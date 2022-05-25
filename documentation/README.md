@@ -1,6 +1,6 @@
 # 📡 NEAR ORACLE API
 
-![NEARoracle image](https://github.com/BalloonBox-Inc/NEARoracle-Oracle/blob/main/images/inverted-primary-logo-bg.png)
+![NEARoracle image](./images/inverted-primary-logo-bg.png)
 
 ## About :mailbox_with_mail:
 

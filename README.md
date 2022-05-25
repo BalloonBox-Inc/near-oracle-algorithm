@@ -1,4 +1,4 @@
-# 💎 🌀 🌐  NEAR Oracle
+# 🔮 NEAR Oracle
 
 ![NEARoracle image](./images/primary-logo-bg.png)
 
