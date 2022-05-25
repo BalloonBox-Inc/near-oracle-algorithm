@@ -1,6 +1,10 @@
 # 🔮 NEAR Oracle
 
-![NEARoracle image](./images/primary-logo-bg.png)
+<p align="center">
+  <a href="https://near.org/">
+    <img alt="NearMainLogo" src="https://github.com/BalloonBox-Inc/NEARoracle-Oracle/blob/dev/images/primary-logo-bg.png" width="700" height="350" />
+  </a>
+</p>
 
 ## At a Glance
 

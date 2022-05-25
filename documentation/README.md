@@ -1,6 +1,10 @@
-# 📡 NEAR ORACLE API
+<p align="center">
+  <a href="https://near.org/">
+    <img alt="NearWhiteLogo" src="https://github.com/BalloonBox-Inc/NEARoracle-Oracle/blob/dev/images/inverted-primary-logo-bg.png" width="450" />
+  </a>
+</p>
 
-![NEARoracle image](./images/inverted-primary-logo-bg.png)
+# NEAR ORACLE API
 
 ## About :mailbox_with_mail:
 
