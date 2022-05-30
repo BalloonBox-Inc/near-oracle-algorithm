@@ -1,7 +1,6 @@
 from validator_api.coinmarketcap import *
 import numpy as np
 
-
 # Scoring grids (identical for both Plaid and Coinbase)
 score_bins = np.array([500, 560, 650, 740, 800, 870])
 loan_bins = np.array([0.5, 1, 5, 10, 15, 20, 25])*1000
@@ -72,7 +71,8 @@ def interpret_score_plaid(score, feedback):
 
         # Score
         if feedback['fetch']:
-            pass
+            interpret['score']['points'] = 300
+            interpret['score']['quality'] = 'very poor'
         else:
             interpret['score']['score_exist'] = True
             interpret['score']['points'] = int(score)
@@ -232,7 +232,8 @@ def interpret_score_coinbase(score, feedback):
 
         # Score
         if ('kyc' in feedback.keys()) & (feedback['kyc']['verified'] == False):
-            pass
+            interpret['score']['points'] = 300
+            interpret['score']['quality'] = 'very poor'
         else:
             interpret['score']['score_exist'] = True
             interpret['score']['points'] = int(score)
