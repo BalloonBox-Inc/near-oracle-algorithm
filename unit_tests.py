@@ -1,5 +1,5 @@
 import unittest
-from support.tests.test_coinbase import TestMetricsCoinbase
+from support.tests.test_coinbase import *
 from support.tests.test_plaid import *
 from support.metrics_coinbase import *
 
