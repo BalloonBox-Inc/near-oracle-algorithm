@@ -2,6 +2,13 @@ from support.metrics_plaid import *  # import code to get tested
 from datetime import datetime
 import unittest
 import json
+import os
+
+
+dummy_data = 'test_plaid.json'
+
+json_file = os.path.join(os.path.dirname(
+    __file__).replace('/tests', '/data'), dummy_data)
 
 
 # -------------------------------------------------------------------------- #
@@ -47,8 +54,8 @@ class TestMetricCredit(unittest.TestCase):
     # factor out set-up code implementing the setUp() method
     def setUp(self):
         self.fb = create_feedback_plaid()
-        with open('data/test_user_plaid.json') as my_file:
-            self.data = str_to_datetime(json.load(my_file), self.fb)
+        with open(json_file) as f:
+            self.data = str_to_datetime(json.load(f), self.fb)
 
     # clean up code at the end of this test class
     def tearDown(self):
@@ -131,8 +138,8 @@ class TestMetricVelocity(unittest.TestCase):
 
     def setUp(self):
         self.fb = create_feedback_plaid()
-        with open('data/test_user_plaid.json') as my_file:
-            self.data = str_to_datetime(json.load(my_file), self.fb)
+        with open(json_file) as f:
+            self.data = str_to_datetime(json.load(f), self.fb)
 
     def tearDown(self):
         self.fb = None
@@ -202,8 +209,8 @@ class TestMetricStability(unittest.TestCase):
 
     def setUp(self):
         self.fb = create_feedback_plaid()
-        with open('data/test_user_plaid.json') as my_file:
-            self.data = str_to_datetime(json.load(my_file), self.fb)
+        with open(json_file) as f:
+            self.data = str_to_datetime(json.load(f), self.fb)
 
     def tearDown(self):
         self.fb = None
@@ -252,8 +259,8 @@ class TestMetricDiversity(unittest.TestCase):
 
     def setUp(self):
         self.fb = create_feedback_plaid()
-        with open('data/test_user_plaid.json') as my_file:
-            self.data = str_to_datetime(json.load(my_file), self.fb)
+        with open(json_file) as f:
+            self.data = str_to_datetime(json.load(f), self.fb)
 
     def tearDown(self):
         self.fb = None
@@ -291,8 +298,8 @@ class TestHelperFunctions(unittest.TestCase):
 
     def setUp(self):
         self.fb = create_feedback_plaid()
-        with open('data/test_user_plaid.json') as my_file:
-            self.data = str_to_datetime(json.load(my_file), self.fb)
+        with open(json_file) as f:
+            self.data = str_to_datetime(json.load(f), self.fb)
 
     def tearDown(self):
         self.fb = None
@@ -372,8 +379,8 @@ class TestParametrizePlaid(unittest.TestCase):
     def setUp(self):
         self.fb = create_feedback_plaid()
 
-        with open('data/test_user_plaid.json') as my_file:
-            self.data = str_to_datetime(json.load(my_file), self.fb)
+        with open(json_file) as f:
+            self.data = str_to_datetime(json.load(f), self.fb)
 
         self.arg = {
             'good': {'data': self.data, 'feedback': self.fb},
