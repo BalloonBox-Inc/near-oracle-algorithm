@@ -1,4 +1,3 @@
-
 from validator_api.coinmarketcap import *
 import numpy as np
 
