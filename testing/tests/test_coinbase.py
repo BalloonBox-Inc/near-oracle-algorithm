@@ -1,7 +1,7 @@
-import json
-import unittest
+from support.metrics_coinbase import *  # import code to get tested
 from datetime import datetime
-from ..metrics_coinbase import *  # import testing code
+import unittest
+import json
 
 
 # -------------------------------------------------------------------------- #

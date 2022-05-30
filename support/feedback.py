@@ -1,4 +1,4 @@
-from validator_api.coinmarketcap import *
+from market.coinmarketcap import *
 import numpy as np
 
 # Scoring grids (identical for both Plaid and Coinbase)

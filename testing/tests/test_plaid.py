@@ -1,7 +1,7 @@
-import json
-import unittest
+from support.metrics_plaid import *  # import code to get tested
 from datetime import datetime
-from ..metrics_plaid import *  # import code to get tested
+import unittest
+import json
 
 
 # -------------------------------------------------------------------------- #
