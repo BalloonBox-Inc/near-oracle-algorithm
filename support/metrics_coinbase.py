@@ -1,8 +1,7 @@
+from testing.performance import *
 from datetime import datetime
 import pandas as pd
 import numpy as np
-
-from optimization.performance import *
 
 now = datetime.now().date()
 

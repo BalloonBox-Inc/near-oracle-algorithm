@@ -6,18 +6,15 @@ from datetime import timezone
 from icecream import ic
 from os import getenv
 
-from optimization.performance import *
-from feedback.message import *
-from validator_api.coinmarketcap import *
-from validator_api.coinbase import *
-from validator_api.plaid import *
+from validator.coinbase import *
+from validator.plaid import *
+from market.coinmarketcap import *
+from support.feedback import *
 from support.score import *
+from testing.performance import *
 
 
 load_dotenv()
-
-
-app = FastAPI()
 
 
 class Plaid_Item(BaseModel):
@@ -33,8 +30,7 @@ class Coinbase_Item(BaseModel):
     coinmarketcap_key: str
 
 
-if getenv('ENV') == 'production':
-    ic.disable()
+app = FastAPI()
 
 
 def create_feedback_plaid():
