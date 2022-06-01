@@ -1,0 +1,213 @@
+{
+    "data": [
+        {
+            "credit_line": "micro loan 25k",
+            "maximum_amount": 25000,
+            "loan_range": [0, 500, 1000, 5000, 10000, 15000, 20000, 25000],
+            "score_range": [300, 500, 560, 650, 740, 800, 870, 900],
+            "qualitative_range": ["very poor", "poor", "fair", "good", "very good", "excellent", "exceptional"],
+            "minimum_requirements": {
+                "plaid": {
+                    "thresholds": {
+                        "transactions_period": 360
+                    },
+                    "scores": {
+                        "models": {}
+                    },
+                    "params": {
+                        "metrics": {},
+                        "matrices": {}
+                    },
+                    "messages": {
+                        "failed": "",
+                        "success": ""
+                    }
+                },
+                "coinbase": {
+                    "thresholds": {
+                        "coinmarketcap_currencies": 50,
+                        "transaction_types": ["fiat_deposit", "request", "buy", "fiat_withdrawal", "vault_withdrawal", "sell", "send"],
+                        "odd_fiats": ["BHD", "BIF", "BYR", "CLP", "DJF", "GNF", "HUF", "IQD", "ISK", "JOD", "JPY", "KMF", "KRW", "KWD",
+                            "LYD", "MGA", "MRO", "OMR", "PYG", "RWF", "TND", "UGX", "VND", "VUV", "XAF", "XOF", "XPF"]
+                    },
+                    "scores": {
+                        "models": {
+                            "kyc": {
+                                "weight": 0.1,
+                                "metrics": {}
+                            },
+                            "history": {
+                                "weight": 0.1,
+                                "metrics": {}
+                            },
+                            "liquidity": {
+                                "weight": 0.4,
+                                "metrics": {
+                                    "balance": 0.6,
+                                    "running_balance": 0.4
+                                }
+                            },
+                            "activity": {
+                                "weight": 0.4,
+                                "metrics": {
+                                    "credit_volume": 0.2,
+                                    "debit_volume": 0.2,
+                                    "credit_consistency": 0.2,
+                                    "debit_consistency": 0.2,
+                                    "inception": 0.2
+                                }
+                            }
+                        }
+                    },
+                    "params": {
+                        "metrics": {
+                            "due_date": [3, 4, 5],
+                            "duration": [90, 120, 150, 180, 210, 270],
+                            "volume_balance": [5000, 6500, 8500, 11000, 13000, 15000],
+                            "volume_profit": [500, 1000, 2000, 2500, 3000, 4000],
+                            "count_txn": [10, 20, 30, 35, 40, 50]
+                        },
+                        "matrices": {
+                            "activity_volume": {
+                                "shape": [7, 7],
+                                "scalars": [3.03, 1.17]
+                            },
+                            "activity_consistency": {
+                                "shape": [7, 7],
+                                "scalars": [1.85, 1.55]
+                            }
+                        }
+                    },
+                    "messages": {
+                        "failed": "NEAR oracle could not calculate your credit score as there is no active wallet nor transaction history associated with your Coinabse account. Please use a different account.",
+                        "success": "Congrats! Your NEAR oracle score is {} - {} points. This score qualifies you for a short term loan of up to {} NEAR which is equivalent to {} USD."
+                    }
+                },
+                "near": {
+                    "thresholds": {},
+                    "scores": {
+                        "models": {}
+                    },
+                    "params": {
+                        "metrics": {},
+                        "matrices": {}
+                    },
+                    "messages": {
+                        "failed": "",
+                        "success": ""
+                    }
+                }
+            }
+        },
+        {
+            "credit_line": "small loan 50k",
+            "maximum_amount": 50000,
+            "loan_range": [25000, 30000, 34000, 38000, 42000, 45000, 48000, 50000],
+            "score_range": [300, 500, 560, 650, 740, 800, 870, 900],
+            "qualitative_range": ["very poor", "poor", "fair", "good", "very good", "excellent", "exceptional"],
+            "minimum_requirements": {
+                "plaid": {
+                    "thresholds": {
+                        "transactions_period": 720
+                    },
+                    "scores": {
+                        "models": {}
+                    },
+                    "params": {
+                        "metrics": {},
+                        "matrices": {}
+                    },
+                    "messages": {
+                        "failed": "",
+                        "success": ""
+                    }
+                },
+                "coinbase": {
+                    "thresholds": {
+                        "coinmarketcap_currencies": 25
+                    },
+                    "scores": {
+                        "models": {}
+                    },
+                    "params": {
+                        "metrics": {},
+                        "matrices": {}
+                    },
+                    "messages": {
+                        "failed": "",
+                        "success": ""
+                    }
+                },
+                "near": {
+                    "thresholds": {},
+                    "scores": {
+                        "models": {}
+                    },
+                    "params": {
+                        "metrics": {},
+                        "matrices": {}
+                    },
+                    "messages": {
+                        "failed": "",
+                        "success": ""
+                    }
+                }
+            }
+        },
+        {
+            "credit_line": "medium loan 100k",
+            "maximum_amount": 100000,
+            "loan_range": [50000, 60000, 70000, 80000, 85000, 90000, 95000, 100000],
+            "score_range": [300, 500, 560, 650, 740, 800, 870, 900],
+            "qualitative_range": ["very poor", "poor", "fair", "good", "very good", "excellent", "exceptional"],
+            "minimum_requirements": {
+                "plaid": {
+                    "thresholds": {
+                        "transactions_period": 1800
+                    },
+                    "scores": {
+                        "models": {}
+                    },
+                    "params": {
+                        "metrics": {},
+                        "matrices": {}
+                    },
+                    "messages": {
+                        "failed": "",
+                        "success": ""
+                    }
+                },
+                "coinbase": {
+                    "thresholds": {
+                        "coinmarketcap_currencies": 10
+                    },
+                    "scores": {
+                        "models": {}
+                    },
+                    "params": {
+                        "metrics": {},
+                        "matrices": {}
+                    },
+                    "messages": {
+                        "failed": "",
+                        "success": ""
+                    }
+                },
+                "near": {
+                    "thresholds": {},
+                    "scores": {
+                        "models": {}
+                    },
+                    "params": {
+                        "metrics": {},
+                        "matrices": {}
+                    },
+                    "messages": {
+                        "failed": "",
+                        "success": ""
+                    }
+                }
+            }
+        }
+    ]
+}

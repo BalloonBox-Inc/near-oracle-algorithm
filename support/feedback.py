@@ -2,10 +2,10 @@ from market.coinmarketcap import *
 import numpy as np
 
 # Scoring grids (identical for both Plaid and Coinbase)
-score_bins = np.array([500, 560, 650, 740, 800, 870])
-loan_bins = np.array([0.5, 1, 5, 10, 15, 20, 25])*1000
-score_quality = ['very poor', 'poor', 'fair',
-                 'good', 'very good', 'excellent', 'exceptional']
+# score_bins = np.array([500, 560, 650, 740, 800, 870])
+# loan_bins = np.array([0.5, 1, 5, 10, 15, 20, 25])*1000
+# score_quality = ['very poor', 'poor', 'fair',
+#                  'good', 'very good', 'excellent', 'exceptional']
 
 
 # Some helper functions
@@ -214,7 +214,7 @@ def create_interpret_coinbase():
             }
 
 
-def interpret_score_coinbase(score, feedback):
+def interpret_score_coinbase(score, feedback, score_range, loan_range, quality_range):
     '''
     Description:
         returns a dict explaining the meaning of the numerical score
@@ -237,24 +237,29 @@ def interpret_score_coinbase(score, feedback):
         else:
             interpret['score']['score_exist'] = True
             interpret['score']['points'] = int(score)
-            interpret['score']['quality'] = score_quality[np.digitize(
-                score, score_bins, right=False)]
+            interpret['score']['quality'] = quality_range[np.digitize(
+                score, score_range, right=False)]
             interpret['score']['loan_amount'] = int(
-                loan_bins[np.digitize(score, score_bins, right=False)])
+                loan_range[np.digitize(score, score_range, right=False)])
             interpret['score']['loan_duedate'] = int(
                 feedback['liquidity']['loan_duedate'])
+
             if ('wallet_age(days)' in list(feedback['history'].keys())) and (feedback['history']['wallet_age(days)']):
                 interpret['score']['wallet_age(days)'] = feedback['history']['wallet_age(days)']
+
             if 'current_balance' in list(feedback['liquidity'].keys()):
                 interpret['score']['current_balance'] = feedback['liquidity']['current_balance']
 
         # Advice
             if 'error' in list(feedback['kyc'].keys()):
                 interpret['advice']['kyc_error'] = True
+
             if 'error' in list(feedback['history'].keys()):
                 interpret['advice']['history_error'] = True
+
             if 'error' in list(feedback['liquidity'].keys()):
                 interpret['advice']['liquidity_error'] = True
+
             if 'error' in list(feedback['activity'].keys()):
                 interpret['advice']['activity_error'] = True
 
@@ -265,7 +270,7 @@ def interpret_score_coinbase(score, feedback):
         return interpret
 
 
-def qualitative_feedback_coinbase(score, feedback, coinmarketcap_key):
+def qualitative_feedback_coinbase(messages, score, feedback, score_range, loan_range, quality_range, coinmarketcap_key):
     '''
     Description:
         A function to format and return a qualitative description of the numerical score obtained by the user
@@ -278,33 +283,29 @@ def qualitative_feedback_coinbase(score, feedback, coinmarketcap_key):
         msg (str): qualitative message explaining the numerical score to the user. Return this message to the user in the front end of the Dapp
     '''
 
-    # NEAR Rate
-    rate = coinmarketcap_rate(coinmarketcap_key, 'USD', 'SCRT')
-
     # SCORE
-
     all_keys = [x for y in [list(feedback[k].keys())
                             for k in feedback.keys()] for x in y]
     # Case #1: NO score exists. Return fetch error when the Oracle did not fetch any data and computed no score
     if ('kyc' in feedback.keys()) & (feedback['kyc']['verified'] == False):
-        msg = 'Congratulations your Coinbase KYC status is successful! However, NEARoracle could not calculate your credit score as there is no active wallet or transaction history associated with your account. Try to log into Coinbase with a different account.'
+        msg = messages['failed']
 
     # Case #2: a score exists. Return descriptive score feedback
     else:
         # Declare score variables
-        quality = score_quality[np.digitize(score, score_bins, right=False)]
+        quality = quality_range[np.digitize(score, score_range, right=False)]
         points = int(score)
         loan_amount = int(
-            loan_bins[np.digitize(score, score_bins, right=False)])
+            loan_range[np.digitize(score, score_range, right=False)])
 
         # Communicate the score
-        msg = 'Congratulations your Coinbase KYC status is successful! Your NEARoracle score is {} - {} points. This qualifies you for a short term loan of up to ${:,.0f} USD ({:,.0f} SCRT)'\
-            .format(quality.upper(), points, loan_amount, loan_amount*rate)
+        rate = coinmarketcap_rate(coinmarketcap_key, 'USD', 'NEAR')
+        msg = messages['success'].format(
+            quality.upper(), points, loan_amount/rate, loan_amount)
+
         if ('loan_duedate' in list(feedback['liquidity'].keys())):
             msg = msg + ' over a recommended pay back period of {0} monthly installments.'.format(
                 feedback['liquidity']['loan_duedate'])
-        else:
-            msg = msg + '.'
 
         # Coinbase account duration
         if ('wallet_age(days)' in all_keys):
@@ -320,8 +321,6 @@ def qualitative_feedback_coinbase(score, feedback, coinmarketcap_key):
             if ('current_balance' in all_keys):
                 msg = msg + ' Your total balance across all wallets is ${} USD.'.format(
                     feedback['liquidity']['current_balance'])
-            else:
-                pass
 
         # ADVICE
 
@@ -332,4 +331,4 @@ def qualitative_feedback_coinbase(score, feedback, coinmarketcap_key):
             msg = msg + ' An error occurred while computing the score metric called {}. As a result, your score was rounded down. Try to log into Coinbase again later.'.format(
                 comma_separated_list(metrics_w_errors))
 
-    return msg
+    return msg + '.'

@@ -1,4 +1,5 @@
 from support.models import *
+from support.helper import *
 
 
 def plaid_score(txn, feedback):
@@ -25,14 +26,20 @@ def plaid_score(txn, feedback):
     return score, feedback
 
 
-def coinbase_score(acc, txn, feedback):
+def coinbase_score(score_range, feedback, model_weights, metric_weigths, params, acc, txn):
+
+    params = coinbase_params(params, score_range)
 
     kyc, feedback = coinbase_kyc(acc, txn, feedback)
-    history, feedback = coinbase_history(acc, feedback)
-    liquidity, feedback = coinbase_liquidity(acc, txn, feedback)
-    activity, feedback = coinbase_activity(acc, txn, feedback)
+    history, feedback = coinbase_history(acc, feedback, params)
+    liquidity, feedback = coinbase_liquidity(
+        acc, txn, feedback, metric_weigths, params)
+    activity, feedback = coinbase_activity(
+        acc, txn, feedback, metric_weigths, params)
 
-    score = 300 + 600*(0.10*kyc + 0.10*history +
-                       0.40*liquidity + 0.40*activity)
+    a = list(model_weights.values())
+    b = [kyc, history, liquidity, activity]
+
+    score = 300 + 600*(dot_product(a, b))
 
     return score, feedback

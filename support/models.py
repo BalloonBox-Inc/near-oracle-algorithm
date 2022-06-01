@@ -1,5 +1,7 @@
 from support.metrics_plaid import *
 from support.metrics_coinbase import *
+from support.helper import *
+
 
 # -------------------------------------------------------------------------- #
 #                                Plaid Model                                 #
@@ -72,39 +74,100 @@ def coinbase_kyc(acc, txn, feedback):
     return score, feedback
 
 
-def coinbase_history(acc, feedback):
+def coinbase_history(acc, feedback, params):
 
-    score, feedback = history_acc_longevity(acc, feedback)
-
-    return score, feedback
-
-
-def coinbase_liquidity(acc, txn, feedback):
-
-    balance, feedback = liquidity_tot_balance_now(acc, feedback)
-    feedback = liquidity_loan_duedate(txn, feedback)
-    run_balance, feedback = liquidity_avg_running_balance(acc, txn, feedback)
-
-    score = 0.60*balance + 0.40*run_balance
+    score, feedback = history_acc_longevity(
+        acc,
+        feedback,
+        params[1],
+        params[7]
+    )
 
     return score, feedback
 
 
-def coinbase_activity(acc, txn, feedback):
+def coinbase_liquidity(acc, txn, feedback, weights, params):
+
+    balance, feedback = liquidity_tot_balance_now(
+        acc,
+        feedback,
+        params[2],
+        params[7]
+    )
+
+    feedback = liquidity_loan_duedate(
+        txn,
+        feedback,
+        params[0]
+    )
+
+    run_balance, feedback = liquidity_avg_running_balance(
+        acc,
+        txn,
+        feedback,
+        params[1],
+        params[2],
+        params[6]
+    )
+
+    a = list(weights.values())[:2]
+    b = [balance, run_balance]
+
+    score = dot_product(a, b)
+
+    return score, feedback
+
+
+def coinbase_activity(acc, txn, feedback, weights, params):
 
     credit_volume, feedback = activity_tot_volume_tot_count(
-        txn, 'credit', feedback)
-    debit_volume, feedback = activity_tot_volume_tot_count(
-        txn, 'debit', feedback)
-    credit_consistency, feedback = activity_consistency(
-        txn, 'credit', feedback)
-    debit_consistency, feedback = activity_consistency(txn, 'debit', feedback)
-    inception, feedback = activity_profit_since_inception(acc, txn, feedback)
+        txn,
+        'credit',
+        feedback,
+        params[2],
+        params[4],
+        params[5]
+    )
 
-    score = 0.2*credit_volume \
-        + 0.2 * debit_volume \
-        + 0.2*credit_consistency \
-        + 0.2*debit_consistency \
-        + 0.2*inception
+    debit_volume, feedback = activity_tot_volume_tot_count(
+        txn,
+        'debit',
+        feedback,
+        params[2],
+        params[4],
+        params[5]
+    )
+
+    credit_consistency, feedback = activity_consistency(
+        txn,
+        'credit',
+        feedback,
+        params[1],
+        params[3],
+        params[6]
+    )
+
+    debit_consistency, feedback = activity_consistency(
+        txn,
+        'debit',
+        feedback,
+        params[1],
+        params[3],
+        params[6]
+    )
+
+    inception, feedback = activity_profit_since_inception(
+        acc,
+        txn,
+        feedback,
+        params[3],
+        params[7]
+    )
+
+    a = list(weights.values())[2:]
+    b = [credit_volume, debit_volume,
+         credit_consistency, debit_consistency, inception]
+
+    score = dot_product(a, b)
 
     return score, feedback

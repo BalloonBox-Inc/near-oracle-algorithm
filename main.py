@@ -1,20 +1,30 @@
 from fastapi import FastAPI
 from pydantic import BaseModel
-from dotenv import load_dotenv
 from datetime import datetime
 from datetime import timezone
-from icecream import ic
+from dotenv import load_dotenv
 from os import getenv
+from icecream import ic
 
-from validator.coinbase import *
+
+# from validator.near import *
 from validator.plaid import *
+from validator.coinbase import *
 from market.coinmarketcap import *
-from support.feedback import *
 from support.score import *
+from support.feedback import *
+# from support.risk import *
+from support.helper import *
+from config.helper import *
 from testing.performance import *
 
 
 load_dotenv()
+
+
+class Near_Item(BaseModel):
+    coinmarketcap_key: str
+    loan_request: int
 
 
 class Plaid_Item(BaseModel):
@@ -22,12 +32,14 @@ class Plaid_Item(BaseModel):
     plaid_client_id: str
     plaid_client_secret: str
     coinmarketcap_key: str
+    loan_request: int
 
 
 class Coinbase_Item(BaseModel):
     coinbase_access_token: str
     coinbase_refresh_token: str
     coinmarketcap_key: str
+    loan_request: int
 
 
 app = FastAPI()
@@ -37,8 +49,10 @@ def create_feedback_plaid():
     return {'fetch': {}, 'credit': {}, 'velocity': {}, 'stability': {}, 'diversity': {}}
 
 
-def create_feedback_coinbase():
-    return {'kyc': {}, 'history': {}, 'liquidity': {}, 'activity': {}}
+# @measure_time_and_memory
+# @app.post('/credit_score/near')
+# async def credit_score_near(item: Near_Item):
+#     return output
 
 
 # @measure_time_and_memory
@@ -106,71 +120,127 @@ async def credit_score_plaid(item: Plaid_Item):
 async def credit_score_coinbase(item: Coinbase_Item):
 
     try:
-        # client connection
-        client = coinbase_client(
-            item.coinbase_access_token, item.coinbase_refresh_token)
-        ic(client)
+        # configs
+        configs = read_config_file(item.loan_request)
+
+        loan_range = configs['loan_range']
+        score_range = configs['score_range']
+        qualitative_range = configs['qualitative_range']
+
+        thresholds = configs['minimum_requirements']['coinbase']['thresholds']
+        params = configs['minimum_requirements']['coinbase']['params']
+
+        models, metrics = read_models_and_metrics(
+            configs['minimum_requirements']['coinbase']['scores']['models'])
+
+        feedback = create_feedback(models)
+        messages = configs['minimum_requirements']['coinbase']['messages']
+
+        ic(loan_range)
+        ic(score_range)
+        ic(qualitative_range)
+        ic(thresholds)
+        ic(params)
+        ic(models)
+        ic(metrics)
+        ic(feedback)
+        ic(messages)
 
         # coinmarketcap
-        # fetch top X cryptos from coinmarketcap API
-        top_coins = coinmarketcap_coins(item.coinmarketcap_key, 25)
-        ic(top_coins)
+        top_marketcap = coinmarketcap_currencies(
+            item.coinmarketcap_key,
+            thresholds['coinmarketcap_currencies']
+        )
+        ic(top_marketcap)
+        if isinstance(top_marketcap, str):
+            raise Exception(top_marketcap)
+
+        # coinbase client connection
+        client = coinbase_client(
+            item.coinbase_access_token,
+            item.coinbase_refresh_token
+        )
+        ic(client)
+
+        # coinbase supported currencies
         currencies = coinbase_currencies(client)
         ic(currencies)
         if 'error' in currencies:
             raise Exception(currencies['error']['message'])
 
-        odd_fiats = ['BHD', 'BIF', 'BYR', 'CLP', 'DJF', 'GNF', 'HUF', 'IQD', 'ISK', 'JOD', 'JPY', 'KMF', 'KRW',
-                     'KWD', 'LYD', 'MGA', 'MRO', 'OMR', 'PYG', 'RWF', 'TND', 'UGX', 'VND', 'VUV', 'XAF', 'XOF', 'XPF']
-        currencies = {k: 1 for (k, v) in currencies.items()
-                      if v == 0.01 or k in odd_fiats}
-        top_coins.update(currencies)
-        coins = list(top_coins.keys())
+        # add top coinmarketcap currencies and coinbase currencies
+        top_currencies = aggregate_currencies(
+            top_marketcap,
+            currencies,
+            thresholds['odd_fiats']
+        )
+        ic(top_currencies)
 
-        # change coinbase native currency to USD
+        # set native currency to USD
         native = coinbase_native_currency(client)
-        ic(native)
         if 'error' in native:
             raise Exception(native['error']['message'])
         if native != 'USD':
             set_native = coinbase_set_native_currency(client, 'USD')
-            ic(set_native)
+        ic(native)
 
-        # fetch and format data from user's Coinbase account
-        coinbase_acc = coinbase_accounts(client)
-        if 'error' in coinbase_acc:
-            raise Exception(coinbase_acc['error']['message'])
-        coinbase_acc = [n for n in coinbase_acc if n['currency'] in coins]
-
-        coinbase_txn = [coinbase_transactions(
-            client, n['id']) for n in coinbase_acc]
-        coinbase_txn = [x for n in coinbase_txn for x in n]
-
-        # keep only certain transaction types
-        txn_types = ['fiat_deposit', 'request', 'buy',
-                     'fiat_withdrawal', 'vault_withdrawal', 'sell', 'send']
-        coinbase_txn = [n for n in coinbase_txn if n['status']
-                        == 'completed' and n['type'] in txn_types]
-        for d in coinbase_txn:
-            # If the txn is of 'send' type and is a credit, then relabel its type to 'send_credit'
-            if d['type'] == 'send' and np.sign(float(d['amount']['amount'])) == 1:
-                d['type'] = 'send_credit'
-            # If the txn is of 'send' type and is a debit, then relabel its type to 'send_debit'
-            elif d['type'] == 'send' and np.sign(float(d['amount']['amount'])) == -1:
-                d['type'] = 'send_debit'
+        # data fetching
+        accounts, transactions = coinbase_accounts_and_transactions(
+            client,
+            top_currencies,
+            thresholds['transaction_types']
+        )
+        ic(accounts)
+        ic(transactions)
+        if isinstance(accounts, str):
+            raise Exception(accounts)
 
         # reset native currency
         set_native = coinbase_set_native_currency(client, native)
         ic(set_native)
 
-        # compute score
-        feedback = create_feedback_coinbase()
+        # compute score and feedback
         score, feedback = coinbase_score(
-            coinbase_acc, coinbase_txn, feedback)
-        message = qualitative_feedback_coinbase(
-            score, feedback, item.coinmarketcap_key)
-        feedback = interpret_score_coinbase(score, feedback)
+            score_range,
+            feedback,
+            models,
+            metrics,
+            params,
+            accounts,
+            transactions
+        )
+        ic(score)
+        ic(feedback)
 
+        # compute risk
+        # risk = calc_risk(
+        #     score,
+        #     score_range,
+        #     loan_range
+        # )
+
+        # update feedback
+        message = qualitative_feedback_coinbase(
+            messages,
+            score,
+            feedback,
+            score_range,
+            loan_range,
+            qualitative_range,
+            item.coinmarketcap_key
+        )
+
+        feedback = interpret_score_coinbase(
+            score,
+            feedback,
+            score_range,
+            loan_range,
+            qualitative_range
+        )
+        ic(message)
+        ic(feedback)
+
+        # return success
         status_code = 200
         status = 'success'
 
@@ -191,11 +261,13 @@ async def credit_score_coinbase(item: Coinbase_Item):
             'status': status,
             'timestamp': timestamp,
             'score': int(score),
+            # 'risk': risk,
             'feedback': feedback,
             'message': message
         }
         if score == 0:
             output.pop('score', None)
+            # output.pop('risk', None)
             output.pop('feedback', None)
-        ic(output)
+
         return output
