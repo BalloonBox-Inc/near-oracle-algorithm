@@ -2,17 +2,16 @@ from support.models import *
 from support.helper import *
 
 
-def plaid_score(txn, feedback):
+def plaid_score(score_range, feedback, model_weights, model_penalties, metric_weigths, params, txn):
 
-    mix, feedback = credit_mix(txn, feedback)
+    credit, feedback = credit_mix(txn, feedback)
 
-    if mix == 0:
+    if credit == 0:
         velocity, feedback = plaid_velocity(txn, feedback)
         stability, feedback = plaid_stability(txn, feedback)
         diversity, feedback = plaid_diversity(txn, feedback)
 
-        # adds up to 0.95 for lack of credit card - it's a penalty
-        score = 300 + 600*(0.33*velocity + 0.42*stability + 0.20*diversity)
+        a = list(model_penalties.values())
 
     else:
         credit, feedback = plaid_credit(txn, feedback)
@@ -20,8 +19,12 @@ def plaid_score(txn, feedback):
         stability, feedback = plaid_stability(txn, feedback)
         diversity, feedback = plaid_diversity(txn, feedback)
 
-        score = 300 + 600*(0.42*credit + 0.20*velocity +
-                           0.28*stability + 0.10*diversity)
+        a = list(model_weights.values())
+
+    b = [credit, velocity, stability, diversity]
+
+    head, tail = head_tail_list(score_range)
+    score = tail + (head-tail)*(dot_product(a, b))
 
     return score, feedback
 
@@ -40,6 +43,7 @@ def coinbase_score(score_range, feedback, model_weights, metric_weigths, params,
     a = list(model_weights.values())
     b = [kyc, history, liquidity, activity]
 
-    score = 300 + 600*(dot_product(a, b))
+    head, tail = head_tail_list(score_range)
+    score = tail + (head-tail)*(dot_product(a, b))
 
     return score, feedback

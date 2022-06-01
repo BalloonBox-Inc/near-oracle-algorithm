@@ -6,6 +6,10 @@ def dot_product(l1, l2):
     return sum(map(mul, l1, l2))
 
 
+def head_tail_list(lst):
+    return lst[-1], lst[0]
+
+
 def aggregate_currencies(ccy1, ccy2, fiats):
     ccy2 = {k: 1 for (k, v) in ccy2.items()
             if v == 0.01 or k in fiats}
@@ -53,8 +57,8 @@ def coinbase_params(params, score_range):
         tuple(params['matrices']['activity_consistency']['scalars'])
     ))
 
-    head = score_range[-1]
-    tail = score_range[0]
+    head, tail = head_tail_list(score_range)
+
     fico = (np.array(score_range[:-1])-tail) / (head-tail)
     fico_medians = [round(fico[i]+(fico[i+1]-fico[i]) / 2, 2)
                     for i in range(len(fico)-1)]

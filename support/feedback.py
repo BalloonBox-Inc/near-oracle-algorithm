@@ -1,12 +1,6 @@
 from market.coinmarketcap import *
 import numpy as np
 
-# Scoring grids (identical for both Plaid and Coinbase)
-# score_bins = np.array([500, 560, 650, 740, 800, 870])
-# loan_bins = np.array([0.5, 1, 5, 10, 15, 20, 25])*1000
-# score_quality = ['very poor', 'poor', 'fair',
-#                  'good', 'very good', 'excellent', 'exceptional']
-
 
 # Some helper functions
 def comma_separated_list(l):

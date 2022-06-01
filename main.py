@@ -28,7 +28,7 @@ class Near_Item(BaseModel):
 
 
 class Plaid_Item(BaseModel):
-    plaid_token: str
+    plaid_access_token: str
     plaid_client_id: str
     plaid_client_secret: str
     coinmarketcap_key: str
@@ -45,10 +45,6 @@ class Coinbase_Item(BaseModel):
 app = FastAPI()
 
 
-def create_feedback_plaid():
-    return {'fetch': {}, 'credit': {}, 'velocity': {}, 'stability': {}, 'diversity': {}}
-
-
 # @measure_time_and_memory
 # @app.post('/credit_score/near')
 # async def credit_score_near(item: Near_Item):
@@ -60,29 +56,101 @@ def create_feedback_plaid():
 async def credit_score_plaid(item: Plaid_Item):
 
     try:
-        # client connection
+        # configs
+        configs = read_config_file(item.loan_request)
+
+        loan_range = configs['loan_range']
+        score_range = configs['score_range']
+        qualitative_range = configs['qualitative_range']
+
+        thresholds = configs['minimum_requirements']['plaid']['thresholds']
+        params = configs['minimum_requirements']['plaid']['params']
+
+        models, metrics = read_models_and_metrics(
+            configs['minimum_requirements']['plaid']['scores']['models'])
+
+        penalties = read_model_penalties(
+            configs['minimum_requirements']['plaid']['scores']['models'])
+
+        messages = configs['minimum_requirements']['plaid']['messages']
+        feedback = create_feedback(models)
+        feedback['fetch'] = {}
+
+        ic(loan_range)
+        ic(score_range)
+        ic(qualitative_range)
+        ic(thresholds)
+        ic(params)
+        ic(models)
+        ic(metrics)
+        ic(messages)
+        ic(feedback)
+
+        # plaid client connection
         client = plaid_client(
-            getenv('ENV'), item.plaid_client_id, item.plaid_client_secret)
+            getenv('ENV'),
+            item.plaid_client_id,
+            item.plaid_client_secret
+        )
         ic(client)
 
-        # data fetching and formatting
-        plaid_txn = plaid_transactions(item.plaid_token, client, 360)
-        if 'error' in plaid_txn:
-            raise Exception(plaid_txn['error']['message'])
+        # data fetching
+        transactions = plaid_transactions(
+            item.plaid_access_token,
+            client,
+            thresholds['transactions_period']
+        )
+        ic(transactions)
+        if isinstance(transactions, str):
+            raise Exception(transactions)
 
-        plaid_txn = {k: v for k, v in plaid_txn.items(
-        ) if k in ['accounts', 'item', 'transactions']}
-        plaid_txn['transactions'] = [
-            t for t in plaid_txn['transactions'] if not t['pending']]
-
-        # compute score
-        feedback = create_feedback_plaid()
+        # create feedback
         feedback = plaid_bank_name(
-            client, plaid_txn['item']['institution_id'], feedback)
-        score, feedback = plaid_score(plaid_txn, feedback)
+            client,
+            transactions['item']['institution_id'],
+            feedback
+        )
+
+        # compute score and feedback
+        score, feedback = plaid_score(
+            score_range,
+            feedback,
+            models,
+            penalties,
+            metrics,
+            params,
+            transactions
+        )
+        ic(score)
+        ic(feedback)
+
+        # compute risk
+        # risk = calc_risk(
+        #     score,
+        #     score_range,
+        #     loan_range
+        # )
+
+        # update feedback
         message = qualitative_feedback_plaid(
-            score, feedback, item.coinmarketcap_key)
-        feedback = interpret_score_plaid(score, feedback)
+            messages,
+            score,
+            feedback,
+            score_range,
+            loan_range,
+            qualitative_range,
+            item.coinmarketcap_key
+        )
+
+        feedback = interpret_score_plaid(
+            score,
+            feedback,
+            score_range,
+            loan_range,
+            qualitative_range
+        )
+        ic(message)
+        ic(feedback)
 
         status_code = 200
         status = 'success'
@@ -91,8 +159,8 @@ async def credit_score_plaid(item: Plaid_Item):
         status_code = 400
         status = 'error'
         score = 0
-        feedback = {}
         message = str(e)
+        feedback = {}
 
     finally:
         timestamp = datetime.now(timezone.utc).strftime(
@@ -104,13 +172,14 @@ async def credit_score_plaid(item: Plaid_Item):
             'status': status,
             'timestamp': timestamp,
             'score': int(score),
-            'feedback': feedback,
-            'message': message
+            # 'risk': risk,
+            'message': message,
+            'feedback': feedback
         }
         if score == 0:
             output.pop('score', None)
+            # output.pop('risk', None)
             output.pop('feedback', None)
-        ic(output)
 
         return output
 
@@ -133,8 +202,8 @@ async def credit_score_coinbase(item: Coinbase_Item):
         models, metrics = read_models_and_metrics(
             configs['minimum_requirements']['coinbase']['scores']['models'])
 
-        feedback = create_feedback(models)
         messages = configs['minimum_requirements']['coinbase']['messages']
+        feedback = create_feedback(models)
 
         ic(loan_range)
         ic(score_range)
@@ -143,8 +212,8 @@ async def credit_score_coinbase(item: Coinbase_Item):
         ic(params)
         ic(models)
         ic(metrics)
-        ic(feedback)
         ic(messages)
+        ic(feedback)
 
         # coinmarketcap
         top_marketcap = coinmarketcap_currencies(
@@ -248,8 +317,8 @@ async def credit_score_coinbase(item: Coinbase_Item):
         status_code = 400
         status = 'error'
         score = 0
-        feedback = {}
         message = str(e)
+        feedback = {}
 
     finally:
         timestamp = datetime.now(timezone.utc).strftime(
@@ -262,8 +331,8 @@ async def credit_score_coinbase(item: Coinbase_Item):
             'timestamp': timestamp,
             'score': int(score),
             # 'risk': risk,
-            'feedback': feedback,
-            'message': message
+            'message': message,
+            'feedback': feedback
         }
         if score == 0:
             output.pop('score', None)

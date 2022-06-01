@@ -6,9 +6,7 @@ from support.helper import *
 # -------------------------------------------------------------------------- #
 #                                Plaid Model                                 #
 # -------------------------------------------------------------------------- #
-
-
-def plaid_credit(txn, feedback):
+def plaid_credit(txn, feedback, params):
 
     limit, feedback = credit_limit(txn, feedback)
     util_ratio, feedback = credit_util_ratio(txn, feedback)
@@ -25,7 +23,7 @@ def plaid_credit(txn, feedback):
     return score, feedback
 
 
-def plaid_velocity(txn, feedback):
+def plaid_velocity(txn, feedback, params):
 
     withdrawals, feedback = velocity_withdrawals(txn, feedback)
     deposits, feedback = velocity_deposits(txn, feedback)
@@ -42,7 +40,7 @@ def plaid_velocity(txn, feedback):
     return score, feedback
 
 
-def plaid_stability(txn, feedback):
+def plaid_stability(txn, feedback, params):
 
     balance, feedback = stability_tot_balance_now(txn, feedback)
     feedback = stability_loan_duedate(txn, feedback)
@@ -53,7 +51,7 @@ def plaid_stability(txn, feedback):
     return score, feedback
 
 
-def plaid_diversity(txn, feedback):
+def plaid_diversity(txn, feedback, params):
 
     acc_count, feedback = diversity_acc_count(txn, feedback)
     profile, feedback = diversity_profile(txn, feedback)

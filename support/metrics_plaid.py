@@ -1,4 +1,5 @@
 from testing.performance import *
+
 from datetime import timedelta
 from datetime import datetime
 import pandas as pd
@@ -6,45 +7,6 @@ import numpy as np
 
 now = datetime.now().date()
 
-# -------------------------------------------------------------------------- #
-#                               Helper Functions                             #
-#                                    -utils-                                 #
-# -------------------------------------------------------------------------- #
-
-
-def build_2D_matrix_by_rule(size, scalar):
-    '''
-    returns a matrix of given size, built through a generalized rule. The matrix must be 2D
-
-            Parameters:
-                size (tuple): declare the matrix size in this format (m, n), where m = rows and n = columns
-                scalar (tuple): scalars to multiply the log_10 by. Follow the format (m_scalar, n_scalar)
-                    m_float: the current cell is equal to m_scalar * log_10(row #) 
-                    n_float: the current cell is equal to n_scalar * log_10(column #) 
-
-            Returns:
-                a matrix of size m x n whose cell are given by m_float+n_float
-    '''
-    # Initialize a zero-matrix of size = (m x n)
-    matrix = np.zeros(size)
-    for m in range(matrix.shape[0]):
-        for n in range(matrix.shape[1]):
-            matrix[m][n] = round(scalar[0]*np.log10(m+1) +
-                                 scalar[1]*np.log10(n+1), 2)
-
-    return matrix
-
-
-# -------------------------------------------------------------------------- #
-#                               Score Matrices                               #
-# -------------------------------------------------------------------------- #
-# Scoring grids
-# naming convention: shape+denominator, m7x7+Scalars+1.3+1.17 -> m7x7_03_17
-# naming convention: shape+denominator, m3x7+Scalars+1.2+1.4 -> m3x7_2_4
-m7x7_03_17 = build_2D_matrix_by_rule((7, 7), (1/3.03, 1/1.17))
-m7x7_85_55 = build_2D_matrix_by_rule((7, 7), (1/1.85, 1/1.55))
-m3x7_2_4 = build_2D_matrix_by_rule((3, 7), (1/1.2, 1/1.4))
-m3x7_73_17 = build_2D_matrix_by_rule((3, 7), (1/1.73, 1/1.17))
 
 fico = (np.array([300, 500, 560, 650, 740, 800, 870])-300) / \
     600  # Fico score binning - normalized
@@ -54,27 +16,20 @@ fico_medians.append(1)
 fico_medians = np.array(fico_medians)
 
 # Categorical bins
-duedate = np.array([3, 4, 5])
-# bins: 0-90 | 91-120 | 121-150 | 151-180 | 181-270 | >270 days
-duration = np.array([90, 120, 150, 180, 210, 270])
-count0 = np.array([1, 2])  # bins: 0-1 | 2 | >=3
 count_lively = np.array([round(x, 0) for x in fico*25])[1:]
 count_txn_month = np.array([round(x, 0) for x in fico*40])[1:]
-count_invest_acc = np.array([1, 2, 3, 4, 5, 6])
 
 volume_flow = np.array([round(x, 0) for x in fico*1500])[1:]
-volume_cred_limit = np.array([0.5, 1, 5, 8, 13, 18])*1000
+# volume_cred_limit = np.array([0.5, 1, 5, 8, 13, 18])*1000
 volume_withdraw = np.array([round(x, 0) for x in fico*1500])[1:]
 volume_deposit = np.array([round(x, 0) for x in fico*7000])[1:]
-volume_invest = np.array([0.5, 1, 2, 4, 6, 8])*1000
-volume_balance_now = np.array([3, 5, 9, 12, 15, 18])*1000
+
+# volume_invest = np.array([0.5, 1, 2, 4, 6, 8])*1000
+# volume_balance_now = np.array([3, 5, 9, 12, 15, 18])*1000
 volume_min_run = np.array([round(x, 0) for x in fico*10000])[1:]
 
 percent_cred_util = np.array([round(x, 2) for x in reversed(fico*0.9)][:-1])
 frequency_interest = np.array([round(x, 2) for x in reversed(fico*0.6)][:-1])
-ratio_flows = np.array([0.7, 1, 1.4, 2, 3, 4])
-slope_product = np.array([0.5, 0.8, 1, 1.3, 1.6, 2])
-slope_linregression = np.array([-0.5, 0, 0.5, 1, 1.5, 2])
 
 
 # -------------------------------------------------------------------------- #

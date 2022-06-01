@@ -63,12 +63,20 @@ def plaid_transactions(access_token, client, timeframe):
         )
 
         r = client.transactions_get(request).to_dict()
+        if 'error' in r:
+            raise Exception(r['error']['message'])
+
+        txn = {k: v for k, v in r.items()
+               if k in ['accounts', 'item', 'transactions']}
+
+        txn['transactions'] = [t for t in txn['transactions']
+                               if not t['pending']]
 
     except plaid.ApiException as e:
-        r = format_error(e)
+        txn = format_error(e)
 
     finally:
-        return r
+        return txn
 
 
 def plaid_bank_name(client, bank_id, feedback):
