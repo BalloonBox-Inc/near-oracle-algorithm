@@ -59,7 +59,7 @@
                             "duration": [90, 120, 150, 180, 210, 270],
                             "count_zero": [1, 2],
                             "count_invest": [1, 2, 3, 4, 5, 6],
-                            "volume_cred": [0.5, 1, 5, 8, 13, 18],
+                            "volume_credit": [0.5, 1, 5, 8, 13, 18],
                             "volume_invest": [0.5, 1, 2, 4, 6, 8],
                             "volume_balance": [3, 5, 9, 12, 15, 18],
                             "flow_ratio": [0.7, 1, 1.4, 2, 3, 4],
@@ -86,8 +86,8 @@
                         }
                     },
                     "messages": {
-                        "failed": "",
-                        "success": ""
+                        "failed": "NEAR oracle could not calculate your credit score as there is no active credit line nor transaction history associated with your Plaid bank account. Please use a different bank account.",
+                        "success": "Congrats! Your NEAR oracle score is {} - {} points. This score qualifies you for a short term loan of up to {} NEAR which is equivalent to {} USD"
                     }
                 },
                 "coinbase": {
@@ -130,8 +130,8 @@
                         "metrics": {
                             "due_date": [3, 4, 5],
                             "duration": [90, 120, 150, 180, 210, 270],
-                            "volume_balance": [5000, 6500, 8500, 11000, 13000, 15000],
-                            "volume_profit": [500, 1000, 2000, 2500, 3000, 4000],
+                            "volume_balance": [5, 6.5, 8.5, 11, 13, 15],
+                            "volume_profit": [0.5, 1, 2, 2.5, 3, 4],
                             "count_txn": [10, 20, 30, 35, 40, 50]
                         },
                         "matrices": {
@@ -147,7 +147,7 @@
                     },
                     "messages": {
                         "failed": "NEAR oracle could not calculate your credit score as there is no active wallet nor transaction history associated with your Coinabse account. Please use a different account.",
-                        "success": "Congrats! Your NEAR oracle score is {} - {} points. This score qualifies you for a short term loan of up to {} NEAR which is equivalent to {} USD."
+                        "success": "Congrats! Your NEAR oracle score is {} - {} points. This score qualifies you for a short term loan of up to {} NEAR which is equivalent to {} USD"
                     }
                 },
                 "near": {

@@ -79,15 +79,14 @@ def plaid_transactions(access_token, client, timeframe):
         return txn
 
 
-def plaid_bank_name(client, bank_id, feedback):
+def plaid_bank_name(client, bank_id):
     '''
         Description:
         returns the bank name where the user holds his bank account
 
     Parameters:
         client (plaid.api.plaid_api.PlaidApi): plaid client info (api key, secret key, palid environment)
-        bank_id (str): the Plaid ID of the institution to get details about 
-        feedback (dict): to write the bank name to
+        bank_id (str): the Plaid ID of the institution to get details about
 
     Returns:
         bank_name (str): name of the bank uwhere user holds their fundings
@@ -96,14 +95,13 @@ def plaid_bank_name(client, bank_id, feedback):
         request = InstitutionsGetByIdRequest(
             institution_id=bank_id,
             country_codes=list(map(lambda x: CountryCode(x), ['US']))
-        )  # hard code 'US' to be the country_code parameter
+        )
 
         r = client.institutions_get_by_id(request)
-        feedback['diversity']['bank_name'] = r['institution']['name']
+        r = r['institution']['name']
 
-    # Always return a bank_name. If the name does not exist then return a None type
     except:
-        feedback['diversity']['bank_name'] = None
+        r = None
 
     finally:
-        return feedback
+        return r

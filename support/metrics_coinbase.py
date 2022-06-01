@@ -72,9 +72,9 @@ def net_flow(txn, timeframe, feedback):
 # -------------------------------------------------------------------------- #
 #                                 Metric #1 KYC                              #
 # -------------------------------------------------------------------------- #
+
+
 # @measure_time_and_memory
-
-
 def kyc(acc, txn, feedback):
     '''
     Description:

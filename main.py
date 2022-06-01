@@ -100,16 +100,16 @@ async def credit_score_plaid(item: Plaid_Item):
             client,
             thresholds['transactions_period']
         )
-        ic(transactions)
+        # ic(transactions)
         if isinstance(transactions, str):
             raise Exception(transactions)
 
-        # create feedback
-        feedback = plaid_bank_name(
+        bank_name = plaid_bank_name(
             client,
             transactions['item']['institution_id'],
-            feedback
         )
+        feedback['diversity']['bank_name'] = bank_name
+        ic(bank_name)
 
         # compute score and feedback
         score, feedback = plaid_score(
