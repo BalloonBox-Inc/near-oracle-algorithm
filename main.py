@@ -83,6 +83,7 @@ async def credit_score_plaid(item: Plaid_Item):
         ic(params)
         ic(models)
         ic(metrics)
+        ic(penalties)
         ic(messages)
         ic(feedback)
 
@@ -152,6 +153,7 @@ async def credit_score_plaid(item: Plaid_Item):
         ic(message)
         ic(feedback)
 
+        # return success
         status_code = 200
         status = 'success'
 
