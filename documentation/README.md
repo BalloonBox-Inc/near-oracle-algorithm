@@ -55,7 +55,6 @@ Body
 
 ```bash
     {
-        "keplr_token": "YOUR_KEPLER_TOKEN",
         "coinbase_access_token": "YOUR_COINBASE_ACCESS_TOKEN",
         "coinbase_refresh_token": "YOUR_COINBASE_REFRESH_TOKEN",
         "coinmarketcap_key": "YOUR_COINMARKETCAP_KEY"
@@ -154,7 +153,6 @@ Body
 
 ```bash
     {
-        "keplr_token": "YOUR_KEPLER_TOKEN"
         "plaid_token": "YOUR_PLAID_TOKEN",
         "plaid_client_id": "YOUR_PLAID_CLIENT_ID",
         "plaid_client_secret": "YOUR_CLIENT_SECRET",
@@ -264,7 +262,6 @@ Sample error response from Plaid Sandbox environment
         'title': 'Credit Score'
     }
 ```
-
 
 ## [NEAR WALLET](https://wallet.near.org/) : credit score model based on your NEAR wallet.
 

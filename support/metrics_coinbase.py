@@ -109,9 +109,9 @@ def kyc(acc, txn, feedback):
 # -------------------------------------------------------------------------- #
 #                               Metric #2 History                            #
 # -------------------------------------------------------------------------- #
+
+
 # @measure_time_and_memory
-
-
 def history_acc_longevity(acc, feedback, duration, fico_medians):
     '''
     Description:
@@ -149,9 +149,9 @@ def history_acc_longevity(acc, feedback, duration, fico_medians):
 # -------------------------------------------------------------------------- #
 #                             Metric #3 Liquidity                            #
 # -------------------------------------------------------------------------- #
+
+
 # @measure_time_and_memory
-
-
 def liquidity_tot_balance_now(acc, feedback, volume_balance, fico_medians):
     '''
     Description:
@@ -286,9 +286,9 @@ def liquidity_avg_running_balance(acc, txn, feedback, duration, volume_balance, 
 # -------------------------------------------------------------------------- #
 #                             Metric #4 Activity                             #
 # -------------------------------------------------------------------------- #
+
+
 # @measure_time_and_memory
-
-
 def activity_tot_volume_tot_count(txn, type, feedback, volume_balance, count_txn, m7x7_03_17):
     '''
     Description:
@@ -332,9 +332,8 @@ def activity_tot_volume_tot_count(txn, type, feedback, volume_balance, count_txn
     finally:
         return score, feedback
 
+
 # @measure_time_and_memory
-
-
 def activity_consistency(txn, type, feedback, duration, volume_profit, m7x7_85_55):
     '''
     Description:
@@ -396,9 +395,8 @@ def activity_consistency(txn, type, feedback, duration, volume_profit, m7x7_85_5
     finally:
         return score, feedback
 
+
 # @measure_time_and_memory
-
-
 def activity_profit_since_inception(acc, txn, feedback, volume_profit, fico_medians):
     '''
     Description:

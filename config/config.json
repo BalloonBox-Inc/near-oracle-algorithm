@@ -86,8 +86,8 @@
                         }
                     },
                     "messages": {
-                        "failed": "NEAR oracle could not calculate your credit score as there is no active credit line nor transaction history associated with your Plaid bank account. Please use a different bank account.",
-                        "success": "Congrats! Your NEAR oracle score is {} - {} points. This score qualifies you for a short term loan of up to {} NEAR which is equivalent to {} USD"
+                        "failed": "NEAR Oracle could not calculate your credit score as there is no active credit line nor transaction history associated with your Plaid bank account. Please use a different bank account.",
+                        "success": "Congrats! Your NEAR Oracle score is {} - {} points. This score qualifies you for a short term loan of up to {} NEAR which is equivalent to {} USD"
                     }
                 },
                 "coinbase": {
@@ -146,8 +146,8 @@
                         }
                     },
                     "messages": {
-                        "failed": "NEAR oracle could not calculate your credit score as there is no active wallet nor transaction history associated with your Coinabse account. Please use a different account.",
-                        "success": "Congrats! Your NEAR oracle score is {} - {} points. This score qualifies you for a short term loan of up to {} NEAR which is equivalent to {} USD"
+                        "failed": "NEAR Oracle could not calculate your credit score as there is no active wallet nor transaction history associated with your Coinabse account. Please use a different account.",
+                        "success": "Congrats! Your NEAR Oracle score is {} - {} points. This score qualifies you for a short term loan of up to {} NEAR which is equivalent to {} USD"
                     }
                 },
                 "near": {

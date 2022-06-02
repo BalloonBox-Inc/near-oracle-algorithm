@@ -163,6 +163,8 @@ def balance_now_checking_only(data, feedback):
 # -------------------------------------------------------------------------- #
 #                               Metric #1 Credit                             #
 # -------------------------------------------------------------------------- #
+
+
 # @measure_time_and_memory
 def credit_mix(data, feedback, duration, count_zero, m3x7_2_4):
     '''
@@ -328,6 +330,7 @@ def credit_util_ratio(data, feedback, duration, credit_util_pct, m7x7_85_55):
         return score, feedback
 
 
+# @measure_time_and_memory
 def credit_interest(data, feedback, fico_medians, frequency_interest):
     '''
     returns score based on number of times user was charged credit card interest fees in past 24 months
@@ -382,6 +385,7 @@ def credit_interest(data, feedback, fico_medians, frequency_interest):
         return score, feedback
 
 
+# @measure_time_and_memory
 def credit_length(data, feedback, fico_medians, duration):
     '''
     returns score based on length of user's best credit account
@@ -418,6 +422,7 @@ def credit_length(data, feedback, fico_medians, duration):
         return score, feedback
 
 
+# @measure_time_and_memory
 def credit_livelihood(data, feedback, fico_medians, count_lively):
     '''
     returns score quantifying the avg monthly txn count for your best credit account
@@ -584,6 +589,7 @@ def velocity_deposits(data, feedback, count_zero, volume_deposit, m3x7_73_17):
         return score, feedback
 
 
+# @measure_time_and_memory
 def velocity_month_net_flow(data, feedback, flow_ratio, volume_flow, m7x7_03_17):
     '''
     returns score for monthly net flow
@@ -627,6 +633,7 @@ def velocity_month_net_flow(data, feedback, flow_ratio, volume_flow, m7x7_03_17)
         return score, feedback
 
 
+# @measure_time_and_memory
 def velocity_month_txn_count(data, feedback, fico_medians, count_txn):
     '''
     returns score based on count of mounthly transactions
@@ -696,6 +703,7 @@ def velocity_month_txn_count(data, feedback, fico_medians, count_txn):
         return score, feedback
 
 
+# @measure_time_and_memory
 def velocity_slope(data, feedback, fico_medians, slope_lr, slope, m7x7_03_17):
     '''
     returns score for the historical behavior of the net monthly flow for past 24 months
@@ -751,6 +759,8 @@ def velocity_slope(data, feedback, fico_medians, slope_lr, slope, m7x7_03_17):
 # -------------------------------------------------------------------------- #
 #                            Metric #3 Stability                             #
 # -------------------------------------------------------------------------- #
+
+
 # @measure_time_and_memory
 def stability_tot_balance_now(data, feedback, fico_medians, volume_balance):
     '''
@@ -878,6 +888,8 @@ def stability_min_running_balance(data, feedback, duration, volume_min, m7x7_85_
 # -------------------------------------------------------------------------- #
 #                            Metric #4 Diversity                             #
 # -------------------------------------------------------------------------- #
+
+
 # @measure_time_and_memory
 def diversity_acc_count(data, feedback, count_zero, duration, m3x7_73_17):
     '''
@@ -912,9 +924,8 @@ def diversity_acc_count(data, feedback, count_zero, duration, m3x7_73_17):
     finally:
         return score, feedback
 
+
 # @measure_time_and_memory
-
-
 def diversity_profile(data, feedback, fico_medians, volume_invest):
     '''
     Description:
