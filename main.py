@@ -13,7 +13,7 @@ from validator.coinbase import *
 from market.coinmarketcap import *
 from support.score import *
 from support.feedback import *
-# from support.risk import *
+from support.risk import *
 from support.helper import *
 from config.helper import *
 from testing.performance import *
@@ -126,11 +126,12 @@ async def credit_score_plaid(item: Plaid_Item):
         ic(feedback)
 
         # compute risk
-        # risk = calc_risk(
-        #     score,
-        #     score_range,
-        #     loan_range
-        # )
+        risk = calc_risk(
+            score,
+            score_range,
+            loan_range
+        )
+        ic(risk)
 
         # update feedback
         message = qualitative_feedback_plaid(
@@ -174,13 +175,13 @@ async def credit_score_plaid(item: Plaid_Item):
             'status': status,
             'timestamp': timestamp,
             'score': int(score),
-            # 'risk': risk,
+            'risk': risk,
             'message': message,
             'feedback': feedback
         }
         if score == 0:
             output.pop('score', None)
-            # output.pop('risk', None)
+            output.pop('risk', None)
             output.pop('feedback', None)
 
         return output
@@ -284,11 +285,12 @@ async def credit_score_coinbase(item: Coinbase_Item):
         ic(feedback)
 
         # compute risk
-        # risk = calc_risk(
-        #     score,
-        #     score_range,
-        #     loan_range
-        # )
+        risk = calc_risk(
+            score,
+            score_range,
+            loan_range
+        )
+        ic(risk)
 
         # update feedback
         message = qualitative_feedback_coinbase(
@@ -332,13 +334,13 @@ async def credit_score_coinbase(item: Coinbase_Item):
             'status': status,
             'timestamp': timestamp,
             'score': int(score),
-            # 'risk': risk,
+            'risk': risk,
             'message': message,
             'feedback': feedback
         }
         if score == 0:
             output.pop('score', None)
-            # output.pop('risk', None)
+            output.pop('risk', None)
             output.pop('feedback', None)
 
         return output
