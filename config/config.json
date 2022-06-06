@@ -5,7 +5,7 @@
             "maximum_amount": 25000,
             "loan_range": [0, 500, 1000, 5000, 10000, 15000, 20000, 25000],
             "score_range": [300, 500, 560, 650, 740, 800, 870, 900],
-            "qualitative_range": ["score out of bounds", "very poor", "poor", "fair", "good", "very good", "excellent", "exceptional"],
+            "qualitative_range": ["out of bounds", "very poor", "poor", "fair", "good", "very good", "excellent", "exceptional"],
             "minimum_requirements": {
                 "plaid": {
                     "thresholds": {
@@ -171,7 +171,7 @@
             "maximum_amount": 50000,
             "loan_range": [25000, 30000, 34000, 38000, 42000, 45000, 48000, 50000],
             "score_range": [300, 500, 560, 650, 740, 800, 870, 900],
-            "qualitative_range": ["very poor", "poor", "fair", "good", "very good", "excellent", "exceptional"],
+            "qualitative_range": ["out of bounds", "very poor", "poor", "fair", "good", "very good", "excellent", "exceptional"],
             "minimum_requirements": {
                 "plaid": {
                     "thresholds": {
@@ -226,7 +226,7 @@
             "maximum_amount": 100000,
             "loan_range": [50000, 60000, 70000, 80000, 85000, 90000, 95000, 100000],
             "score_range": [300, 500, 560, 650, 740, 800, 870, 900],
-            "qualitative_range": ["very poor", "poor", "fair", "good", "very good", "excellent", "exceptional"],
+            "qualitative_range": ["out of bounds", "very poor", "poor", "fair", "good", "very good", "excellent", "exceptional"],
             "minimum_requirements": {
                 "plaid": {
                     "thresholds": {
