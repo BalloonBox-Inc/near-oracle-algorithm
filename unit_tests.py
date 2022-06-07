@@ -8,8 +8,8 @@ def suite():
     suite = unittest.TestSuite()
 
     # # Plaid
-    # suite.addTest(unittest.makeSuite(TestMetricCredit))
-    # suite.addTest(unittest.makeSuite(TestMetricVelocity))
+    suite.addTest(unittest.makeSuite(TestMetricCredit))
+    suite.addTest(unittest.makeSuite(TestMetricVelocity))
     # suite.addTest(unittest.makeSuite(TestMetricStability))
     # suite.addTest(unittest.makeSuite(TestMetricDiversity))
     # suite.addTest(unittest.makeSuite(TestHelperFunctions))

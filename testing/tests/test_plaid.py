@@ -1,4 +1,6 @@
 from support.metrics_plaid import *  # import code to get tested
+from support.helper import *
+from config.helper import *
 from datetime import datetime
 import unittest
 import json
@@ -49,172 +51,215 @@ def str_to_datetime(plaid_txn, feedback):
 #                - test core functions of Coinbase algorithm -               #
 # -------------------------------------------------------------------------- #
 
-# class TestMetricCredit(unittest.TestCase):
+class TestMetricCredit(unittest.TestCase):
 
-#     # factor out set-up code implementing the setUp() method
-#     def setUp(self):
-#         self.fb = create_feedback_plaid()
-#         with open(json_file) as f:
-#             self.data = str_to_datetime(json.load(f), self.fb)
+    # factor out set-up code implementing the setUp() method
+    def setUp(self):
 
-#     # clean up code at the end of this test class
-#     def tearDown(self):
-#         self.fb = None
-#         self.data = None
+        # import variables from config.json
+        configs = read_config_file(24500)
+        models, metrics = read_models_and_metrics(
+            configs['minimum_requirements']['plaid']['scores']['models'])
+        self.fb = create_feedback(models)
+        self.fb['fetch'] = {}
 
-#     def test_credit_mix(self):
-#         '''
-#         - ensure we remove the word 'credit' from the credit card names 
-#         - ensure we store the names of ALL owned credit cards
-#         - if a user owns no credit card, then raise exception 'no credit card'
-#         '''
-#         self.assertNotIn('credit', credit_mix(self.data, self.fb))
-#         self.assertEqual(len(credit_mix.credit), len(credit_mix.card_names))
-#         self.assertIn('error', credit_mix([], self.fb)[1]['credit'].keys())
+        with open(json_file) as f:
+            self.data = str_to_datetime(json.load(f), self.fb)
 
-#     def test_credit_limit(self):
-#         '''
-#         - return a float for the credit limit
-#         - if a user's credit limit is not defined, then raise exception
-#         '''
-#         self.assertIsInstance(credit_limit(self.data, self.fb)[
-#                               1]['credit']['credit_limit'], (float, int))
-#         self.assertIn('error', credit_limit([], self.fb)[1]['credit'].keys())
+        # import params
+        score_range = configs['score_range']
+        params = configs['minimum_requirements']['plaid']['params']
+        self.par = plaid_params(params, score_range)
 
-#     def test_credit_util_ratio(self):
-#         '''
-#         - if there's good credit data, it should return a credit utilization ratio, as a float >= 0.3
-#         - the credit util ration should be at most 2 (if exceeds this upper bound, then something's wrong)
-#         - ensure bad data returns an error
-#         '''
-#         a = credit_util_ratio(self.data, self.fb)
+    # clean up code at the end of this test class
+    def tearDown(self):
+        self.fb = None
+        self.data = None
+        self.par =  None
 
-#         if dynamic_select(self.data, 'credit', self.fb)['id'] != 'inexistent':
-#             self.assertIn('utilization_ratio', a[1]['credit'].keys())
-#             self.assertIsInstance(
-#                 a[1]['credit']['utilization_ratio'], (float, int))
-#             self.assertGreaterEqual(a[0], 0.3)
-#         self.assertLess(a[0], 2)
+    def test_credit_mix(self):
+        '''
+        - ensure we remove the word 'credit' from the credit card names 
+        - ensure we store the names of ALL owned credit cards
+        - if a user owns no credit card, then raise exception 'no credit card'
+        '''
+        self.assertNotIn('credit', credit_mix(self.data, self.fb, self.par[1], self.par[2], self.par[11]))
+        self.assertEqual(len(credit_mix.credit), len(credit_mix.card_names))
+        self.assertIn('error', credit_mix([], self.fb, self.par[1], self.par[2], self.par[11])[1]['credit'].keys())
 
-#         self.assertIn('error', credit_util_ratio(
-#             [], self.fb)[1]['credit'].keys())
+    def test_credit_limit(self):
+        '''
+        - return a float for the credit limit
+        - if a user's credit limit is not defined, then raise exception
+        '''
+        self.assertIsInstance(credit_limit(self.data, self.fb, self.par[1], self.par[4], self.par[10])[
+                              1]['credit']['credit_limit'], (float, int))
+        self.assertIn('error', credit_limit([], self.fb, self.par[1], self.par[4], self.par[10])[1]['credit'].keys())
 
-#     def test_credit_interest(self):
-#         '''
-#         - Plaid Sandbox data has an impeccable credit card pedigree and thus should score 1/1
-#         - bad data should raise an exception because the dynamic_select() function will break
-#         '''
-#         self.assertEqual(credit_interest(self.data, self.fb)[0], 1)
-#         self.assertIn('dynamic_select',  credit_interest(
-#             [], self.fb)[1]['fetch'].keys())
+    def test_credit_util_ratio(self):
+        '''
+        - if there's good credit data, it should return a credit utilization ratio, as a float >= 0.3
+        - the credit util ration should be at most 2 (if exceeds this upper bound, then something's wrong)
+        - ensure bad data returns an error
+        '''
+        a = credit_util_ratio(self.data, self.fb, self.par[1], self.par[21], self.par[11])
 
-#     def test_credit_length(self):
-#         '''
-#         - length should be of type float OR int
-#         - if a credit card exists, then there should be a positive length
-#         - bad data should raise an exception
-#         '''
-#         a = credit_length(self.data, self.fb)
+        if dynamic_select(self.data, 'credit', self.fb)['id'] != 'inexistent':
+            self.assertIn('utilization_ratio', a[1]['credit'].keys())
+            self.assertIsInstance(
+                a[1]['credit']['utilization_ratio'], (float, int))
+            self.assertGreaterEqual(a[0], 0.3)
+        self.assertLess(a[0], 2)
 
-#         if dynamic_select(self.data, 'credit', self.fb)['id']:
-#             self.assertIsInstance(
-#                 a[1]['credit']['credit_duration_(days)'], (float, int))
-#             self.assertGreater(a[1]['credit']['credit_duration_(days)'], 0)
-#         self.assertIn('error', credit_length([], self.fb)[1]['credit'].keys())
+        self.assertIn('error', credit_util_ratio(
+            [], self.fb, self.par[1], self.par[21], self.par[11])[1]['credit'].keys())
 
-#     def test_credit_livelihood(self):
-#         '''
-#         - if there exist a non-empty dataframe containing the txn means, then the mean should be positive
-#         - bad data should raise an error
-#         '''
-#         a = credit_livelihood(self.data, self.fb)
-#         if len(credit_livelihood.d):
-#             self.assertGreater(a[1]['credit']['avg_count_monthly_txn'], 0)
-#         self.assertIn('error', credit_livelihood(
-#             [], self.fb)[1]['credit'].keys())
+    def test_credit_interest(self):
+        '''
+        - Plaid Sandbox data has an impeccable credit card pedigree and thus should score 1/1
+        - bad data should raise an exception because the dynamic_select() function will break
+        '''
+        self.assertEqual(credit_interest(self.data, self.fb, self.par[14], self.par[22])[0], 1)
+        self.assertIn('dynamic_select',  credit_interest(
+            [], self.fb, self.par[14], self.par[22])[1]['fetch'].keys())
+
+    def test_credit_length(self):
+        '''
+        - length should be of type float OR int
+        - if a credit card exists, then there should be a positive length
+        - bad data should raise an exception
+        '''
+        a = credit_length(self.data, self.fb, self.par[14], self.par[1])
+
+        if dynamic_select(self.data, 'credit', self.fb)['id']:
+            self.assertIsInstance(
+                a[1]['credit']['credit_duration_(days)'], (float, int))
+            self.assertGreater(a[1]['credit']['credit_duration_(days)'], 0)
+        self.assertIn('error', credit_length([], self.fb, self.par[14], self.par[1])[1]['credit'].keys())
+
+    def test_credit_livelihood(self):
+        '''
+        - if there exist a non-empty dataframe containing the txn means, then the mean should be positive
+        - bad data should raise an error
+        '''
+        a = credit_livelihood(self.data, self.fb, self.par[14], self.par[15])
+        if len(credit_livelihood.d):
+            self.assertGreater(a[1]['credit']['avg_count_monthly_txn'], 0)
+        self.assertIn('error', credit_livelihood(
+            [], self.fb, self.par[14], self.par[15])[1]['credit'].keys())
 
 
-# class TestMetricVelocity(unittest.TestCase):
+class TestMetricVelocity(unittest.TestCase):
 
-#     def setUp(self):
-#         self.fb = create_feedback_plaid()
-#         with open(json_file) as f:
-#             self.data = str_to_datetime(json.load(f), self.fb)
+    # factor out set-up code implementing the setUp() method
+    def setUp(self):
 
-#     def tearDown(self):
-#         self.fb = None
-#         self.data = None
+        # import variables from config.json
+        configs = read_config_file(24500)
+        models, metrics = read_models_and_metrics(
+            configs['minimum_requirements']['plaid']['scores']['models'])
+        self.fb = create_feedback(models)
+        self.fb['fetch'] = {}
 
-#     def test_velocity_withdrawals(self):
-#         '''
-#         - passing a feedback of NoneType, returns a feedback of NoneType too
-#         - good data but without withdrawals raises the 'no withdrawals' exception
-#         - bad data returns an error
-#         '''
-#         self.assertIsNone(velocity_withdrawals(self.data, None)[1])
-#         self.assertRegex(velocity_withdrawals(self.data, self.fb)[
-#                          1]['velocity']['error'], 'no withdrawals')
-#         self.assertIn('error', velocity_withdrawals(
-#             [], self.fb)[1]['velocity'].keys())
+        with open(json_file) as f:
+            self.data = str_to_datetime(json.load(f), self.fb)
 
-#     def test_velocity_deposits(self):
-#         '''
-#         - if there are some 'payroll' trasactions, then the score should be positive
-#         - bad data returns an error
-#         '''
-#         a = velocity_deposits(self.data, self.fb)
+        # import params
+        score_range = configs['score_range']
+        params = configs['minimum_requirements']['plaid']['params']
+        self.par = plaid_params(params, score_range)
 
-#         if [t for t in self.data['transactions'] if t['amount'] < -200 and 'payroll' in [x.lower() for x in t['category']]]:
-#             self.assertGreater(a[0], 0)
-#         self.assertRegex(a[1]['velocity']['error'], 'no deposits')
+    # clean up code at the end of this test class
+    def tearDown(self):
+        self.fb = None
+        self.data = None
+        self.par =  None
 
-#     def test_velocity_month_net_flow(self):
-#         '''
-#         - the avg net flow should be a large positive integer
-#         - bad input data results into an error
-#         '''
-#         self.assertGreater(velocity_month_net_flow(self.data, self.fb)[
-#                            1]['velocity']['avg_net_flow'], 0)
-#         self.assertIn('error', velocity_month_net_flow(
-#             [], self.fb)[1]['velocity'].keys())
+    def test_velocity_withdrawals(self):
+        '''
+        - passing a feedback of NoneType, returns a feedback of NoneType too
+        - good data but without withdrawals raises the 'no withdrawals' exception
+        - bad data returns an error
+        '''
+        self.assertIsNone(velocity_withdrawals(self.data, None, self.par[2], self.par[18], self.par[13])[1])
+        self.assertRegex(velocity_withdrawals(self.data, self.fb, self.par[2], self.par[18], self.par[13])[
+                         1]['velocity']['error'], 'no withdrawals')
+        self.assertIn('error', velocity_withdrawals(
+            [], self.fb, self.par[2], self.par[18], self.par[13])[1]['velocity'].keys())
 
-#     def test_velocity_month_txn_count(self):
-#         '''
-#         - if there is a legit checking account, then the score should be positive
-#         '''
-#         checking_acc = [a['account_id']
-#                         for a in self.data['accounts'] if a['subtype'].lower() == 'checking']
-#         if [t for t in self.data['transactions'] if t['account_id'] in checking_acc]:
-#             self.assertGreater(velocity_month_txn_count(
-#                 self.data, self.fb)[0], 0)
+    def test_velocity_deposits(self):
+        '''
+        - if there are some 'payroll' trasactions, then the score should be positive
+        - bad data returns an error
+        '''
+        a = velocity_deposits(self.data, self.fb, self.par[2], self.par[19], self.par[13])
 
-#     def test_velocity_slope(self):
-#         '''
-#         - if there's more than 10 datapoint for months of transaction history, then the algo should persom linear regression
-#             otherwise it'll simply calculate the monthly flow as 2 rations
-#         - bad input data returns error
-#         '''
-#         if len(flows(self.data, 24, self.fb)) >= 10:
-#             self.assertIn('slope', velocity_slope(
-#                 self.data, self.fb)[1]['velocity'].keys())
-#         else:
-#             self.assertIn('monthly_flow', velocity_slope(
-#                 self.data, self.fb)[1]['velocity'].keys())
+        if [t for t in self.data['transactions'] if t['amount'] < -200 and 'payroll' in [x.lower() for x in t['category']]]:
+            self.assertGreater(a[0], 0)
+        self.assertRegex(a[1]['velocity']['error'], 'no deposits')
 
-#         self.assertIn('error', velocity_slope(
-#             [], self.fb)[1]['velocity'].keys())
+    def test_velocity_month_net_flow(self):
+        '''
+        - the avg net flow should be a large positive integer
+        - bad input data results into an error
+        '''
+        self.assertGreater(velocity_month_net_flow(self.data, self.fb, self.par[7], self.par[17], self.par[10])[
+                           1]['velocity']['avg_net_flow'], 0)
+        self.assertIn('error', velocity_month_net_flow(
+            [], self.fb, self.par[7], self.par[17], self.par[10])[1]['velocity'].keys())
+
+    def test_velocity_month_txn_count(self):
+        '''
+        - if there is a legit checking account, then the score should be positive
+        '''
+        checking_acc = [a['account_id']
+                        for a in self.data['accounts'] if a['subtype'].lower() == 'checking']
+        if [t for t in self.data['transactions'] if t['account_id'] in checking_acc]:
+            self.assertGreater(velocity_month_txn_count(
+                self.data, self.fb, self.par[14], self.par[16])[0], 0)
+
+    def test_velocity_slope(self):
+        '''
+        - if there's more than 10 datapoint for months of transaction history, then the algo should persom linear regression
+            otherwise it'll simply calculate the monthly flow as 2 rations
+        - bad input data returns error
+        '''
+        if len(flows(self.data, 24, self.fb)) >= 10:
+            self.assertIn('slope', velocity_slope(
+                self.data, self.fb, self.par[14], self.par[9], self.par[8], self.par[10])[1]['velocity'].keys())
+        else:
+            self.assertIn('monthly_flow', velocity_slope(
+                self.data, self.fb, self.par[14], self.par[9], self.par[8], self.par[10])[1]['velocity'].keys())
+
+        self.assertIn('error', velocity_slope(
+            [], self.fb, self.par[14], self.par[9], self.par[8], self.par[10])[1]['velocity'].keys())
 
 
 # class TestMetricStability(unittest.TestCase):
 
-#     def setUp(self):
-#         self.fb = create_feedback_plaid()
-#         with open(json_file) as f:
-#             self.data = str_to_datetime(json.load(f), self.fb)
+    # # factor out set-up code implementing the setUp() method
+    # def setUp(self):
 
-#     def tearDown(self):
-#         self.fb = None
-#         self.data = None
+    #     # import variables from config.json
+    #     configs = read_config_file(24500)
+    #     models, metrics = read_models_and_metrics(
+    #         configs['minimum_requirements']['plaid']['scores']['models'])
+    #     self.fb = create_feedback(models)
+    #     self.fb['fetch'] = {}
+
+    #     with open(json_file) as f:
+    #         self.data = str_to_datetime(json.load(f), self.fb)
+
+    #     # import params
+    #     score_range = configs['score_range']
+    #     params = configs['minimum_requirements']['plaid']['params']
+    #     self.par = plaid_params(params, score_range)
+
+    # # clean up code at the end of this test class
+    # def tearDown(self):
+    #     self.fb = None
+    #     self.data = None
+    #     self.par =  None
 
 #     def test_stability_tot_balance_now(self):
 #         '''
@@ -257,14 +302,29 @@ def str_to_datetime(plaid_txn, feedback):
 
 # class TestMetricDiversity(unittest.TestCase):
 
-#     def setUp(self):
-#         self.fb = create_feedback_plaid()
-#         with open(json_file) as f:
-#             self.data = str_to_datetime(json.load(f), self.fb)
+    # # factor out set-up code implementing the setUp() method
+    # def setUp(self):
 
-#     def tearDown(self):
-#         self.fb = None
-#         self.data = None
+    #     # import variables from config.json
+    #     configs = read_config_file(24500)
+    #     models, metrics = read_models_and_metrics(
+    #         configs['minimum_requirements']['plaid']['scores']['models'])
+    #     self.fb = create_feedback(models)
+    #     self.fb['fetch'] = {}
+
+    #     with open(json_file) as f:
+    #         self.data = str_to_datetime(json.load(f), self.fb)
+
+    #     # import params
+    #     score_range = configs['score_range']
+    #     params = configs['minimum_requirements']['plaid']['params']
+    #     self.par = plaid_params(params, score_range)
+
+    # # clean up code at the end of this test class
+    # def tearDown(self):
+    #     self.fb = None
+    #     self.data = None
+    #     self.par =  None
 
 #     def test_diversity_acc_count(self):
 #         '''

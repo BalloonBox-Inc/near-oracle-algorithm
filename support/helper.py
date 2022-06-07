@@ -36,7 +36,6 @@ def build_2d_matrix(size, scalars):
     return matrix
 
 
-
 def plaid_params(params, score_range):
 
     due_date = immutable_array(

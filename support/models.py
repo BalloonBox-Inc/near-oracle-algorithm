@@ -24,7 +24,7 @@ def plaid_credit(txn, feedback, weights, params):
         feedback,
         params[1],
         params[4],
-        params[12]
+        params[10]
     )
 
     util_ratio, feedback = credit_util_ratio(
