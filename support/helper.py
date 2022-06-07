@@ -7,7 +7,7 @@ def dot_product(l1, l2):
 
 
 def head_tail_list(lst):
-    return lst[-1], lst[0]
+    return lst[0], lst[-1]
 
 
 def aggregate_currencies(ccy1, ccy2, fiats):
@@ -34,6 +34,7 @@ def build_2d_matrix(size, scalars):
             matrix[m][n] = round(scalars[0]*np.log10(m+1) +
                                  scalars[1]*np.log10(n+1), 2)
     return matrix
+
 
 
 def plaid_params(params, score_range):
@@ -76,7 +77,7 @@ def plaid_params(params, score_range):
     ))
 
     head, tail = head_tail_list(score_range)
-    fico = (np.array(score_range[:-1])-tail) / (head-tail)
+    fico = (np.array(score_range[:-1])-head) / (tail-head)
     fico_medians = [round(fico[i]+(fico[i+1]-fico[i]) / 2, 2)
                     for i in range(len(fico)-1)]
     fico_medians.append(1)
@@ -126,7 +127,7 @@ def coinbase_params(params, score_range):
     ))
 
     head, tail = head_tail_list(score_range)
-    fico = (np.array(score_range[:-1])-tail) / (head-tail)
+    fico = (np.array(score_range[:-1])-head) / (tail-head)
     fico_medians = [round(fico[i]+(fico[i+1]-fico[i]) / 2, 2)
                     for i in range(len(fico)-1)]
     fico_medians.append(1)
