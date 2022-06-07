@@ -110,7 +110,6 @@ def kyc(acc, txn, feedback):
 #                               Metric #2 History                            #
 # -------------------------------------------------------------------------- #
 
-
 # @measure_time_and_memory
 def history_acc_longevity(acc, feedback, duration, fico_medians):
     '''
