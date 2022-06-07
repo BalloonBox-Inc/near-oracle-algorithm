@@ -7,7 +7,7 @@ def calc_risk(score, score_arr, loan_arr):
     # when score is equal to one of the bin separators, treat it as if it was in the lower bin
     head, tail = head_tail_list(score_arr)
     if score in score_arr and score >= tail+1:
-        score = score - 1
+        score = score + 1
 
     # split score bin equally into three qualitative levels of risk
     score_arr = np.array(score_arr)
