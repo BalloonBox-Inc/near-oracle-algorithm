@@ -489,7 +489,7 @@ class TestParametrizePlaid(unittest.TestCase):
             [self.par[14], self.par[5]]  
         ]
 
-        self.func = {
+        self.fn = {
             'fn_good': [
                 credit_mix,
                 credit_limit,
@@ -508,7 +508,8 @@ class TestParametrizePlaid(unittest.TestCase):
                 stability_min_running_balance,
 
                 diversity_acc_count,
-                diversity_profile]
+                diversity_profile
+            ]
         }
 
     def tearDown(self):
@@ -516,11 +517,11 @@ class TestParametrizePlaid(unittest.TestCase):
         self.data = None
         self.args1 = None
         self.args2 = None
-        self.func = None
+        self.fn = None
         self.par = None
 
     def test_output_good(self):
-        for (f, a) in zip(self.func['fn_good'], self.args2):
+        for (f, a) in zip(self.fn['fn_good'], self.args2):
             z = f(*self.args1['good'], *a)
             with self.subTest():
                 self.assertIsInstance(z, tuple)
@@ -529,7 +530,7 @@ class TestParametrizePlaid(unittest.TestCase):
                 self.assertIsInstance(z[1], dict)
 
     def test_output_empty(self):
-        for (f, a) in zip(self.func['fn_good'], self.args2):
+        for (f, a) in zip(self.fn['fn_good'], self.args2):
             z = f(*self.args1['empty'], *a)
             with self.subTest():
                 self.assertIsInstance(z, tuple)
@@ -538,7 +539,7 @@ class TestParametrizePlaid(unittest.TestCase):
                 self.assertIsInstance(z[1], dict)
 
     def test_output_none(self):
-        for (f, a) in zip(self.func['fn_good'], self.args2):
+        for (f, a) in zip(self.fn['fn_good'], self.args2):
             z = f(*self.args1['none'], *a)
             with self.subTest():
                 self.assertIsInstance(z, tuple)

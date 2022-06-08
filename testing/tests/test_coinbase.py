@@ -7,7 +7,7 @@ import json
 import os
 
 
-# import a sataset for testing
+LOAN_AMOUNT = 24000
 dummy_data = 'test_coinbase.json'
 
 json_file = os.path.join(os.path.dirname(
@@ -51,7 +51,7 @@ class TestMetricsCoinbase(unittest.TestCase):
     def setUp(self):
 
         # import variables from config.json 
-        configs = read_config_file(24000)
+        configs = read_config_file(LOAN_AMOUNT)
         models, metrics = read_models_and_metrics(
             configs['minimum_requirements']['coinbase']['scores']['models'])
         self.fb = create_feedback(models)
@@ -213,7 +213,7 @@ class TestParametrizeCoinbase(unittest.TestCase):
 
     def setUp(self):
         # import variables from config.json 
-        configs = read_config_file(24000)
+        configs = read_config_file(LOAN_AMOUNT)
         models, metrics = read_models_and_metrics(
             configs['minimum_requirements']['coinbase']['scores']['models'])
         self.fb = create_feedback(models)
@@ -228,36 +228,66 @@ class TestParametrizeCoinbase(unittest.TestCase):
         params = configs['minimum_requirements']['coinbase']['params']
         self.par = coinbase_params(params, score_range) 
     
+        self.args1 = {
+            'good': 
+            [
+                [self.acc, self.tx, self.fb],
+                [self.acc, self.fb],
+                [self.acc, self.tx, self.fb],
+                [self.acc, self.fb],
+                [self.tx, 'credit', self.fb],
+                [self.tx, 'debit', self.fb],
+                [self.tx, 'credit', self.fb],
+                [self.tx, 'debit', self.fb],
+                [self.acc, self.tx, self.fb]
+            ],
+            'empty': 
+            [
+                [[], None, self.fb],
+                [None, self.fb],
+                [[], [], self.fb],
+                [None, self.fb],
+                [[], None, self.fb],
+                [[], [], self.fb],
+                [[], None, self.fb],
+                [None, [], self.fb],
+                [None, None, self.fb]
+            ]
+        }
 
-        self.param = {
-            'fn_good': [
-                kyc(self.acc, self.tx, self.fb),
-                history_acc_longevity(self.acc, self.fb, self.par[1], self.par[7]),
-                liquidity_avg_running_balance(self.acc, self.tx, self.fb, self.par[1], self.par[2], self.par[6]),
-                liquidity_tot_balance_now(self.acc, self.fb, self.par[2], self.par[7]),
-                activity_consistency(self.tx, 'credit', self.fb, self.par[1], self.par[3], self.par[6]),
-                activity_consistency(self.tx, 'debit', self.fb, self.par[1], self.par[3], self.par[6]),
-                activity_tot_volume_tot_count(self.tx, 'credit', self.fb, self.par[2], self.par[4], self.par[5]),
-                activity_tot_volume_tot_count(self.tx, 'debit', self.fb, self.par[2], self.par[4], self.par[5]),
-                activity_profit_since_inception(self.acc, self.tx, self.fb, self.par[3], self.par[7])],
-            'fn_empty': [
-                kyc([], None, self.fb),
-                history_acc_longevity(None, self.fb, self.par[1], self.par[7]),
-                liquidity_avg_running_balance([], [], self.fb, self.par[1], self.par[2], self.par[6]),
-                liquidity_tot_balance_now(None, self.fb, self.par[2], self.par[7]),
-                activity_consistency([], None, self.fb, self.par[1], self.par[3], self.par[6]),
-                activity_consistency([], [], self.fb, self.par[1], self.par[3], self.par[6]),
-                activity_tot_volume_tot_count([], None, self.fb, self.par[2], self.par[4], self.par[5]),
-                activity_tot_volume_tot_count(None, [], self.fb, self.par[2], self.par[4], self.par[5]),
-                activity_profit_since_inception(None, None, self.fb, self.par[3], self.par[7])]
-                }
+        self.args2 = [
+            list(),
+            [self.par[1], self.par[7]],
+            [self.par[1], self.par[2], self.par[6]],
+            [self.par[2], self.par[7]],
+            [self.par[1], self.par[3], self.par[6]],
+            [self.par[1], self.par[3], self.par[6]],
+            [self.par[2], self.par[4], self.par[5]],
+            [self.par[2], self.par[4], self.par[5]],
+            [self.par[3], self.par[7]],
+        ]
+
+        self.fn = {
+            'all': [
+                kyc,
+                history_acc_longevity,
+                liquidity_avg_running_balance,
+                liquidity_tot_balance_now,
+                activity_consistency,
+                activity_consistency,
+                activity_tot_volume_tot_count,
+                activity_tot_volume_tot_count,
+                activity_profit_since_inception
+            ]
+        }
 
     def tearDown(self):
-        for y in [self.fb, self.acc, self.tx, self.par, self.param]:
+        for y in [self.fb, self.acc, self.tx, self.par, self.args1, self.args2, self.fn]:
             y = None
 
     def test_output_good(self):
-        for x in self.param['fn_good']:
+        for (f, a, b) in zip(self.fn['all'], self.args1['good'], self.args2):
+            x = f(*a, *b)
             with self.subTest():
                 self.assertIsInstance(x, tuple)
                 self.assertLessEqual(x[0], 1)
@@ -265,7 +295,8 @@ class TestParametrizeCoinbase(unittest.TestCase):
                 self.assertIsInstance(x[1], dict)
 
     def test_output_empty(self):
-        for x in self.param['fn_empty']:
+        for (f, a, b) in zip(self.fn['all'], self.args1['empty'], self.args2):
+            x = f(*a, *b)
             with self.subTest():
                 self.assertIsInstance(x, tuple)
                 self.assertEqual(x[0], 0)
