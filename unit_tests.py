@@ -10,10 +10,10 @@ def suite():
     # # Plaid
     suite.addTest(unittest.makeSuite(TestMetricCredit))
     suite.addTest(unittest.makeSuite(TestMetricVelocity))
-    # suite.addTest(unittest.makeSuite(TestMetricStability))
-    # suite.addTest(unittest.makeSuite(TestMetricDiversity))
-    # suite.addTest(unittest.makeSuite(TestHelperFunctions))
-    # suite.addTest(unittest.makeSuite(TestParametrizePlaid))
+    suite.addTest(unittest.makeSuite(TestMetricStability))
+    suite.addTest(unittest.makeSuite(TestMetricDiversity))
+    suite.addTest(unittest.makeSuite(TestHelperFunctions))
+    suite.addTest(unittest.makeSuite(TestParametrizePlaid))
 
     # Coinbase
     suite.addTest(unittest.makeSuite(TestMetricsCoinbase))
