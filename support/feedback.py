@@ -142,11 +142,12 @@ def qualitative_feedback_plaid(messages, score, feedback, score_range, loan_rang
 
         # Communicate the score
         rate = coinmarketcap_rate(coinmarketcap_key, 'USD', 'NEAR')
+
         msg = messages['success'].format(
-            quality.upper(), points, int(round(loan_amount*rate, 0)), loan_amount)
+                quality.upper(), points, int(round(loan_amount*rate, 0)), loan_amount)
 
         if ('loan_duedate' in list(feedback['stability'].keys())):
-            msg = msg + ' over a recommended pay back period of {0} monthly installments'.format(
+            msg = msg + ' over a recommended pay back period of {0} monthly installments.'.format(
                 feedback['stability']['loan_duedate'])
 
         # Interpret the score
@@ -159,7 +160,7 @@ def qualitative_feedback_plaid(messages, score, feedback, score_range, loan_rang
 
         # Tot balance now
         if 'cumulative_current_balance' in all_keys:
-            msg = msg + ' Your total current balance is ${:,.0f} USD across all accounts held with {}'.format(
+            msg = msg + ' Your total current balance is ${:,.0f} USD across all accounts held with {}.'.format(
                 feedback['stability']['cumulative_current_balance'], feedback['diversity']['bank_name'])
 
         # ADVICE
@@ -300,7 +301,7 @@ def qualitative_feedback_coinbase(messages, score, feedback, score_range, loan_r
             quality.upper(), points, int(round(loan_amount*rate, 0)), loan_amount)
 
         if ('loan_duedate' in list(feedback['liquidity'].keys())):
-            msg = msg + ' over a recommended pay back period of {0} monthly installments'.format(
+            msg = msg + ' over a recommended pay back period of {0} monthly installments.'.format(
                 feedback['liquidity']['loan_duedate'])
 
         # Coinbase account duration
