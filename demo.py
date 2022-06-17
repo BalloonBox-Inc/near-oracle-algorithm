@@ -7,11 +7,10 @@ from datetime import datetime, timezone
 from dotenv import load_dotenv, dotenv_values
 from icecream import ic
 
-from app import *
 from support.score import *
-from feedback.message import *
-from validator_api.plaid import *
-from validator_api.coinbase import *
+from support.feedback import *
+from validator.plaid import *
+from validator.coinbase import *
 from support.metrics_plaid import *
 from support.metrics_coinbase import *
 

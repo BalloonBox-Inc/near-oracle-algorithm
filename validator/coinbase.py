@@ -1,16 +1,9 @@
 from coinbase.wallet.error import CoinbaseError
 from coinbase.wallet.client import OAuthClient
-from dotenv import load_dotenv
 from datetime import datetime
 from icecream import ic
-from os import getenv
-
+import numpy as np
 import json
-
-load_dotenv()
-
-if getenv('ENV') == 'production':
-    ic.disable()
 
 
 def coinbase_client(access_token, refresh_token):
@@ -103,3 +96,36 @@ def coinbase_transactions(client, account_id):
 
     finally:
         return r
+
+
+def coinbase_accounts_and_transactions(client, currencies, txn_types):
+    '''Returns user accounts and transactions'''
+    try:
+        # fetching accounts
+        acc = coinbase_accounts(client)
+        if 'error' in acc:
+            raise Exception(acc['error']['message'])
+
+        # formating accounts
+        acc = [n for n in acc if n['currency'] in currencies]
+
+        # fetching transactions
+        txn = [coinbase_transactions(client, n['id']) for n in acc]
+
+        # formatting transactions
+        txn = [x for n in txn for x in n]
+        txn = [n for n in txn
+               if n['status'] == 'completed'
+               and n['type'] in txn_types]
+
+        for d in txn:
+            if d['type'] == 'send' and np.sign(float(d['amount']['amount'])) == 1:
+                d['type'] = 'send_credit'
+
+            elif d['type'] == 'send' and np.sign(float(d['amount']['amount'])) == -1:
+                d['type'] = 'send_debit'
+
+    except Exception as e:
+        acc = str(e)
+
+    return acc, txn

@@ -1,6 +1,10 @@
-# 💎 🌀 🌐  NEAR Oracle
+# 🔮 NEAR Oracle
 
-![NEARoracle image](./images/near_oceanblue.png)
+<p align="center">
+  <a href="https://near.org/">
+    <img alt="NearMainLogo" src="https://github.com/BalloonBox-Inc/NEARoracle-Oracle/blob/dev/images/logo_near_oracle.png" width="700" />
+  </a>
+</p>
 
 ## At a Glance
 
@@ -102,7 +106,7 @@ There are two distinct models, one for each of our chosen validators, namely Pla
 ## Interpret Your Score :mag:
 
 NEARoracle returns to the user a numerical score ranging from 300-900 points. The score is partitioned into categorical bins (very poor | poor | fair | good | very good | excellent | exceptional), which describe the score qualitatively (see fuel gauge in the diagram below). Every bin is associated with a USD equivalent, which represents the maximum loan amount in USD that a user qualifies for, based on NEARoracle oracle calculation. Lastly, the NEARoracle also returns the estimated payback period, namely the expected time it will take for the user to pay back the loan. The loan terms (loan amount, qualitative descriptor, and payback period) are algorithmic recommendations, and, therefore, they are not prescriptive. Although we strongly advise lenders and borrowers to consider the NEARoracle Oracle's parameters, we also encourage them to stipulate loan terms to best suit their needs.
-![](./images/ranges.png)
+![](./images/credit_score_range.png)
 
 ### Unit tests :pencil2: :black_nib: :page_facing_up:
 

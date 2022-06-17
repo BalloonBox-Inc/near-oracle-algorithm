@@ -1,6 +1,10 @@
-# 📡 NEAR ORACLE API
+<p align="center">
+  <a href="https://near.org/">
+    <img alt="NearWhiteLogo" src="https://github.com/BalloonBox-Inc/NEARoracle-Oracle/blob/dev/images/inverted-primary-logo-bg.png" width="450" />
+  </a>
+</p>
 
-![NEARoracle image](https://github.com/BalloonBox-Inc/NEARoracle-Oracle/blob/main/images/near_white.png)
+# NEAR ORACLE API
 
 ## About :mailbox_with_mail:
 
@@ -51,10 +55,10 @@ Body
 
 ```bash
     {
-        "keplr_token": "YOUR_KEPLER_TOKEN",
         "coinbase_access_token": "YOUR_COINBASE_ACCESS_TOKEN",
         "coinbase_refresh_token": "YOUR_COINBASE_REFRESH_TOKEN",
-        "coinmarketcap_key": "YOUR_COINMARKETCAP_KEY"
+        "coinmarketcap_key": "YOUR_COINMARKETCAP_KEY",
+        "loan_request": INTEGER_NUMBER
     }
 ```
 
@@ -64,36 +68,40 @@ Response: **200**
 
 ```bash
     enum ScoreQuality {
-    'very poor',
-    'poor',
-    'fair',
-    'good',
-    'very good',
-    'excellent',
-    'exceptional',
+        'very poor',
+        'poor',
+        'fair',
+        'good',
+        'very good',
+        'excellent',
+        'exceptional',
     }
 
     export interface IScoreResponseCoinbase {
     endpoint: '/credit_score/coinbase';
     feedback: {
         advice: {
-        activity_error: boolean;
-        history_error: boolean;
-        kyc_error: boolean;
-        liquidity_error: boolean;
+            activity_error: boolean;
+            history_error: boolean;
+            kyc_error: boolean;
+            liquidity_error: boolean;
         };
         score: {
-        current_balance: number;
-        loan_amount: 500 | 1000 | 5000 | 10000 | 15000 | 20000 | 25000;
-        loan_duedate: 3 | 4 | 5 | 6;
-        points: number;  # integer in range [300, 900]
-        quality: ScoreQuality;
-        score_exist: boolean;
-        wallet_age(days): number;
+            current_balance: number;
+            loan_amount: 500 | 1000 | 5000 | 10000 | 15000 | 20000 | 25000;
+            loan_duedate: 3 | 4 | 5 | 6;
+            points: number;  # integer in range [300, 900]
+            quality: ScoreQuality;
+            score_exist: boolean;
+            wallet_age(days): number;
         };
     };
     message: string;
     score: number;
+    risk: {
+        loan_amount: number;
+        risk_level: 'low' | 'medium' | 'high';
+    };
     status: 'success' | 'error';
     status_code: 200 | 400;
     timestamp: string;
@@ -125,7 +133,10 @@ Response: **200**
     },
     "message": "NEARoracle could not calculate your credit score because there is no active wallet nor transaction history <br/>
     in your Coinbase account. Try to log into Coinbase with a different account.",
-
+    "risk": {
+        "loan_amount": 500,
+        "risk_level": "medium"
+    }
     "score": 300.0,
     "status": "success",
     "status_code": 200,
@@ -150,11 +161,11 @@ Body
 
 ```bash
     {
-        "keplr_token": "YOUR_KEPLER_TOKEN"
-        "plaid_token": "YOUR_PLAID_TOKEN",
+        "plaid_access_token": "YOUR_PLAID_TOKEN",
         "plaid_client_id": "YOUR_PLAID_CLIENT_ID",
         "plaid_client_secret": "YOUR_CLIENT_SECRET",
-        "coinmarketcap_key": "YOUR_COINMARKETCAP_KEY"
+        "coinmarketcap_key": "YOUR_COINMARKETCAP_KEY",
+        "loan_request": INTEGER_NUMBER
     }
 ```
 
@@ -164,38 +175,42 @@ Response: **200**
 
 ```bash
     enum ScoreQuality {
-    'very poor',
-    'poor',
-    'fair',
-    'good',
-    'very good',
-    'excellent',
-    'exceptional',
+        'very poor',
+        'poor',
+        'fair',
+        'good',
+        'very good',
+        'excellent',
+        'exceptional',
     }
 
     export interface IScoreResponsePlaid {
     endpoint: '/credit_score/plaid';
     feedback: {
         advice: {
-        credit_error: boolean;
-        credit_exist: boolean;
-        diversity_error: boolean;
-        stability_error: boolean;
-        velocity_error: boolean;
+            credit_error: boolean;
+            credit_exist: boolean;
+            diversity_error: boolean;
+            stability_error: boolean;
+            velocity_error: boolean;
         };
         score: {
-        bank_accounts: number;
-        card_names: string[];
-        cum_balance: number;
-        loan_amount: 500 | 1000 | 5000 | 10000 | 15000 | 20000 | 25000;
-        loan_duedate: 3 | 4 | 5 | 6;
-        points: number; # integer in range [300, 900]
-        quality: ScoreQuality;
-        score_exist: boolean;
+            bank_accounts: number;
+            card_names: string[];
+            cum_balance: number;
+            loan_amount: 500 | 1000 | 5000 | 10000 | 15000 | 20000 | 25000;
+            loan_duedate: 3 | 4 | 5 | 6;
+            points: number; # integer in range [300, 900]
+            quality: ScoreQuality;
+            score_exist: boolean;
         };
     };
     message: string;
     score: number;
+    risk: {
+            loan_amount: number;
+            risk_level: 'low' | 'medium' | 'high';
+    };
     status: 'success' | 'error';
     status_code: 200 | 400;
     timestamp: string;
@@ -208,39 +223,35 @@ Response: **200**
 ```bash
     {
         "endpoint": "/credit_score/plaid",
-        "feedback": {
-            "advice": {
-                "credit_error": false,
-                "credit_exist": true,
-                "diversity_error": false,
-                "stability_error": false,
-                "velocity_error": true
-            },
-            "score": {
-                "bank_accounts": 9,
-                "card_names": [
-                    "Plaid diamond 12.5% apr interest credit card"
-                ],
-                "cum_balance": 44520,
-                "loan_amount": 5000,
-                "loan_duedate": 6,
-                "points": 639,
-                "quality": "fair",
-                "score_exist": true
-            }
-        },
-        "message": "Your NEARoracle score is FAIR - 639 points. This score qualifies you for a short term loan <br/>
-        of up to $5,000 USD (467.73 NEAR) over a recommended pay back period of 6 monthly installments. <br/>
-        Part of your score is based on the transaction history of your Plaid diamond 12.5% apr interest credit card. <br/>
-        Your total current balance is $44,520 USD across all accounts. An error occurred while computing the <br/>
-        score metric called velocity. As a result, your score was rounded down. <br/>
-        Try again later or select an alternative bank account if you have one.",
-
-        "score": 639,
-        "status": "success",
+        "title": "Credit Score",
         "status_code": 200,
-        "timestamp": "03-24-2022 17:34:52 GMT",
-        "title": "Credit Score"
+        "status": "success",
+        "timestamp": "06-06-2022 20:48:02 GMT",
+        "score": 401,
+        "risk": {
+            "loan_amount": 500,
+            "risk_level": "medium"
+        },
+        "message": "Congrats! Your NEAR Oracle score is VERY POOR - 401 points. This score qualifies you for a short term loan of up to 93 NEAR which is equivalent to 500 USD over a recommended pay back period of 6 monthly installments Your total current balance is $320 USD across all accounts held with Chase NEARoracle found no credit card associated with your bank account. Credit scores rely heavily on credit card history. Improve your score by selecting a different bank account which shows credit history.",
+        "feedback": {
+            "score": {
+                "score_exist": true,
+                "points": 401,
+                "quality": "very poor",
+                "loan_amount": 500,
+                "loan_duedate": 6,
+                "card_names": null,
+                "cum_balance": 320,
+                "bank_accounts": 2
+            },
+            "advice": {
+                "credit_exist": false,
+                "credit_error": true,
+                "velocity_error": true,
+                "stability_error": false,
+                "diversity_error": false
+            }
+        }
     }
 ```
 
@@ -260,7 +271,6 @@ Sample error response from Plaid Sandbox environment
         'title': 'Credit Score'
     }
 ```
-
 
 ## [NEAR WALLET](https://wallet.near.org/) : credit score model based on your NEAR wallet.
 

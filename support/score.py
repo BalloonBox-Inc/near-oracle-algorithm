@@ -1,38 +1,74 @@
 from support.models import *
+from support.helper import *
 
 
-def plaid_score(txn, feedback):
+def plaid_score(score_range, feedback, model_weights, model_penalties, metric_weigths, params, txn):
+    '''
+    params = [
+        due_date, duration, count_zero, count_invest, volume_credit, volume_invest,
+        volume_balance, flow_ratio, slope, slope_lr, activity_vol_mtx,
+        activity_cns_mtx, credit_mix_mtx, diversity_velo_mtx, fico_medians, count_lively,
+        count_txn, volume_flow, volume_withdraw, volume_deposit, volume_min, 
+        credit_util_pct, frequency_interest
+    ]
+    '''
+    params = plaid_params(params, score_range)
 
-    mix, feedback = credit_mix(txn, feedback)
+    credit, feedback = credit_mix(
+        txn, feedback, params[1], params[2], params[12])
 
-    if mix == 0:
-        velocity, feedback = plaid_velocity(txn, feedback)
-        stability, feedback = plaid_stability(txn, feedback)
-        diversity, feedback = plaid_diversity(txn, feedback)
+    if credit == 0:
+        velocity, feedback = plaid_velocity(
+            txn, feedback, metric_weigths, params)
+        stability, feedback = plaid_stability(
+            txn, feedback, metric_weigths, params)
+        diversity, feedback = plaid_diversity(
+            txn, feedback, metric_weigths, params)
 
-        # adds up to 0.95 for lack of credit card - it's a penalty
-        score = 300 + 600*(0.33*velocity + 0.42*stability + 0.20*diversity)
+        a = list(model_penalties.values())
 
     else:
-        credit, feedback = plaid_credit(txn, feedback)
-        velocity, feedback = plaid_velocity(txn, feedback)
-        stability, feedback = plaid_stability(txn, feedback)
-        diversity, feedback = plaid_diversity(txn, feedback)
+        credit, feedback = plaid_credit(
+            txn, feedback, metric_weigths, params)
+        velocity, feedback = plaid_velocity(
+            txn, feedback, metric_weigths, params)
+        stability, feedback = plaid_stability(
+            txn, feedback, metric_weigths, params)
+        diversity, feedback = plaid_diversity(
+            txn, feedback, metric_weigths, params)
 
-        score = 300 + 600*(0.42*credit + 0.20*velocity +
-                           0.28*stability + 0.10*diversity)
+        a = list(model_weights.values())
+
+    b = [credit, velocity, stability, diversity]
+
+    head, tail = head_tail_list(score_range)
+    score = head + (tail-head)*(dot_product(a, b))
 
     return score, feedback
 
 
-def coinbase_score(acc, txn, feedback):
+def coinbase_score(score_range, feedback, model_weights, metric_weigths, params, acc, txn):
+    '''
+    params = [
+        due_date, duration, volume_balance, volume_profit, count_txn, activity_vol_mtx, 
+        activity_cns_mtx, fico_medians
+    ]
+    '''
+    params = coinbase_params(params, score_range)
 
-    kyc, feedback = coinbase_kyc(acc, txn, feedback)
-    history, feedback = coinbase_history(acc, feedback)
-    liquidity, feedback = coinbase_liquidity(acc, txn, feedback)
-    activity, feedback = coinbase_activity(acc, txn, feedback)
+    kyc, feedback = coinbase_kyc(
+        acc, txn, feedback)
+    history, feedback = coinbase_history(
+        acc, feedback, params)
+    liquidity, feedback = coinbase_liquidity(
+        acc, txn, feedback, metric_weigths, params)
+    activity, feedback = coinbase_activity(
+        acc, txn, feedback, metric_weigths, params)
 
-    score = 300 + 600*(0.10*kyc + 0.10*history +
-                       0.40*liquidity + 0.40*activity)
+    a = list(model_weights.values())
+    b = [kyc, history, liquidity, activity]
+
+    head, tail = head_tail_list(score_range)
+    score = head + (tail-head)*(dot_product(a, b))
 
     return score, feedback

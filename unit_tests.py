@@ -1,14 +1,13 @@
+from testing.tests.test_coinbase import *
+from testing.tests.test_plaid import *
 import unittest
-from support.tests.test_coinbase import TestMetricsCoinbase
-from support.tests.test_plaid import *
-from support.metrics_coinbase import *
 
 
 # Run the actual tests bundling classes of test cases into test suites
 def suite():
     suite = unittest.TestSuite()
 
-    # Plaid
+    # # Plaid
     suite.addTest(unittest.makeSuite(TestMetricCredit))
     suite.addTest(unittest.makeSuite(TestMetricVelocity))
     suite.addTest(unittest.makeSuite(TestMetricStability))

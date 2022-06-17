@@ -1,18 +1,23 @@
-import json
-import unittest
+from support.metrics_coinbase import *  # import code to get tested
+from config.helper import *
+from support.helper import *
 from datetime import datetime
-from ..metrics_coinbase import *  # import testing code
+import unittest
+import json
+import os
+
+
+LOAN_AMOUNT = 24000
+dummy_data = 'test_coinbase.json'
+
+json_file = os.path.join(os.path.dirname(
+    __file__).replace('/tests', '/data'), dummy_data)
 
 
 # -------------------------------------------------------------------------- #
 #                               Helper Functions                             #
 #                                                                            #
 # -------------------------------------------------------------------------- #
-
-def create_feedback_coinbase():
-    return {'kyc': {}, 'history': {}, 'liquidity': {}, 'activity': {}}
-
-
 def str_to_date(acc, feedback):
     """
     serialize a Python data structure converting string instances into datetime objects
@@ -44,17 +49,30 @@ class TestMetricsCoinbase(unittest.TestCase):
 
     # factor out set-up code implementing the setUp() method
     def setUp(self):
-        self.fb = create_feedback_coinbase()
-        with open('data/test_user_coinbase.json') as my_file:
-            self.acc = str_to_date(json.load(my_file)['accounts'], self.fb)
-        with open('data/test_user_coinbase.json') as my_file:
-            self.tx = json.load(my_file)['transactions']
+
+        # import variables from config.json 
+        configs = read_config_file(LOAN_AMOUNT)
+        models, metrics = read_models_and_metrics(
+            configs['minimum_requirements']['coinbase']['scores']['models'])
+        self.fb = create_feedback(models)
+
+        with open(json_file) as f:
+            self.acc = str_to_date(json.load(f)['accounts'], self.fb)
+        with open(json_file) as f:
+            self.tx = json.load(f)['transactions']
+
+        # import parameters
+        score_range = configs['score_range']
+        params = configs['minimum_requirements']['coinbase']['params']
+        self.par = coinbase_params(params, score_range) 
+        
 
     # clean up code at the end of this test class
     def tearDown(self):
         self.fb = None
         self.acc = None
         self.tx = None
+        self.par = None
 
     def test_kyc(self):
         '''
@@ -76,17 +94,17 @@ class TestMetricsCoinbase(unittest.TestCase):
         - variable 'age' should be a non-negative of type: int or float
         - if there's no account, the score should be 0
         '''
-        history_acc_longevity(self.acc, self.fb)
+        history_acc_longevity(self.acc, self.fb, self.par[1], self.par[7])
 
         self.assertGreaterEqual(history_acc_longevity.age, 0)
         self.assertIsInstance(history_acc_longevity.age, (int, float))
-        self.assertEqual(history_acc_longevity([], self.fb)[0], 0)
+        self.assertEqual(history_acc_longevity([], self.fb, self.par[1], self.par[7])[0], 0)
 
     def test_liquidity_tot_balance_now(self):
         '''
         - empty account should result in 'no balance' error
         '''
-        self.assertRegex(liquidity_tot_balance_now([], self.fb)[
+        self.assertRegex(liquidity_tot_balance_now([], self.fb, self.par[2], self.par[7])[
                          1]['liquidity']['error'], 'no balance')
 
     def test_liquidity_loan_duedate(self):
@@ -94,15 +112,15 @@ class TestMetricsCoinbase(unittest.TestCase):
         - duedate should be at most 6 months
         - this is the only function that returns no score, but rather, it returns only the feedback dict
         '''
-        self.assertLessEqual(liquidity_loan_duedate(self.tx, self.fb)[
+        self.assertLessEqual(liquidity_loan_duedate(self.tx, self.fb, self.par[0])[
                              'liquidity']['loan_duedate'], 6)
-        self.assertIsInstance(liquidity_loan_duedate(self.tx, self.fb), dict)
+        self.assertIsInstance(liquidity_loan_duedate(self.tx, self.fb, self.par[0]), dict)
 
     def test_liquidity_avg_running_balance(self):
         '''
         - no tx yields a 'no tx' error
         '''
-        self.assertRegex(liquidity_avg_running_balance(self.acc, [], self.fb)[
+        self.assertRegex(liquidity_avg_running_balance(self.acc, [], self.fb, self.par[1], self.par[2], self.par[6])[
                          1]['liquidity']['error'], 'no transaction history')
 
     def test_activity_tot_volume_tot_count(self):
@@ -112,9 +130,9 @@ class TestMetricsCoinbase(unittest.TestCase):
         - credit and debit checks share the same dictionary key
         - no tx returns 'no tx history' error
         '''
-        fb = create_feedback_coinbase()
-        cred, cred_fb = activity_tot_volume_tot_count(self.tx, 'credit', fb)
-        deb, deb_fb = activity_tot_volume_tot_count(self.tx, 'debit', fb)
+        fb = {'kyc': {}, 'history': {}, 'liquidity': {}, 'activity': {}}
+        cred, cred_fb = activity_tot_volume_tot_count(self.tx, 'credit', fb, self.par[2], self.par[4], self.par[5])
+        deb, deb_fb = activity_tot_volume_tot_count(self.tx, 'debit', fb, self.par[2], self.par[4], self.par[5])
 
         for a in [cred, deb]:
             self.assertIsInstance(a, (float, int))
@@ -122,7 +140,7 @@ class TestMetricsCoinbase(unittest.TestCase):
 
         self.assertEqual(cred_fb['activity'].get(
             'credit').keys(), deb_fb['activity'].get('debit').keys())
-        self.assertRegex(activity_tot_volume_tot_count([], 'credit', self.fb)[
+        self.assertRegex(activity_tot_volume_tot_count([], 'credit', self.fb, self.par[2], self.par[4], self.par[5])[
                          1]['activity']['error'], 'no transaction history')
 
     def test_activity_consistency(self):
@@ -132,14 +150,14 @@ class TestMetricsCoinbase(unittest.TestCase):
         - avg volume should be a positive number
         - no tx returns 'no tx history' error
         '''
-        a, b = activity_consistency(self.tx, 'credit', self.fb)
+        a, b = activity_consistency(self.tx, 'credit', self.fb, self.par[1], self.par[3], self.par[6])
         i = list(activity_consistency.frame.index)
         d = [x[0] for x in activity_consistency.typed_txn]
 
         self.assertCountEqual(i, d)
         self.assertIsInstance(np.random.choice(d), datetime)
         self.assertGreater(a, 0)
-        self.assertRegex(activity_consistency([], 'credit', self.fb)[
+        self.assertRegex(activity_consistency([], 'credit', self.fb, self.par[1], self.par[3], self.par[6])[
                          1]['activity']['error'], 'no transaction history')
 
     def test_activity_profit_since_inception(self):
@@ -148,12 +166,12 @@ class TestMetricsCoinbase(unittest.TestCase):
         - 'profit' should be positive
         - if there's no profit, then should raise an exception
         '''
-        activity_profit_since_inception(self.acc, self.tx, self.fb)
+        activity_profit_since_inception(self.acc, self.tx, self.fb, self.par[3], self.par[7])
 
         self.assertIsInstance(
             activity_profit_since_inception.profit, (float, int))
         self.assertGreater(activity_profit_since_inception.profit, 0)
-        self.assertRegex(activity_profit_since_inception([], [], self.fb)[
+        self.assertRegex(activity_profit_since_inception([], [], self.fb, self.par[3], self.par[7])[
                          1]['activity']['error'], 'no net profit')
 
     def test_net_flow(self):
@@ -163,7 +181,7 @@ class TestMetricsCoinbase(unittest.TestCase):
         '''
         a = net_flow(self.tx, 12, self.fb)
         b = net_flow([], 6, self.fb)
-        c = net_flow(None, 6, create_feedback_coinbase())
+        c = net_flow(None, 6, {'kyc': {}, 'history': {}, 'liquidity': {}, 'activity': {}})
 
         # good inputs
         self.assertIsInstance(a, tuple)
@@ -194,41 +212,82 @@ class TestParametrizeCoinbase(unittest.TestCase):
     '''
 
     def setUp(self):
-        self.fb = create_feedback_coinbase()
-        with open('data/test_user_coinbase.json') as my_file:
-            self.acc = str_to_date(json.load(my_file)['accounts'], self.fb)
-        with open('data/test_user_coinbase.json') as my_file:
-            self.tx = json.load(my_file)['transactions']
+        # import variables from config.json 
+        configs = read_config_file(LOAN_AMOUNT)
+        models, metrics = read_models_and_metrics(
+            configs['minimum_requirements']['coinbase']['scores']['models'])
+        self.fb = create_feedback(models)
 
-        self.param = {
-            'fn_good': [
-                kyc(self.acc, self.tx, self.fb),
-                history_acc_longevity(self.acc, self.fb),
-                liquidity_avg_running_balance(self.acc, self.tx, self.fb),
-                liquidity_tot_balance_now(self.acc, self.fb),
-                activity_consistency(self.tx, 'credit', self.fb),
-                activity_consistency(self.tx, 'debit', self.fb),
-                activity_tot_volume_tot_count(self.tx, 'credit', self.fb),
-                activity_tot_volume_tot_count(self.tx, 'debit', self.fb),
-                activity_profit_since_inception(self.acc, self.tx, self.fb)],
-            'fn_empty': [
-                kyc([], None, self.fb),
-                history_acc_longevity(None, self.fb),
-                liquidity_avg_running_balance([], [], self.fb),
-                liquidity_tot_balance_now(None, self.fb),
-                activity_consistency([], None, self.fb),
-                activity_consistency([], [], self.fb),
-                activity_tot_volume_tot_count([], None, self.fb),
-                activity_tot_volume_tot_count(None, [], self.fb),
-                activity_profit_since_inception(None, None, self.fb)
-            ]}
+        with open(json_file) as f:
+            self.acc = str_to_date(json.load(f)['accounts'], self.fb)
+        with open(json_file) as f:
+            self.tx = json.load(f)['transactions']
+
+        # import parameters
+        score_range = configs['score_range']
+        params = configs['minimum_requirements']['coinbase']['params']
+        self.par = coinbase_params(params, score_range) 
+    
+        self.args1 = {
+            'good': 
+            [
+                [self.acc, self.tx, self.fb],
+                [self.acc, self.fb],
+                [self.acc, self.tx, self.fb],
+                [self.acc, self.fb],
+                [self.tx, 'credit', self.fb],
+                [self.tx, 'debit', self.fb],
+                [self.tx, 'credit', self.fb],
+                [self.tx, 'debit', self.fb],
+                [self.acc, self.tx, self.fb]
+            ],
+            'empty': 
+            [
+                [[], None, self.fb],
+                [None, self.fb],
+                [[], [], self.fb],
+                [None, self.fb],
+                [[], None, self.fb],
+                [[], [], self.fb],
+                [[], None, self.fb],
+                [None, [], self.fb],
+                [None, None, self.fb]
+            ]
+        }
+
+        self.args2 = [
+            list(),
+            [self.par[1], self.par[7]],
+            [self.par[1], self.par[2], self.par[6]],
+            [self.par[2], self.par[7]],
+            [self.par[1], self.par[3], self.par[6]],
+            [self.par[1], self.par[3], self.par[6]],
+            [self.par[2], self.par[4], self.par[5]],
+            [self.par[2], self.par[4], self.par[5]],
+            [self.par[3], self.par[7]],
+        ]
+
+        self.fn = {
+            'all': [
+                kyc,
+                history_acc_longevity,
+                liquidity_avg_running_balance,
+                liquidity_tot_balance_now,
+                activity_consistency,
+                activity_consistency,
+                activity_tot_volume_tot_count,
+                activity_tot_volume_tot_count,
+                activity_profit_since_inception
+            ]
+        }
 
     def tearDown(self):
-        for y in [self.fb, self.acc, self.tx, self.param]:
+        for y in [self.fb, self.acc, self.tx, self.par, self.args1, self.args2, self.fn]:
             y = None
 
     def test_output_good(self):
-        for x in self.param['fn_good']:
+        for (f, a, b) in zip(self.fn['all'], self.args1['good'], self.args2):
+            x = f(*a, *b)
             with self.subTest():
                 self.assertIsInstance(x, tuple)
                 self.assertLessEqual(x[0], 1)
@@ -236,7 +295,8 @@ class TestParametrizeCoinbase(unittest.TestCase):
                 self.assertIsInstance(x[1], dict)
 
     def test_output_empty(self):
-        for x in self.param['fn_empty']:
+        for (f, a, b) in zip(self.fn['all'], self.args1['empty'], self.args2):
+            x = f(*a, *b)
             with self.subTest():
                 self.assertIsInstance(x, tuple)
                 self.assertEqual(x[0], 0)
