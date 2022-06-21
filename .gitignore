@@ -12,3 +12,6 @@
 
 # virtual environment
 /NEARoracle
+
+# neglect all covalent-related files
+covalent_**

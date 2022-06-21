@@ -22,7 +22,9 @@ from testing.performance import *
 load_dotenv()
 
 
-class Near_Item(BaseModel):
+class Covalent_Item(BaseModel):
+    eth_address: str
+    covalent_key: str
     coinmarketcap_key: str
     loan_request: int
 
