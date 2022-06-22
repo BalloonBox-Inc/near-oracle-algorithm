@@ -4,6 +4,74 @@ from datetime import datetime
 # -------------------------------------------------------------------------- #
 #                               Helper Functions                             #
 # -------------------------------------------------------------------------- #
+def swiffer_duster(txn, feedback):
+    '''
+    Description:
+        remove 'dust' transactions (i.e., transactions with less than $0.1 in spot fiat value get classified as dust) and
+        keep only 'successful' transactions (i.e., transactions that got completed). Whenever you call the 'swiffer_duster' 
+        function, ensure it returns an output different than a NoneType
+
+    Parameters:
+        txn (dict): Covalent class A endpoint 'transactions_v2'
+        feedback (dict): score feedback
+
+    Returns:
+        txn (dict): formatted txn data containing only successful and non-dusty transactions
+    '''
+    try: 
+        success_only = []
+        for t in txn['items']:
+            # keep only transactions that are successful and have a value > 0
+            if t['successful'] and t['value_quote'] > 0:
+                success_only.append(t)
+
+        txn['items'] = success_only
+        return txn
+
+    except Exception as e:
+        feedback['fetch'][swiffer_duster.__name__] = str(e)
+
+
+def purge_portfolio(portfolio, feedback):
+    '''
+    Description:
+        remove 'dusty' tokens from portfolio. That is, we xonsider only those tokens 
+        that had a closing day balance of >$50 for at least 3 days in the last month
+
+    Parameters:
+        portfolio (dict): Covalent class A endpoint 'portfolio_v2'
+        feedback (dict): score feedback
+
+    Returns:
+        portfolio (dict): purged portfolio without dusty tokens
+    '''
+    try: 
+        # ensure the quote currency is USD. If it isn't, then raise an exception
+        if portfolio['quote_currency'] != 'USD':
+            raise Exception('quote_currency should be USD')
+        else:
+            print(len(portfolio['items']))
+            counts = list()
+            for a in portfolio['items']:
+                count = 0
+                for b in a['holdings']:
+                    if b['close']['quote'] > 50:
+                        count += 1
+                    # exist the loop as soon as the count exceeds 3
+                    if count > 2:
+                        break
+                counts.append(count)
+
+            # remove dusty token from the records
+            for i in range(len(counts)):
+                if counts[i] < 3:
+                    portfolio['items'].pop(i)
+
+            print(len(portfolio['items']))
+        return portfolio
+            
+    except Exception as e:
+        feedback['fetch'][purge_portfolio.__name__] =  str(e)
 
 # -------------------------------------------------------------------------- #
 #                            Metric #1 Credibility                           #
