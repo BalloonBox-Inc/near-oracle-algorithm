@@ -25,7 +25,10 @@ def immutable_array(arr):
 
 
 def build_2d_matrix(size, scalars):
-
+    '''
+    build a simple 2D scoring matrix.
+    Matrix axes growth rate is defined by a log in base 10 function
+    '''
     matrix = np.zeros(size)
     scalars = [1/n for n in scalars]
 
@@ -34,6 +37,23 @@ def build_2d_matrix(size, scalars):
             matrix[m][n] = round(scalars[0]*np.log10(m+1) +
                                  scalars[1]*np.log10(n+1), 2)
     return matrix
+
+
+def build_normalized_matrix(size, scalar):
+    '''
+    build a normalized 2D scoring matrix.
+    Matrix axes growth rate is defined by a natural logarithm function
+    '''
+    m = np.zeros(size)
+    # evaluate the bottom right element in the matrix and use it to normalize the matrix
+    extrema = round(scalar[0]*np.log(m.shape[0])\
+                    +scalar[1]*np.log(m.shape[1]), 2) 
+
+    for a in range(m.shape[0]):
+        for b in range(m.shape[1]):
+            m[a][b] = round((scalar[0]*np.log(a+1)\
+                            +scalar[1]*np.log(b+1))/extrema, 2) 
+    return m
 
 
 def plaid_params(params, score_range):

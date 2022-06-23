@@ -10,7 +10,7 @@ def swiffer_duster(txn, feedback):
         remove 'dust' transactions (i.e., transactions with less than $0.1 in spot fiat value get classified as dust) and
         keep only 'successful' transactions (i.e., transactions that got completed). Whenever you call the 'swiffer_duster' 
         function, ensure it returns an output different than a NoneType
-
+        
     Parameters:
         txn (dict): Covalent class A endpoint 'transactions_v2'
         feedback (dict): score feedback
@@ -19,14 +19,17 @@ def swiffer_duster(txn, feedback):
         txn (dict): formatted txn data containing only successful and non-dusty transactions
     '''
     try: 
-        success_only = []
-        for t in txn['items']:
-            # keep only transactions that are successful and have a value > 0
-            if t['successful'] and t['value_quote'] > 0:
-                success_only.append(t)
+        if txn['quote_currency'] == 'USD':
+            success_only = []
+            for t in txn['items']:
+                # keep only transactions that are successful and have a value > 0
+                if t['successful'] and t['value_quote'] > 0:
+                    success_only.append(t)
 
-        txn['items'] = success_only
-        return txn
+            txn['items'] = success_only
+            return txn
+        else:
+            raise Exception("quote_currency should be USD, but it isn't")
 
     except Exception as e:
         feedback['fetch'][swiffer_duster.__name__] = str(e)
@@ -72,6 +75,33 @@ def purge_portfolio(portfolio, feedback):
             
     except Exception as e:
         feedback['fetch'][purge_portfolio.__name__] =  str(e)
+
+
+def top_erc_only(data, feedback, top_erc_tokens):
+    ''' 
+    Description:
+        filter the Covalent API data by keeping only the assets in the ETH wallet address which are top ranked on Coinmarketcap as ERC20 tokens
+    
+    Parameters:
+        data (dict): can be either the 'balances_v2' or the 'portfolio_v2' Covalent class A endpoint
+        feedback (dict): score feedback
+        top_erc_tokens (list): list of ERC tokens ranked highest on Coinmarketcap
+
+    Returns:
+        data (dict): containing only top ERC tokens. All other tokens will NOT count toward the credit score and are disregarded altogether
+    '''
+    try:
+        for b in data['items']:
+            if 'contract_ticker_symbol' not in b.keys():
+                raise KeyError('you passed invalid data. This function \
+                    only accepts the endpoints: balances_v2 and portfolio_v2')
+            else:
+                if b['contract_ticker_symbol'] not in top_erc_tokens:
+                    data['items'].remove(b)
+        return data
+
+    except Exception as e:
+        feedback['fetch']['error'] = str(e)
 
 # -------------------------------------------------------------------------- #
 #                            Metric #1 Credibility                           #
@@ -210,7 +240,130 @@ def wealth_volume_per_txn(txn, feedback, fico_medians, volume_per_txn):
 # -------------------------------------------------------------------------- #
 #                             Metric #3 Traffic                              #
 # -------------------------------------------------------------------------- #
+def traffic_cred_deb(txn, feedback, operation, count_operations, cred_deb, mtx_traffic):
+    '''
+    Description:
+        rewarding points proportionally to the count and volume of credit and debit transactions
 
+    Parameters:
+        txn (dict): Covalent class A endpoint 'transactions_v2'
+        feedback (dict): score feedback
+        operation (str): accepts 'credit', 'debit', or 'transfer'
+        count_operations (array): bins transaction count
+        cred_deb (array): bins transaction volume
+        mtx_traffic (array): score matrix 
+
+    Returns:
+        score (float): for the count and volume of credit or debit transactions
+        feedback (dict): updated score feedback
+    '''
+    try:
+        counts = 0
+        volume = 0
+        eth_wallet = txn['address']
+
+        # credit
+        if operation == 'credit':
+            for t in txn['items']:
+                if t['to_address'] == eth_wallet:
+                    counts += 1
+                    volume += t['value_quote']   
+            count_operations = count_operations/2 
+            cred_deb = cred_deb/2    
+
+        # debit
+        elif operation == 'debit':
+            for t in txn['items']:
+                if t['from_address'] == eth_wallet:
+                    counts += 1
+                    volume += t['value_quote']
+
+        # transfer
+        elif operation == 'transfer':
+            for t in txn['items']:
+                if eth_wallet not in [t['from_address'], t['to_address']]:
+                    indx = txn['items'].index(t)
+                    if txn['items'][indx]['log_events'][0]['decoded']['name'] == 'Transfer':
+                        counts += 1
+                        volume += t['value_quote']
+            count_operations = count_operations/5
+            cred_deb = cred_deb/2 
+
+        # except
+        else:
+            raise Exception("you apssed an invalid param: accepts only 'credit', 'debit', or 'transfer'")
+
+
+        m = np.digitize(counts, count_operations, right=True)
+        n = np.digitize(volume, cred_deb, right=True)
+        score = mtx_traffic[m][n]
+        feedback['traffic']['count_credit_txns'] =  counts
+        feedback['traffic']['volume_credit_txns'] = round(volume, 2)
+
+    except Exception as e:
+        score = 0
+        feedback['traffic']['error'] = str(e)
+
+    finally:
+        return score, feedback
+
+
+def traffic_credit_debit(txn, feedback, fico_medians, frequency_txn):
+    '''
+    Description:
+        reward wallet address with frequent monthly transactions
+
+    Parameters:
+        txn (dict): Covalent class A endpoint 'transactions_v2'
+        feedback (dict): score feedback
+        fico_medians (array): scoring array
+        frequency_txn (array): bins for transaction frequency
+
+    Returns:
+        score (float): the more frequent transactions the higher the score
+        feedback (dict): updated score feedback
+    '''
+    try:
+        datum = txn['items'][-1]['block_signed_at'].split('T')[0]
+        oldest = datetime.strptime(datum, '%Y-%M-%d').date()
+        duration = int((now - oldest).days/30) # months
+
+        frequency = round(len(txn['items']) / duration , 2)
+        score = fico_medians[np.digitize(frequency, frequency_txn, right=True)]
+        feedback['traffic']['txn_frequency'] = f'{frequency} txn/month over {duration} months'
+
+    except Exception as e:
+        feedback['traffic']['error'] = str(e)
+
+    finally:
+        return score, feedback
+
+
+def traffic_dustiness(txn, feedback, fico_medians):
+    '''
+    Description:
+        accounts for legitimate transactions over total transactions
+        (assuming some transactions are dust, i.e., < $0.1 value)
+
+    Parameters:
+        txn (dict): Covalent class A endpoint 'transactions_v2'
+        feedback (dict): score feedback
+        fico_medians (array): scoring array
+
+    Returns:
+        score (float): the more dusty txn the lower the score
+        feedback (dict): updated score feedback
+    '''
+    try:
+        legit_ratio = (len(txn['items']) - len(swiffer_duster(txn, feedback)['items'])) / len(txn['items'])
+        score = fico_medians[np.digitize(legit_ratio, fico_medians*0.8, right=True)]
+        feedback['traffic']['legit_txn_ratio'] = round(legit_ratio, 2)
+
+    except Exception as e:
+        feedback['traffic']['error'] = str(e)
+
+    finally:
+        return score, feedback
 
 # -------------------------------------------------------------------------- #
 #                             Metric #4 Stamina                              #

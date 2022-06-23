@@ -38,6 +38,32 @@ def coinmarketcap_currencies(api_key, limit):
     return top_currencies
 
 
+def coinmarektcap_top_erc(api_key, limit, erc_tokens):
+    '''
+    Description: 
+        keep only those ERC token from the ETH wallet address which are top ranked on Coinmarketcap
+
+    Parameters:
+        api_key (str): bearer token to authenticate into coinmarketcap API
+        limit (float): number of top cryptos you want to keep
+        erc_tokens (lits): list of coins which are ERC20 tokens
+
+    Returns:
+        top_erc_tokens (list): list of top ERC tokens based on Coinmarketcap rankings
+    '''
+    try:
+        # retrieve top cryptos from coinmarketcap
+        top_currencies = list(coinmarketcap_currencies(api_key, limit).keys())
+        # intersect 2 lists
+        top_erc_tokens = [x for x in top_currencies if x in erc_tokens]
+        top_erc_tokens.append('WETH')
+
+    except Exception as e:
+        top_erc_tokens = str(e)
+
+    return top_erc_tokens
+
+
 def coinmarketcap_rate(api_key, coin_in, coin_out):
     '''
     Description:
