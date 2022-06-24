@@ -30,7 +30,7 @@ def coinmarketcap_currencies(api_key, limit):
         r = requests.get(url, headers=headers, params=params).json()
 
         top_currencies = dict(
-            [(n['symbol'], n['quote']['USD']['price']) for n in r['data']])
+            [(n['symbol'], (n['cmc_rank'], n['quote']['USD']['price'])) for n in r['data']])
 
     except Exception as e:
         top_currencies = str(e)

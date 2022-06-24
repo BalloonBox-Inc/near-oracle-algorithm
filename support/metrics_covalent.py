@@ -12,7 +12,7 @@ def swiffer_duster(txn, feedback):
         remove 'dust' transactions (i.e., transactions with less than $0.1 in spot fiat value get classified as dust) and
         keep only 'successful' transactions (i.e., transactions that got completed). Whenever you call the 'swiffer_duster' 
         function, ensure it returns an output different than a NoneType
-        
+
     Parameters:
         txn (dict): Covalent class A endpoint 'transactions_v2'
         feedback (dict): score feedback
@@ -79,18 +79,20 @@ def purge_portfolio(portfolio, feedback):
         feedback['fetch'][purge_portfolio.__name__] =  str(e)
 
 
-def top_erc_only(data, feedback, top_erc_tokens):
+def top_erc_only(data, feedback, top_erc):
     ''' 
     Description:
-        filter the Covalent API data by keeping only the assets in the ETH wallet address which are top ranked on Coinmarketcap as ERC20 tokens
+        filter the Covalent API data by keeping only the assets in the ETH 
+        wallet address which are top ranked on Coinmarketcap as ERC20 tokens
     
     Parameters:
         data (dict): can be either the 'balances_v2' or the 'portfolio_v2' Covalent class A endpoint
         feedback (dict): score feedback
-        top_erc_tokens (list): list of ERC tokens ranked highest on Coinmarketcap
+        top_erc (list): list of ERC tokens ranked highest on Coinmarketcap
 
     Returns:
-        data (dict): containing only top ERC tokens. All other tokens will NOT count toward the credit score and are disregarded altogether
+        data (dict): containing only top ERC tokens. All other tokens will NOT
+        count toward the credit score and are disregarded altogether
     '''
     try:
         for b in data['items']:
@@ -98,7 +100,7 @@ def top_erc_only(data, feedback, top_erc_tokens):
                 raise KeyError('you passed invalid data. This function \
                     only accepts the endpoints: balances_v2 and portfolio_v2')
             else:
-                if b['contract_ticker_symbol'] not in top_erc_tokens:
+                if b['contract_ticker_symbol'] not in top_erc:
                     data['items'].remove(b)
         return data
 
@@ -239,7 +241,7 @@ def wealth_capital_now_adjusted(balances, feedback, erc_rank, fico_medians, volu
         feedback['wealth']['error'] = str(e)
 
     finally:
-        return score, feedback
+        return score, feedback        
 
 
 def wealth_volume_per_txn(txn, feedback, fico_medians, volume_per_txn):
@@ -345,7 +347,7 @@ def traffic_cred_deb(txn, feedback, operation, count_operations, cred_deb, mtx_t
         return score, feedback
 
 
-def traffic_credit_debit(txn, feedback, fico_medians, frequency_txn):
+def traffic_frequency(txn, feedback, fico_medians, frequency_txn):
     '''
     Description:
         reward wallet address with frequent monthly transactions
@@ -370,6 +372,7 @@ def traffic_credit_debit(txn, feedback, fico_medians, frequency_txn):
         feedback['traffic']['txn_frequency'] = f'{frequency} txn/month over {duration} months'
 
     except Exception as e:
+        score = 0
         feedback['traffic']['error'] = str(e)
 
     finally:
@@ -397,11 +400,99 @@ def traffic_dustiness(txn, feedback, fico_medians):
         feedback['traffic']['legit_txn_ratio'] = round(legit_ratio, 2)
 
     except Exception as e:
+        score = 0
         feedback['traffic']['error'] = str(e)
 
     finally:
         return score, feedback
 
+
+def traffic_running_balance(portfolio, feedback, fico_medians, avg_run_bal):
+    '''
+    Description:
+        score earned based on the average running balance 
+        of your best token over the past 30 days
+
+    Parameters:
+        portfolio (dict): Covalent class A endpoint 'portfolio_v2'
+        feedback (dict): score feedback
+        fico_medians (array): scoring array
+        avg_run_bal (array): bins for avg running balance
+
+    Returns:
+        score (float): points earned for the average running 
+            balance (over the last month) of the best token owned
+        feedback (dict): updated score feedback
+    '''
+    try:
+        overview = {}
+
+        for p in portfolio['items']:
+            sum = 0
+            count = 0
+            ticker = p['contract_ticker_symbol']
+            for q in p['holdings']:
+                sum += q['close']['quote']
+                count += 1
+            avg = sum/count
+            overview[ticker] = avg
+
+        best_avg = max(overview.values())
+        score = fico_medians[np.digitize(best_avg, avg_run_bal, right=True)]
+        feedback['traffic']['avg_running_balance(best_token)'] = round(best_avg, 2)
+
+    except Exception as e:
+        score = 0
+        feedback['traffic']['error'] = str(e)
+
+    finally:
+        return score, feedback
+
+
 # -------------------------------------------------------------------------- #
 #                             Metric #4 Stamina                              #
 # -------------------------------------------------------------------------- #
+def stamina_methods_count(txn, feedback):
+    '''
+    Description:
+
+    Parameters:
+        txn (dict): Covalent class A endpoint 'transactions_v2'
+        feedback (dict): score feedback
+
+    Returns:
+        score (float): 
+        feedback (dict): updated score feedback
+    '''
+    score = 0
+    return score, feedback
+
+def stamina_coins_count(balances, feedback):
+    '''
+    Description:
+
+    Parameters:
+        balances (dict): Covalent class A endpoint 'balances_v2'
+        feedback (dict): score feedback
+
+    Returns:
+        score (float): 
+        feedback (dict): updated score feedback
+    '''
+    score = 0
+    return score, feedback
+
+def stamina_dexterity(portfolio, feedback):
+    '''
+    Description:
+
+    Parameters:
+        portfolio (dict): Covalent class A endpoint 'portfolio_v2'
+        feedback (dict): score feedback
+
+    Returns:
+        score (float): 
+        feedback (dict): updated score feedback
+    '''
+    score = 0
+    return score, feedback
