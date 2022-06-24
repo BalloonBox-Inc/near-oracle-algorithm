@@ -11,6 +11,7 @@ def head_tail_list(lst):
 
 
 def aggregate_currencies(ccy1, ccy2, fiats):
+    ccy1 = {k:v[1] for (k, v) in ccy1.items()}
     ccy2 = {k: 1 for (k, v) in ccy2.items()
             if v == 0.01 or k in fiats}
 

@@ -5,7 +5,7 @@ import pandas as pd
 import numpy as np
 
 
-now = datetime.now().date()
+NOW = datetime.now().date()
 
 # -------------------------------------------------------------------------- #
 #                               Helper Functions                             #
@@ -130,7 +130,7 @@ def history_acc_longevity(acc, feedback, duration, fico_medians):
         if acc:
             oldest = min([d['created_at'] for d in acc if d['created_at']])
             # age (in days) of longest standing Coinbase account
-            history_acc_longevity.age = (now - oldest).days
+            history_acc_longevity.age = (NOW - oldest).days
             score = fico_medians[np.digitize(
                 history_acc_longevity.age, duration, right=True)]
 
@@ -210,7 +210,7 @@ def liquidity_loan_duedate(txn, feedback, due_date):
         # Read in the date of the oldest txn
         first_txn = datetime.strptime(
             txn[-1]['created_at'], '%Y-%m-%dT%H:%M:%SZ').date()
-        txn_length = int((now - first_txn).days/30)  # months
+        txn_length = int((NOW - first_txn).days/30)  # months
 
         # Loan duedate is equal to the month of txn history there are
         due = np.digitize(txn_length, due_date, right=True)

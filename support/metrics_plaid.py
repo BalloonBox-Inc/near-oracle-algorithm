@@ -5,7 +5,7 @@ from datetime import datetime
 import pandas as pd
 import numpy as np
 
-now = datetime.now().date()
+NOW = datetime.now().date()
 
 
 # -------------------------------------------------------------------------- #
@@ -41,7 +41,7 @@ def dynamic_select(data, acc_name, feedback):
                 transat = [t for t in txn if t['account_id'] == id]
                 txn_count = len(transat)
                 if len(transat) != 0:
-                    length = (now - transat[-1]['date']).days
+                    length = (NOW - transat[-1]['date']).days
                 else:
                     length = 0
                 info.append([id, type, limit, txn_count, length])
@@ -194,7 +194,7 @@ def credit_mix(data, feedback, duration, count_zero, m3x7_2_4):
                           if d['account_id'] in credit_ids]
 
             first_txn = credit_txn[-1]['date']
-            date_diff = (now - first_txn).days
+            date_diff = (NOW - first_txn).days
 
             m = np.digitize(size, count_zero, right=True)
             n = np.digitize(date_diff, duration, right=True)
@@ -241,7 +241,7 @@ def credit_limit(data, feedback, duration, volume_credit, m7x7_03_17):
                           if d['account_id'] in credit_ids]
 
             first_txn = credit_txn[-1]['date']
-            date_diff = (now - first_txn).days
+            date_diff = (NOW - first_txn).days
 
             m = np.digitize(date_diff, duration, right=True)
             n = np.digitize(credit_lim, volume_credit, right=True)
@@ -356,7 +356,7 @@ def credit_interest(data, feedback, fico_medians, frequency_interest):
             interests = list()
 
             if alltxn:
-                length = min(24, round((now - alltxn[-1]['date']).days/30, 0))
+                length = min(24, round((NOW - alltxn[-1]['date']).days/30, 0))
                 for t in alltxn:
 
                     # keep only txn of type 'interest on credit card'
@@ -364,7 +364,7 @@ def credit_interest(data, feedback, fico_medians, frequency_interest):
                         date = t['date']
 
                         # keep only txn of last 24 months
-                        if date > now - timedelta(days=2*365):
+                        if date > NOW - timedelta(days=2*365):
                             interests.append(t)
 
                 frequency = len(interests)/length
@@ -406,7 +406,7 @@ def credit_length(data, feedback, fico_medians, duration):
         if alltxn:
             oldest_txn = alltxn[-1]['date']
             # date today - date of oldest credit transaction
-            how_long = (now - oldest_txn).days
+            how_long = (NOW - oldest_txn).days
             score = fico_medians[np.digitize(how_long, duration, right=True)]
 
             feedback['credit']['credit_duration_(days)'] = how_long
@@ -820,7 +820,7 @@ def stability_loan_duedate(data, feedback, due_date):
     try:
         # Read in the date of the oldest txn
         first_txn = data['transactions'][-1]['date']
-        txn_length = int((now - first_txn).days/30)  # months
+        txn_length = int((NOW - first_txn).days/30)  # months
 
         # Loan duedate is equal to the month of txn history there are
         due = np.digitize(txn_length, due_date, right=True)
@@ -909,7 +909,7 @@ def diversity_acc_count(data, feedback, count_zero, duration, m3x7_73_17):
         size = len(data['accounts'])
 
         first_txn = data['transactions'][-1]['date']
-        date_diff = (now - first_txn).days
+        date_diff = (NOW - first_txn).days
 
         m = np.digitize(size, [i+2 for i in count_zero], right=False)
         n = np.digitize(date_diff, duration, right=True)

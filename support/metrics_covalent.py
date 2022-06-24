@@ -1,6 +1,8 @@
 import numpy as np
 from datetime import datetime
 
+NOW = datetime.now().date()
+
 # -------------------------------------------------------------------------- #
 #                               Helper Functions                             #
 # -------------------------------------------------------------------------- #
@@ -154,7 +156,7 @@ def credibility_oldest_txn(txn, feedback, fico_medians, duration):
     '''
     try:
         oldest = datetime.strptime(txn['items'][-1]['block_signed_at'].split('T')[0], '%Y-%m-%d').date()
-        how_long = (now - oldest).days
+        how_long = (NOW - oldest).days
 
         score = fico_medians[np.digitize(how_long, duration, right=True)]
         feedback['credibility']['longevity(days)'] = how_long
@@ -196,6 +198,41 @@ def wealth_capital_now(balances, feedback, fico_medians, volume_now):
             feedback['wealth']['cum_balance_now'] = round(total, 2)
         else:
             raise Exception('quote_currency should be USD')
+
+    except Exception as e:
+        score = 0
+        feedback['wealth']['error'] = str(e)
+
+    finally:
+        return score, feedback
+
+
+def wealth_capital_now_adjusted(balances, feedback, erc_rank, fico_medians, volume_now):
+    ''' 
+    Description:
+        adjusted tot balance of token owned (USD). Accounts for the Coinmarketcap ranking of the token owned
+
+    Parameters:
+        balances (dict): Covalent class A endpoint 'balances_v2'
+        feedback (dict): score feedback
+        fico_medians (array): score bins
+        volume_now (array): bins for the total token volume owned now
+
+    Returns:
+        score (float): points for cumulative balance now (adjusted)
+        feedback (dict): updated score feedback
+    '''
+    try:
+        adjusted_balance = 0
+        for b in balances['items']:
+            balance = b['quote']
+            ticker = b['contract_ticker_symbol']
+            # multiply the balance owned per token by a weight proportional to that token's ranking on Coinmarketcap
+            penalty = np.e**( erc_rank[ticker]**(1/3.5) )
+            adjusted_balance += round(1 - penalty / 100, 2) * balance
+
+            score = fico_medians[np.digitize(adjusted_balance, volume_now, right=True)]
+            feedback['wealth']['cum_balance_now(adjusted)'] = round(adjusted_balance, 2)
 
     except Exception as e:
         score = 0
@@ -326,7 +363,7 @@ def traffic_credit_debit(txn, feedback, fico_medians, frequency_txn):
     try:
         datum = txn['items'][-1]['block_signed_at'].split('T')[0]
         oldest = datetime.strptime(datum, '%Y-%M-%d').date()
-        duration = int((now - oldest).days/30) # months
+        duration = int((NOW - oldest).days/30) # months
 
         frequency = round(len(txn['items']) / duration , 2)
         score = fico_medians[np.digitize(frequency, frequency_txn, right=True)]
