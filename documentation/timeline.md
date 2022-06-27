@@ -13,8 +13,8 @@
 |Mon|Tue|Wed|Thu|Fri|Sat|Sun|
 |:----:|:----:|:----:|:----:|:----:|:----:|:----:|
 |6⚽<br/> **kickoff** |7<br/> `Refactor unittests` |8<br/> `Generate txn traffic in NEAR wallet` |9<br/> `Connect w/ NEAR wallet via fastAPI`|10<br/> <br/> `Fetch NEARwallet data in Python` |||
-|13<br/> `Design algorithm (decision tree)` |14<br/> `Validate algorithm (decision tree)` |15📌<br/> `Internal dApp demo` |16<br/> `QA DApp frontend`  |17<br/> `Implement QA feedbacks` |||
-|20🔥 <br/> **Milestone #1 Demo** |21<br/> `Dev algo` |22<br/> `Dev algo` |23<br/> `Dev algo`|24<br/> `Dev algo` |||
-|27<br/> `Integrate algo`| 28<br/> `Document algo` |29<br/> `NEAR algo prototype due` |30<br/> `Unit test algo` |1<br/> `Unit test algo` |||
-|4📌<br/> `Internal algo demo` |5<br/> |6<br/> |7 <br/> |8🔥 <br/> **Milestone #2 demo** |||
-
+|13<br/> `` |14<br/> `Validate algorithm (decision tree)` |15📌<br/> `Internal dApp demo` |16<br/> `QA DApp frontend & Implement QA feedbacks`  |17🔥 <br/> **Milestone #1 Submitted** |||
+|20<br/> `Dev algo - Covalent API` |21<br/> `Design algorithm (decision tree)` |22<br/> `Code algo` |23<br/> `Code algo`|24<br/> `Code algo` |||
+|27<br/> `Code algo`| 28<br/> `Integrate algo & Document it` |29<br/> `Unit test algo` |30📌<br/> `Covalent oracle MVP due` |1<br/>  |||
+|4<br/> `Test algo` |5<br/> `Fine tune algo (on Etherscan addresses)` |6<br/> `Fine tune algo` |7📌<br/> `Internal algo demo` |8🔥 <br/> **Milestone #2 demo** |||
+ 
