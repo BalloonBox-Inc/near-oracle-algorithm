@@ -10,8 +10,7 @@ def swiffer_duster(txn, feedback):
     '''
     Description:
         remove 'dust' transactions (i.e., transactions with less than $0.1 in spot fiat value get classified as dust) and
-        keep only 'successful' transactions (i.e., transactions that got completed). Whenever you call the 'swiffer_duster' 
-        function, ensure it returns an output different than a NoneType
+        keep only 'successful' transactions (i.e., transactions that got completed).
 
     Parameters:
         txn (dict): Covalent class A endpoint 'transactions_v2'
@@ -29,7 +28,10 @@ def swiffer_duster(txn, feedback):
                     success_only.append(t)
 
             txn['items'] = success_only
-            return txn
+            if txn['items']:
+                return txn
+            else:
+                raise Exception("txn data should be a dict, but is NoneType")
         else:
             raise Exception("quote_currency should be USD, but it isn't")
 
@@ -113,7 +115,7 @@ def top_erc_only(data, feedback, top_erc):
 def credibility_kyc(balances, txn, feedback):
     '''
     Description:
-        checks whether an ETH wallet address has legitimate transactin history and active balances
+        checks whether an ETH wallet address has legitimate transaction history and active balances
 
     Parameters:
         balances (dict): Covalent class A endpoint 'balances_v2'
@@ -125,7 +127,8 @@ def credibility_kyc(balances, txn, feedback):
         feedback (dict): updated score feedback
     '''
     try:
-        # Assign max score as long as the user owns some credible non-zero balance accounts with some transaction history
+        # Assign max score as long as the user owns some credible 
+        # non-zero balance accounts with some transaction history
         if balances and txn:
             score = 1
             feedback['credibility']['verified'] = True
@@ -178,6 +181,7 @@ def wealth_capital_now(balances, feedback, fico_medians, volume_now):
     '''
     Description:
         returns score based on total volume of token owned (USD) now
+        across ALL tokens owned (regardless fo their Coinmarketcap ranking)
 
     Parameters:
         balances (dict): Covalent class A endpoint 'balances_v2'
@@ -225,12 +229,16 @@ def wealth_capital_now_adjusted(balances, feedback, erc_rank, fico_medians, volu
         feedback (dict): updated score feedback
     '''
     try:
+        # Keep only balances data of top rankes ERC tokens
+        top_erc = list(erc_rank.keys())
+        balances = top_erc_only(balances, feedback, top_erc)
+
         adjusted_balance = 0
         for b in balances['items']:
             balance = b['quote']
             ticker = b['contract_ticker_symbol']
             # multiply the balance owned per token by a weight proportional to that token's ranking on Coinmarketcap
-            penalty = np.e**( erc_rank[ticker]**(1/3.5) )
+            penalty = np.e**(erc_rank[ticker]**(1/3.5) )
             adjusted_balance += round(1 - penalty / 100, 2) * balance
 
             score = fico_medians[np.digitize(adjusted_balance, volume_now, right=True)]
@@ -241,7 +249,7 @@ def wealth_capital_now_adjusted(balances, feedback, erc_rank, fico_medians, volu
         feedback['wealth']['error'] = str(e)
 
     finally:
-        return score, feedback        
+        return score, feedback       
 
 
 def wealth_volume_per_txn(txn, feedback, fico_medians, volume_per_txn):
@@ -260,6 +268,9 @@ def wealth_volume_per_txn(txn, feedback, fico_medians, volume_per_txn):
         feedback (dict): updated score feedback
     '''
     try:
+        # remove 'dust' transactions from youw dataset
+        txn = swiffer_duster(txn, feedback)
+        
         volume = 0
         for t in txn['items']:
             volume += t['value_quote']
@@ -297,6 +308,9 @@ def traffic_cred_deb(txn, feedback, operation, count_operations, cred_deb, mtx_t
         feedback (dict): updated score feedback
     '''
     try:
+        # remove 'dust' transactions from youw dataset
+        txn = swiffer_duster(txn, feedback)
+
         counts = 0
         volume = 0
         eth_wallet = txn['address']
@@ -347,38 +361,6 @@ def traffic_cred_deb(txn, feedback, operation, count_operations, cred_deb, mtx_t
         return score, feedback
 
 
-def traffic_frequency(txn, feedback, fico_medians, frequency_txn):
-    '''
-    Description:
-        reward wallet address with frequent monthly transactions
-
-    Parameters:
-        txn (dict): Covalent class A endpoint 'transactions_v2'
-        feedback (dict): score feedback
-        fico_medians (array): scoring array
-        frequency_txn (array): bins for transaction frequency
-
-    Returns:
-        score (float): the more frequent transactions the higher the score
-        feedback (dict): updated score feedback
-    '''
-    try:
-        datum = txn['items'][-1]['block_signed_at'].split('T')[0]
-        oldest = datetime.strptime(datum, '%Y-%M-%d').date()
-        duration = int((NOW - oldest).days/30) # months
-
-        frequency = round(len(txn['items']) / duration , 2)
-        score = fico_medians[np.digitize(frequency, frequency_txn, right=True)]
-        feedback['traffic']['txn_frequency'] = f'{frequency} txn/month over {duration} months'
-
-    except Exception as e:
-        score = 0
-        feedback['traffic']['error'] = str(e)
-
-    finally:
-        return score, feedback
-
-
 def traffic_dustiness(txn, feedback, fico_medians):
     '''
     Description:
@@ -407,7 +389,7 @@ def traffic_dustiness(txn, feedback, fico_medians):
         return score, feedback
 
 
-def traffic_running_balance(portfolio, feedback, fico_medians, avg_run_bal):
+def traffic_running_balance(portfolio, feedback, fico_medians, avg_run_bal, top_erc):
     '''
     Description:
         score earned based on the average running balance 
@@ -418,6 +400,7 @@ def traffic_running_balance(portfolio, feedback, fico_medians, avg_run_bal):
         feedback (dict): score feedback
         fico_medians (array): scoring array
         avg_run_bal (array): bins for avg running balance
+        top_erc (list): list of ERC tokens ranked highest on Coinmarketcap
 
     Returns:
         score (float): points earned for the average running 
@@ -425,6 +408,8 @@ def traffic_running_balance(portfolio, feedback, fico_medians, avg_run_bal):
         feedback (dict): updated score feedback
     '''
     try:
+        # keep only top ERC on Coinmarketcap
+        portfolio = top_erc_only(portfolio, feedback, top_erc)
         overview = {}
 
         for p in portfolio['items']:
@@ -449,49 +434,44 @@ def traffic_running_balance(portfolio, feedback, fico_medians, avg_run_bal):
         return score, feedback
 
 
-# -------------------------------------------------------------------------- #
-#                             Metric #4 Stamina                              #
-# -------------------------------------------------------------------------- #
-def stamina_coins_count(balances, feedback, count_to_four, volume_now, mtx_stamina, erc_rank):
+def traffic_frequency(txn, feedback, fico_medians, frequency_txn):
     '''
     Description:
+        reward wallet address with frequent monthly transactions
 
     Parameters:
-        balances (dict): Covalent class A endpoint 'balances_v2'
+        txn (dict): Covalent class A endpoint 'transactions_v2'
         feedback (dict): score feedback
-        count_to_four (array): bins counting the distinct coins owned
-        volume_now (array): bins for the total token volume owned now
-        mtx_stamina (array): 2D scoring grid
-        erc_rank (dict): list of top Coinmarektcap ERC20 tokens and their ranks
+        fico_medians (array): scoring array
+        frequency_txn (array): bins for transaction frequency
 
     Returns:
-        score (float): 
+        score (float): the more frequent transactions the higher the score
         feedback (dict): updated score feedback
     '''
     try:
-        weighted_sum = 0
-        volumes = [b['quote'] for b in balances['items'] if b['quote'] != 0]
-        ranks = [erc_rank[b['contract_ticker_symbol']] for b in balances['items'] if b['quote'] != 0]
-        unique_coins = len(volumes)
+        # remove 'dust' transactions from youw dataset
+        txn = swiffer_duster(txn, feedback)
+        
+        datum = txn['items'][-1]['block_signed_at'].split('T')[0]
+        oldest = datetime.strptime(datum, '%Y-%M-%d').date()
+        duration = int((NOW - oldest).days/30) # months
 
-        for b in balances['items']:
-            if b['quote'] != 0:
-                weight = (min(ranks) / (b['quote']/min(ranks)) ) / sum(ranks)
-                weighted_sum += b['quote']*weight
-
-        m = np.digitize(unique_coins, count_to_four, right=True)
-        n = np.digitize(weighted_sum, volume_now*0.5, right=True)
-        score = mtx_stamina[m][n]
-        feedback['stamina']['coins_count'] = unique_coins
+        frequency = round(len(txn['items']) / duration , 2)
+        score = fico_medians[np.digitize(frequency, frequency_txn, right=True)]
+        feedback['traffic']['txn_frequency'] = f'{frequency} txn/month over {duration} months'
 
     except Exception as e:
         score = 0
-        feedback['stamina']['error'] = str(e)
+        feedback['traffic']['error'] = str(e)
 
     finally:
         return score, feedback
 
 
+# -------------------------------------------------------------------------- #
+#                             Metric #4 Stamina                              #
+# -------------------------------------------------------------------------- #
 def stamina_methods_count(txn, feedback, fico_medians, count_to_four):
     '''
     Description:
@@ -509,6 +489,8 @@ def stamina_methods_count(txn, feedback, fico_medians, count_to_four):
         feedback (dict): updated score feedback
     '''
     try:
+        # remove 'dust' transactions from youw dataset
+        txn = swiffer_duster(txn, feedback)
         methods = {}
 
         for t in txn['items']:
@@ -537,17 +519,97 @@ def stamina_methods_count(txn, feedback, fico_medians, count_to_four):
         return score, feedback
 
 
-def stamina_dexterity(portfolio, feedback):
+def stamina_coins_count(balances, feedback, count_to_four, volume_now, mtx_stamina, erc_rank):
     '''
     Description:
+        How many cryptocurrencies does the wallet address own? 
+        What is the tot weighted volume owned right now?
+
+    Parameters:
+        balances (dict): Covalent class A endpoint 'balances_v2'
+        feedback (dict): score feedback
+        count_to_four (array): bins counting the distinct coins owned
+        volume_now (array): bins for the total token volume owned now
+        mtx_stamina (array): 2D scoring grid
+        erc_rank (dict): list of top Coinmarektcap ERC20 tokens and their ranks
+
+    Returns:
+        score (float): rewards points for the number of coins owned and their tot weighted balance
+        feedback (dict): updated score feedback
+    '''
+    try:
+        # keep only top ERC on Coinmarketcap
+        balances = top_erc_only(balances, feedback, list(erc_rank.keys()))
+
+        weighted_sum = 0
+        volumes = [b['quote'] for b in balances['items'] if b['quote'] != 0]
+        ranks = [erc_rank[b['contract_ticker_symbol']] for b in balances['items'] if b['quote'] != 0]
+        unique_coins = len(volumes)
+
+        for b in balances['items']:
+            if b['quote'] != 0:
+                weight = (min(ranks) / (b['quote']/min(ranks)) ) / sum(ranks)
+                weighted_sum += b['quote']*weight
+
+        m = np.digitize(unique_coins, count_to_four, right=True)
+        n = np.digitize(weighted_sum, volume_now*0.5, right=True)
+        score = mtx_stamina[m][n]
+        feedback['stamina']['coins_count'] = unique_coins
+
+    except Exception as e:
+        score = 0
+        feedback['stamina']['error'] = str(e)
+
+    finally:
+        return score, feedback
+
+
+def stamina_dexterity(portfolio, feedback, count_to_four, volume_now, mtx_stamina):
+    '''
+    Description:
+        does this user buy when the market is low and sell when the market is high? 
+        Let's call the operation of buying in bear market and selling in bullish a smart trade
+        How often do smart trades occur? 
+        How much caputail is traded cumulatives across ALL smart trades?
 
     Parameters:
         portfolio (dict): Covalent class A endpoint 'portfolio_v2'
         feedback (dict): score feedback
+        count_to_four (array): bins counting the distinct coins owned
+        volume_now (array): bins for the total token volume owned now
+        mtx_stamina (array): 2D scoring grid
 
     Returns:
-        score (float): 
+        score (float): rewarding the count and the tot voume of smart trades
         feedback (dict): updated score feedback
     '''
-    score = 0
-    return score, feedback
+    try:
+        portfolio = purge_portfolio(portfolio, feedback)
+
+        for p in portfolio['items']:
+            quote_rates = np.array([q['quote_rate'] for q in p['holdings']])
+            trades = np.array([q['high']['quote'] - q['low']['quote'] for q in p['holdings']])
+            x = int(len(p['holdings'])/3)
+
+            # does this user buy when the market is bearish?
+            bear_indeces = np.argpartition(quote_rates, x)[:x]
+            bear_trades = [t for t in trades[bear_indeces] if t > 0]
+
+            # does this user sell when the market is bullish?
+            bull_indeces = np.argpartition(quote_rates, x*2)[-x:]
+            bull_trades = [t for t in trades[bull_indeces] if t >0]
+            
+        count = len(bear_trades) + len(bull_trades)
+        traded = sum(bear_trades) + sum(bull_trades)
+
+        m = np.digitize(count, count_to_four, right=True)
+        n = np.digitize(traded, volume_now/10, right=True)
+        score = mtx_stamina[m][n]
+        feedback['stamina']['count_smart_trades'] = count
+
+    except Exception as e:
+        score = 0
+        feedback['stamina']['error'] = str(e)
+
+    finally:
+        return score, feedback
