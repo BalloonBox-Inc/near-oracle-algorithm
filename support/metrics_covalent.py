@@ -452,35 +452,90 @@ def traffic_running_balance(portfolio, feedback, fico_medians, avg_run_bal):
 # -------------------------------------------------------------------------- #
 #                             Metric #4 Stamina                              #
 # -------------------------------------------------------------------------- #
-def stamina_methods_count(txn, feedback):
-    '''
-    Description:
-
-    Parameters:
-        txn (dict): Covalent class A endpoint 'transactions_v2'
-        feedback (dict): score feedback
-
-    Returns:
-        score (float): 
-        feedback (dict): updated score feedback
-    '''
-    score = 0
-    return score, feedback
-
-def stamina_coins_count(balances, feedback):
+def stamina_coins_count(balances, feedback, count_to_four, volume_now, mtx_stamina, erc_rank):
     '''
     Description:
 
     Parameters:
         balances (dict): Covalent class A endpoint 'balances_v2'
         feedback (dict): score feedback
+        count_to_four (array): bins counting the distinct coins owned
+        volume_now (array): bins for the total token volume owned now
+        mtx_stamina (array): 2D scoring grid
+        erc_rank (dict): list of top Coinmarektcap ERC20 tokens and their ranks
 
     Returns:
         score (float): 
         feedback (dict): updated score feedback
     '''
-    score = 0
-    return score, feedback
+    try:
+        weighted_sum = 0
+        volumes = [b['quote'] for b in balances['items'] if b['quote'] != 0]
+        ranks = [erc_rank[b['contract_ticker_symbol']] for b in balances['items'] if b['quote'] != 0]
+        unique_coins = len(volumes)
+
+        for b in balances['items']:
+            if b['quote'] != 0:
+                weight = (min(ranks) / (b['quote']/min(ranks)) ) / sum(ranks)
+                weighted_sum += b['quote']*weight
+
+        m = np.digitize(unique_coins, count_to_four, right=True)
+        n = np.digitize(weighted_sum, volume_now*0.5, right=True)
+        score = mtx_stamina[m][n]
+        feedback['stamina']['coins_count'] = unique_coins
+
+    except Exception as e:
+        score = 0
+        feedback['stamina']['error'] = str(e)
+
+    finally:
+        return score, feedback
+
+
+def stamina_methods_count(txn, feedback, fico_medians, count_to_four):
+    '''
+    Description:
+        rewards the user for the number of distinct methods they performed in their 
+        transaction history and for the volume of currency traded for each unique method
+
+    Parameters:
+        txn (dict): Covalent class A endpoint 'transactions_v2'
+        feedback (dict): score feedback
+        fico_medians (array): binning rewarding percentages of the score
+        count_to_four (array): binning the count of unique methods
+
+    Returns:
+        score (float): points for the number of unique methods and their volume
+        feedback (dict): updated score feedback
+    '''
+    try:
+        methods = {}
+
+        for t in txn['items']:
+            amount = t['value_quote']
+            if t['log_events']:
+                method_name = t['log_events'][0]['decoded']['name']
+                if method_name in methods.keys():
+                    methods[method_name] += amount
+                else: 
+                    methods[method_name] = amount
+            else:
+                if 'unclassified' in methods.keys():
+                    methods['unclassified'] += amount
+                else:
+                    methods['unclassified'] = amount
+
+        methods_count = len([k for k in methods.keys() if methods[k] > 50])
+        score = fico_medians[np.digitize(methods_count, count_to_four, right=True)]
+        feedback['stamina']['unique_methods_count'] = methods_count
+
+    except Exception as e:
+        score = 0
+        feedback['stamina']['error'] = str(e)
+    
+    finally:
+        return score, feedback
+
 
 def stamina_dexterity(portfolio, feedback):
     '''
