@@ -107,7 +107,7 @@ def top_erc_only(data, feedback, top_erc):
         return data
 
     except Exception as e:
-        feedback['fetch']['error'] = str(e)
+        feedback['fetch'][top_erc_only.__name__] = str(e)
 
 # -------------------------------------------------------------------------- #
 #                            Metric #1 Credibility                           #
@@ -223,6 +223,7 @@ def wealth_capital_now_adjusted(balances, feedback, erc_rank, fico_medians, volu
         feedback (dict): score feedback
         fico_medians (array): score bins
         volume_now (array): bins for the total token volume owned now
+        erc_rank (dict): list of top Coinmarektcap ERC20 tokens and their ranks
 
     Returns:
         score (float): points for cumulative balance now (adjusted)
@@ -389,7 +390,7 @@ def traffic_dustiness(txn, feedback, fico_medians):
         return score, feedback
 
 
-def traffic_running_balance(portfolio, feedback, fico_medians, avg_run_bal, top_erc):
+def traffic_running_balance(portfolio, feedback, fico_medians, avg_run_bal, erc_rank):
     '''
     Description:
         score earned based on the average running balance 
@@ -409,6 +410,7 @@ def traffic_running_balance(portfolio, feedback, fico_medians, avg_run_bal, top_
     '''
     try:
         # keep only top ERC on Coinmarketcap
+        top_erc = list(erc_rank.keys())
         portfolio = top_erc_only(portfolio, feedback, top_erc)
         overview = {}
 
