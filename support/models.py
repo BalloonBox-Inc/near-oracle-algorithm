@@ -353,7 +353,7 @@ def covalent_wealth(txn, balances, feedback, weights, params, erc_rank):
     return score, feedback
 
 
-def covalent_traffic(txn, portfolio, feedback, weigths, params, erc_rank):
+def covalent_traffic(txn, portfolio, feedback, weights, params, erc_rank):
 
     credit, feedback = traffic_cred_deb(
         txn, 
@@ -402,7 +402,7 @@ def covalent_traffic(txn, portfolio, feedback, weigths, params, erc_rank):
     return score, feedback
 
 
-def covalent_stamina(txn, balances, portfolio, feedback, weigths, params, erc_rank):
+def covalent_stamina(txn, balances, portfolio, feedback, weights, params, erc_rank):
 
     coins, feedback = stamina_coins_count(
         balances, 
