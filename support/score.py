@@ -78,7 +78,7 @@ def covalent_score(score_range, feedback, model_weights, metric_weigths, params,
     '''
     params = [
         count_to_four, volume_now, volume_per_txn, duration, count_operations, cred_deb,
-        frequency_txn, avg_run_bal, mtx_traffic, mtx_stamina, fico_medians
+        frequency_txn, avg_run_bal, due_date, fico_medians, mtx_traffic, mtx_stamina
     ]
     '''
     params = covalent_params(params, score_range)

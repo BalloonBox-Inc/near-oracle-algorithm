@@ -86,7 +86,7 @@
                         }
                     },
                     "messages": {
-                        "failed": "NEAR Oracle could not calculate your credit score as there is no active credit line nor transaction history associated with your Plaid bank account. Please use a different bank account",
+                        "failed": "NEAR Oracle could not calculate your credit score as there is no active credit line nor transaction history associated with your Plaid bank account. Please use a different bank account.",
                         "success": "Congrats, you have successfully obtained a credit score! Your NEAR Oracle score is {} - {} points. This score qualifies you for a short term loan of up to {} NEAR which is equivalent to {} USD"
                     }
                 },
@@ -146,7 +146,7 @@
                         }
                     },
                     "messages": {
-                        "failed": "NEAR Oracle could not calculate your credit score as there is no active wallet nor transaction history associated with your Coinbase account. Please use a different account",
+                        "failed": "NEAR Oracle could not calculate your credit score as there is no active wallet nor transaction history associated with your Coinbase account. Please use a different account.",
                         "success": "Congrats, you have successfully obtained a credit score! Your NEAR Oracle score is {} - {} points. This score qualifies you for a short term loan of up to {} NEAR which is equivalent to {} USD"
                     }
                 },
@@ -161,7 +161,7 @@
                                 "weight": 0.1,
                                 "metrics": {
                                     "kyc": 0.3,
-                                    "inception": 0.6
+                                    "inception": 0.7
                                 }
                             },
                             "wealth": {
@@ -201,7 +201,8 @@
                             "count_operations": [10, 20, 33, 40, 45, 50],
                             "cred_deb": [3.5, 7.5, 10, 13, 15.5, 20],
                             "frequency_txn": [2, 3, 5, 7, 9, 10],
-                            "avg_run_bal": [5, 18, 37, 45, 58, 70]
+                            "avg_run_bal": [5, 18, 37, 45, 58, 70],
+                            "due_date": [3, 4, 5]
                         },
                         "matrices": {
                             "mtx_traffic": {
@@ -215,7 +216,7 @@
                         }
                     },
                     "messages": {
-                        "failed": "NEAR Oracle could not calculate your credit score as there is no active wallet nor transaction history associated with your Coinbase account. Please use a different account",
+                        "failed": "NEAR Oracle could not calculate your credit score since there is no transaction history associated with your ETH wallet address. Please use a different wallet address.",
                         "success": "Congrats, you have successfully obtained a credit score! Your NEAR Oracle score is {} - {} points. This score qualifies you for a short term loan of up to {} NEAR which is equivalent to {} USD"
                     }
                 }

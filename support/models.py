@@ -295,7 +295,7 @@ def coinbase_activity(acc, txn, feedback, weights, params):
 '''
     params = [
         count_to_four, volume_now, volume_per_txn, duration, count_operations, cred_deb,
-        frequency_txn, avg_run_bal, mtx_traffic, mtx_stamina, fico_medians
+        frequency_txn, avg_run_bal, due_date, fico_medians, mtx_traffic, mtx_stamina
     ]
 '''
 def covalent_credibility(txn, balances, feedback, weights, params):
@@ -309,7 +309,7 @@ def covalent_credibility(txn, balances, feedback, weights, params):
     inception, feedback = credibility_oldest_txn(
         txn, 
         feedback, 
-        params[10],
+        params[9],
         params[3]
         )
 
@@ -326,7 +326,7 @@ def covalent_wealth(txn, balances, feedback, weights, params, erc_rank):
     capital_now, feedback = wealth_capital_now(
         balances, 
         feedback, 
-        params[10],
+        params[9],
         params[1]
         )
 
@@ -334,14 +334,14 @@ def covalent_wealth(txn, balances, feedback, weights, params, erc_rank):
         balances, 
         feedback,
         erc_rank,
-        params[10],
+        params[9],
         params[1]
         )
 
     volume_per_txn, feedback = wealth_volume_per_txn(
         txn, 
         feedback,
-        params[10],
+        params[9],
         params[2]
         )
 
@@ -361,7 +361,7 @@ def covalent_traffic(txn, portfolio, feedback, weights, params, erc_rank):
         'credit',
         params[4],
         params[5],
-        params[8]
+        params[10]
         )
 
     debit, feedback = traffic_cred_deb(
@@ -370,26 +370,26 @@ def covalent_traffic(txn, portfolio, feedback, weights, params, erc_rank):
         'debit',
         params[4],
         params[5],
-        params[8]
+        params[10]
         )
 
     frequency, feedback = traffic_frequency(
         txn, 
         feedback,
-        params[10],
+        params[9],
         params[6]
         )
 
     dust, feedback = traffic_dustiness(
         txn, 
         feedback,
-        params[10]
+        params[9]
         )
 
     run_balance, feedback = traffic_running_balance(
         portfolio, 
         feedback,
-        params[10],
+        params[9],
         params[7],
         erc_rank
         )
@@ -409,14 +409,14 @@ def covalent_stamina(txn, balances, portfolio, feedback, weights, params, erc_ra
         feedback, 
         params[0],
         params[1],
-        params[9],
+        params[11],
         erc_rank
         )
 
     methods, feedback = stamina_methods_count(
         txn,
         feedback,
-        params[10],
+        params[9],
         params[0]
         )
 
@@ -425,7 +425,13 @@ def covalent_stamina(txn, balances, portfolio, feedback, weights, params, erc_ra
         feedback,
         params[0],
         params[1],
-        params[9]
+        params[11]
+        )
+
+    feedback = stamina_loan_duedate(
+        txn,
+        feedback,
+        params[8]
         )
 
     a = list(weights.values())[10:]

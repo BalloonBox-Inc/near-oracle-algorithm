@@ -176,6 +176,8 @@ def covalent_params(params, score_range):
         np.array(params['metrics']['frequency_txn']))
     avg_run_bal = immutable_array(
         np.array(params['metrics']['avg_run_bal'])) #should be *100
+    due_date = immutable_array(
+        np.array(params['metrics']['due_date']))
 
     mtx_traffic = immutable_array(build_normalized_matrix(
         tuple(params['matrices']['mtx_traffic']['shape']),
@@ -194,5 +196,5 @@ def covalent_params(params, score_range):
     fico_medians = immutable_array(np.array(fico_medians))
 
     r = [count_to_four, volume_now, volume_per_txn, duration, count_operations, cred_deb,
-        frequency_txn, avg_run_bal, mtx_traffic, mtx_stamina, fico_medians]
+        frequency_txn, avg_run_bal, due_date, fico_medians, mtx_traffic, mtx_stamina]
     return r
