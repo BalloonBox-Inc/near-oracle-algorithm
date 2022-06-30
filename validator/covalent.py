@@ -65,16 +65,17 @@ def covalent_get_transactions(chain_id, eth_address, api_key, no_logs, pagesize,
 
         else:
             txn = result['data']
-            
-            while pagenumber < 3:
+            # fetched txn data from the first 3 pages making 3 distinct Covalent API calls
+            while pagenumber < 2:
+                pagenumber += 1
                 if txn['pagination']['has_more']:
-                    pagenumber += 1
                     endpoint = f'/{chain_id}/address/{eth_address}/transactions_v2/'\
                             f'?no-logs={no_logs}&page-size={pagesize}&page-number={pagenumber}&key={api_key}'
                     url = 'https://api.covalenthq.com/v1' + endpoint
                     result = requests.get(url).json()
                     txn_next = result['data']
                     txn['items'] = txn['items'] + txn_next['items']
+                    txn['pagination']['has_more'] = txn_next['pagination']['has_more']
             r = txn
     
     except requests.exceptions.JSONDecodeError:

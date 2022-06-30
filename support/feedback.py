@@ -491,7 +491,7 @@ def qualitative_feedback_covalent(
     # Tot balance
     else:
         if ('cum_balance_now' in all_keys):
-            bal = feedback['wealth']['current_balance']
+            bal = feedback['wealth']['cum_balance_now']
             msg = msg + f' Your total balance across all cryptocurrencies owned is ${bal} USD'
 
     # ADVICE

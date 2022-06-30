@@ -129,7 +129,7 @@ def credibility_kyc(balances, txn, feedback):
     try:
         # Assign max score as long as the user owns some credible 
         # non-zero balance accounts with some transaction history
-        if balances and txn:
+        if txn['items'] and sum([b['quote'] for b in balances['items']]) > 1:
             score = 1
             feedback['credibility']['verified'] = True
         else:
@@ -195,12 +195,11 @@ def wealth_capital_now(balances, feedback, fico_medians, volume_now):
     '''
     try:
         if balances['quote_currency'] == 'USD':
-            total = 0
-            for b in balances['items']:
-                partial = b['quote']
-                total += partial
-
-            score = fico_medians[np.digitize(total, volume_now, right=True)]
+            total = sum([b['quote'] for b in balances['items']])
+            if total == 0:
+                score = 0
+            else:
+                score = fico_medians[np.digitize(total, volume_now, right=True)]
             feedback['wealth']['cum_balance_now'] = round(total, 2)
         else:
             raise Exception('quote_currency should be USD')
@@ -223,7 +222,6 @@ def wealth_capital_now_adjusted(balances, feedback, erc_rank, fico_medians, volu
         feedback (dict): score feedback
         fico_medians (array): score bins
         volume_now (array): bins for the total token volume owned now
-        erc_rank (dict): list of top Coinmarektcap ERC20 tokens and their ranks
 
     Returns:
         score (float): points for cumulative balance now (adjusted)
@@ -234,16 +232,21 @@ def wealth_capital_now_adjusted(balances, feedback, erc_rank, fico_medians, volu
         top_erc = list(erc_rank.keys())
         balances = top_erc_only(balances, feedback, top_erc)
 
-        adjusted_balance = 0
-        for b in balances['items']:
-            balance = b['quote']
-            ticker = b['contract_ticker_symbol']
-            # multiply the balance owned per token by a weight proportional to that token's ranking on Coinmarketcap
-            penalty = np.e**(erc_rank[ticker]**(1/3.5) )
-            adjusted_balance += round(1 - penalty / 100, 2) * balance
+        total = sum([b['quote'] for b in balances['items']])
+        if total == 0:
+            score = 0
+            feedback['wealth']['cum_balance_now(adjusted)'] = 0
+        else:
+            adjusted_balance = 0
+            for b in balances['items']:
+                balance = b['quote']
+                ticker = b['contract_ticker_symbol']
+                # multiply the balance owned per token by a weight proportional to that token's ranking on Coinmarketcap
+                penalty = np.e**(erc_rank[ticker]**(1/3.5) )
+                adjusted_balance += round(1 - penalty / 100, 2) * balance
 
-            score = fico_medians[np.digitize(adjusted_balance, volume_now, right=True)]
-            feedback['wealth']['cum_balance_now(adjusted)'] = round(adjusted_balance, 2)
+                score = fico_medians[np.digitize(adjusted_balance, volume_now, right=True)]
+                feedback['wealth']['cum_balance_now(adjusted)'] = round(adjusted_balance, 2)
 
     except Exception as e:
         score = 0
