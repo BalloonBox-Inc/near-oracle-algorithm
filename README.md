@@ -83,7 +83,7 @@ python demo.py
 
 Understand the credit score model at a glance.
 
-There are two distinct models, one for each of our chosen validators, namely Plaid & Coinbase.
+There are three distinct models, one for each of our chosen validators, namely Plaid, Coinbase & Covalent.
 
 [**Plaid model**](./images/logic_plaid.png) diagram and features:
 
@@ -102,6 +102,15 @@ There are two distinct models, one for each of our chosen validators, namely Pla
 - :closed_lock_with_key: auto-convert any currency to USD in real-time
 - :bulb: analyze all transactions since Coinbase account inception
 - :moneybag: compute user's net profit
+
+**Covalent model** diagram and features:
+
+- :fox_face: authenticate user via MetaMask 
+- :parachute: account for credits, debits transactions, transfers, frequency, cumulative balance now, and more
+- :chains: fetch up to 100 top ERC20 tokens (by market capitalization) via [CoinMarketCap](https://coinmarketcap.com/) API
+- :bar_chart: analyze time series of latest 400 transactions on MetaMask wallet
+- :chart: inspect historical OHLCV for last 30 days
+
 
 ## Interpret Your Score :mag:
 
