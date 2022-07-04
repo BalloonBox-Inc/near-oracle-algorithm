@@ -20,14 +20,10 @@ def swiffer_duster(txn, feedback):
         txn (dict): formatted txn data containing only successful and non-dusty transactions
     '''
     try: 
+        # keep only transactions that are successful and have a value > 0
         if txn['quote_currency'] == 'USD':
-            success_only = []
-            for t in txn['items']:
-                # keep only transactions that are successful and have a value > 0
-                if t['successful'] and t['value_quote'] > 0:
-                    success_only.append(t)
+            txn['items'] = [t for t in txn['items'] if t['successful'] and t['value_quote'] > 0]
 
-            txn['items'] = success_only
             if txn['items']:
                 return txn
             else:
