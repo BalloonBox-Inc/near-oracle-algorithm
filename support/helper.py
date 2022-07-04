@@ -11,6 +11,7 @@ def head_tail_list(lst):
 
 
 def aggregate_currencies(ccy1, ccy2, fiats):
+    ccy1 = {k:v[1] for (k, v) in ccy1.items()}
     ccy2 = {k: 1 for (k, v) in ccy2.items()
             if v == 0.01 or k in fiats}
 
@@ -25,7 +26,10 @@ def immutable_array(arr):
 
 
 def build_2d_matrix(size, scalars):
-
+    '''
+    build a simple 2D scoring matrix.
+    Matrix axes growth rate is defined by a log in base 10 function
+    '''
     matrix = np.zeros(size)
     scalars = [1/n for n in scalars]
 
@@ -34,6 +38,23 @@ def build_2d_matrix(size, scalars):
             matrix[m][n] = round(scalars[0]*np.log10(m+1) +
                                  scalars[1]*np.log10(n+1), 2)
     return matrix
+
+
+def build_normalized_matrix(size, scalar):
+    '''
+    build a normalized 2D scoring matrix.
+    Matrix axes growth rate is defined by a natural logarithm function
+    '''
+    m = np.zeros(size)
+    # evaluate the bottom right element in the matrix and use it to normalize the matrix
+    extrema = round(scalar[0]*np.log(m.shape[0])\
+                    +scalar[1]*np.log(m.shape[1]), 2) 
+
+    for a in range(m.shape[0]):
+        for b in range(m.shape[1]):
+            m[a][b] = round((scalar[0]*np.log(a+1)\
+                            +scalar[1]*np.log(b+1))/extrema, 2) 
+    return m
 
 
 def plaid_params(params, score_range):
@@ -134,4 +155,46 @@ def coinbase_params(params, score_range):
 
     r = [due_date, duration, volume_balance, volume_profit,
          count_txn, activity_vol_mtx, activity_cns_mtx, fico_medians]
+    return r
+
+
+def covalent_params(params, score_range):
+
+    count_to_four = immutable_array(
+        np.array(params['metrics']['count_to_four']))
+    volume_now = immutable_array(
+        np.array(params['metrics']['volume_now'])*10) #should be *1000
+    volume_per_txn = immutable_array(
+        np.array(params['metrics']['volume_per_txn'])*10) #should be *100
+    duration = immutable_array(
+        np.array(params['metrics']['duration']))
+    count_operations = immutable_array(
+        np.array(params['metrics']['count_operations']))
+    cred_deb = immutable_array(
+        np.array(params['metrics']['cred_deb'])*1) #should be *1000
+    frequency_txn = immutable_array(
+        np.array(params['metrics']['frequency_txn']))
+    avg_run_bal = immutable_array(
+        np.array(params['metrics']['avg_run_bal'])) #should be *100
+    due_date = immutable_array(
+        np.array(params['metrics']['due_date']))
+
+    mtx_traffic = immutable_array(build_normalized_matrix(
+        tuple(params['matrices']['mtx_traffic']['shape']),
+        tuple(params['matrices']['mtx_traffic']['scalars'])
+    ))
+    mtx_stamina = immutable_array(build_normalized_matrix(
+        tuple(params['matrices']['mtx_stamina']['shape']),
+        tuple(params['matrices']['mtx_stamina']['scalars'])
+    ))
+
+    head, tail = head_tail_list(score_range)
+    fico = (np.array(score_range[:-1])-head) / (tail-head)
+    fico_medians = [round(fico[i]+(fico[i+1]-fico[i]) / 2, 2)
+                    for i in range(len(fico)-1)]
+    fico_medians.append(1)
+    fico_medians = immutable_array(np.array(fico_medians))
+
+    r = [count_to_four, volume_now, volume_per_txn, duration, count_operations, cred_deb,
+        frequency_txn, avg_run_bal, due_date, fico_medians, mtx_traffic, mtx_stamina]
     return r

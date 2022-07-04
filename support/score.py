@@ -72,3 +72,30 @@ def coinbase_score(score_range, feedback, model_weights, metric_weigths, params,
     score = head + (tail-head)*(dot_product(a, b))
 
     return score, feedback
+
+
+def covalent_score(score_range, feedback, model_weights, metric_weigths, params, erc_rank, txn, balances, portfolio):
+    '''
+    params = [
+        count_to_four, volume_now, volume_per_txn, duration, count_operations, cred_deb,
+        frequency_txn, avg_run_bal, due_date, fico_medians, mtx_traffic, mtx_stamina
+    ]
+    '''
+    params = covalent_params(params, score_range)
+
+    credibility, feedback = covalent_credibility(
+        txn, balances, feedback, metric_weigths, params)
+    wealth, feedback = covalent_wealth(
+        txn, balances, feedback, metric_weigths, params, erc_rank)
+    traffic, feedback = covalent_traffic(
+        txn, portfolio, feedback, metric_weigths, params, erc_rank)
+    stamina, feedback = covalent_stamina(
+        txn, balances, portfolio, feedback, metric_weigths, params, erc_rank)
+
+    a = list(model_weights.values())
+    b = [credibility, wealth, traffic, stamina]
+
+    head, tail = head_tail_list(score_range)
+    score = head + (tail-head)*(dot_product(a, b))
+
+    return score, feedback

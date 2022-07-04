@@ -86,7 +86,7 @@
                         }
                     },
                     "messages": {
-                        "failed": "NEAR Oracle could not calculate your credit score as there is no active credit line nor transaction history associated with your Plaid bank account. Please use a different bank account",
+                        "failed": "NEAR Oracle could not calculate your credit score as there is no active credit line nor transaction history associated with your Plaid bank account. Please use a different bank account.",
                         "success": "Congrats, you have successfully obtained a credit score! Your NEAR Oracle score is {} - {} points. This score qualifies you for a short term loan of up to {} NEAR which is equivalent to {} USD"
                     }
                 },
@@ -146,22 +146,78 @@
                         }
                     },
                     "messages": {
-                        "failed": "NEAR Oracle could not calculate your credit score as there is no active wallet nor transaction history associated with your Coinbase account. Please use a different account",
+                        "failed": "NEAR Oracle could not calculate your credit score as there is no active wallet nor transaction history associated with your Coinbase account. Please use a different account.",
                         "success": "Congrats, you have successfully obtained a credit score! Your NEAR Oracle score is {} - {} points. This score qualifies you for a short term loan of up to {} NEAR which is equivalent to {} USD"
                     }
                 },
-                "near": {
-                    "thresholds": {},
+                "covalent": {
+                    "thresholds": {
+                        "coinmarketcap_currencies": 50,
+                        "erc_tokens": ["ETH", "WETH", "MATIC", "MKR", "BAT", "CRO", "USDC", "TUSD", "REP", "OMG", "LINK", "PAX", "HOT", "ZRX", "IOST", "HT", "AOA", "ENJ", "MCO", "NEXO", "NET", "GUSD", "ENG", "LAMB"]
+                    },
                     "scores": {
-                        "models": {}
+                        "models": {
+                            "credibility": {
+                                "weight": 0.1,
+                                "metrics": {
+                                    "kyc": 0.3,
+                                    "inception": 0.7
+                                }
+                            },
+                            "wealth": {
+                                "weight": 0.35,
+                                "metrics": {
+                                    "capital_now": 0.35, 
+                                    "capital_now_adj": 0.40, 
+                                    "volume_per_txn": 0.25
+                                }
+                            },
+                            "traffic": {
+                                "weight": 0.4,
+                                "metrics": {
+                                    "credit":0.15,
+                                    "debit": 0.15,
+                                    "dust": 0.15,
+                                    "run_balance": 0.35,
+                                    "frequency": 0.20
+                                }
+                            },
+                            "stamina": {
+                                "weight": 0.15,
+                                "metrics": {
+                                    "coins": 0.25,
+                                    "methods": 0.2, 
+                                    "dexterity": 0.55
+                                }
+                            }
+                        }
                     },
                     "params": {
-                        "metrics": {},
-                        "matrices": {}
+                        "metrics": {
+                            "count_to_four": [1, 2, 3],
+                            "volume_now": [5, 6.5, 8.5, 11, 13, 15],
+                            "volume_per_txn": [1.4, 3.5, 5.3, 6.3, 7, 8],
+                            "duration": [90, 120, 150, 180, 210, 270],
+                            "count_operations": [10, 20, 33, 40, 45, 50],
+                            "cred_deb": [3.5, 7.5, 10, 13, 15.5, 20],
+                            "frequency_txn": [2, 3, 5, 7, 9, 10],
+                            "avg_run_bal": [5, 18, 37, 45, 58, 70],
+                            "due_date": [3, 4, 5]
+                        },
+                        "matrices": {
+                            "mtx_traffic": {
+                                "shape": [7, 7],
+                                "scalars": [4, 12]
+                            },
+                            "mtx_stamina": {
+                                "shape": [4, 7],
+                                "scalars": [7, 8]
+                            }
+                        }
                     },
                     "messages": {
-                        "failed": "",
-                        "success": ""
+                        "failed": "NEAR Oracle could not calculate your credit score since there is no transaction history associated with your ETH wallet address. Please use a different wallet address.",
+                        "success": "Congrats, you have successfully obtained a credit score! Your NEAR Oracle score is {} - {} points. This score qualifies you for a short term loan of up to {} NEAR which is equivalent to {} USD"
                     }
                 }
             }
