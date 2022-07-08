@@ -347,7 +347,7 @@ async def credit_score_coinbase(item: Coinbase_Item):
 
 @measure_time_and_memory
 @app.post('/credit_score/covalent')
-async def credit_score_coinbase(item: Covalent_Item):
+async def credit_score_covalent(item: Covalent_Item):
     try:
         # configs
         configs = read_config_file(item.loan_request)
