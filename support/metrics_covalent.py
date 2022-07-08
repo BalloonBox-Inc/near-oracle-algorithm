@@ -38,7 +38,7 @@ def swiffer_duster(txn, feedback):
 def purge_portfolio(portfolio, feedback):
     '''
     Description:
-        remove 'dusty' tokens from portfolio. That is, we xonsider only those tokens 
+        remove 'dusty' tokens from portfolio. That is, we consider only those tokens 
         that had a closing day balance of >$50 for at least 3 days in the last month
 
     Parameters:
@@ -53,7 +53,6 @@ def purge_portfolio(portfolio, feedback):
         if portfolio['quote_currency'] != 'USD':
             raise Exception('quote_currency should be USD')
         else:
-            print(len(portfolio['items']))
             counts = list()
             for a in portfolio['items']:
                 count = 0
@@ -70,7 +69,6 @@ def purge_portfolio(portfolio, feedback):
                 if counts[i] < 3:
                     portfolio['items'].pop(i)
 
-            print(len(portfolio['items']))
         return portfolio
             
     except Exception as e:
@@ -119,12 +117,12 @@ def credibility_kyc(balances, txn, feedback):
         feedback (dict): score feedback
 
     Returns:
-        score (float): 1 if KYC'ed and 0
+        score (float): 1 if KYC'ed and 0 otherwise
         feedback (dict): updated score feedback
     '''
     try:
-        # Assign max score as long as the user owns some credible 
-        # non-zero balance accounts with some transaction history
+        # Assign max score as long as the user owns a
+        # non-zero balance and a credible transaction history
         if txn['items'] and sum([b['quote'] for b in balances['items']]) > 1:
             score = 1
             feedback['credibility']['verified'] = True
@@ -143,7 +141,7 @@ def credibility_kyc(balances, txn, feedback):
 def credibility_oldest_txn(txn, feedback, fico_medians, duration):
     '''
     Description:
-        returns score based on total volume of token owned (USD) now
+        reads the date of the oldest recorded transaction, and rewards a score accondingly
 
     Parameters:
         txn (dict): Covalent class A endpoint 'transactions_v2'
@@ -216,6 +214,7 @@ def wealth_capital_now_adjusted(balances, feedback, erc_rank, fico_medians, volu
     Parameters:
         balances (dict): Covalent class A endpoint 'balances_v2'
         feedback (dict): score feedback
+        erc_rank (dict): ERC tokens and their associated Coinmarketcap rank
         fico_medians (array): score bins
         volume_now (array): bins for the total token volume owned now
 
@@ -344,7 +343,7 @@ def traffic_cred_deb(txn, feedback, operation, count_operations, cred_deb, mtx_t
 
         # except
         else:
-            raise Exception("you apssed an invalid param: accepts only 'credit', 'debit', or 'transfer'")
+            raise Exception("you passed an invalid param: accepts only 'credit', 'debit', or 'transfer'")
 
 
         m = np.digitize(counts, count_operations, right=True)
@@ -392,7 +391,7 @@ def traffic_dustiness(txn, feedback, fico_medians):
 def traffic_running_balance(portfolio, feedback, fico_medians, avg_run_bal, erc_rank):
     '''
     Description:
-        score earned based on the average running balance 
+        score earned based on the average volume per txn
         of your best token over the past 30 days
 
     Parameters:
@@ -400,7 +399,7 @@ def traffic_running_balance(portfolio, feedback, fico_medians, avg_run_bal, erc_
         feedback (dict): score feedback
         fico_medians (array): scoring array
         avg_run_bal (array): bins for avg running balance
-        top_erc (list): list of ERC tokens ranked highest on Coinmarketcap
+        erc_rank (dict): ERC tokens and their associated Coinmarketcap rank
 
     Returns:
         score (float): points earned for the average running 
@@ -451,7 +450,7 @@ def traffic_frequency(txn, feedback, fico_medians, frequency_txn):
         feedback (dict): updated score feedback
     '''
     try:
-        # remove 'dust' transactions from youw dataset
+        # remove 'dust' transactions from your dataset
         txn = swiffer_duster(txn, feedback)
         
         datum = txn['items'][-1]['block_signed_at'].split('T')[0]
@@ -490,7 +489,7 @@ def stamina_methods_count(txn, feedback, fico_medians, count_to_four):
         feedback (dict): updated score feedback
     '''
     try:
-        # remove 'dust' transactions from youw dataset
+        # remove 'dust' transactions from your dataset
         txn = swiffer_duster(txn, feedback)
         methods = {}
 
@@ -508,7 +507,8 @@ def stamina_methods_count(txn, feedback, fico_medians, count_to_four):
                 else:
                     methods['unclassified'] = amount
 
-        methods_count = len([k for k in methods.keys() if methods[k] > 50])
+        # keep only methods with cumulated traded volume > $10 USD
+        methods_count = len([k for k in methods.keys() if methods[k] > 10]) 
         score = fico_medians[np.digitize(methods_count, count_to_four, right=True)]
         feedback['stamina']['unique_methods_count'] = methods_count
 
@@ -568,10 +568,10 @@ def stamina_coins_count(balances, feedback, count_to_four, volume_now, mtx_stami
 def stamina_dexterity(portfolio, feedback, count_to_four, volume_now, mtx_stamina):
     '''
     Description:
-        does this user buy when the market is low and sell when the market is high? 
-        Let's call the operation of buying in bear market and selling in bullish a smart trade
+        does this user buy when the market is bearish and sell when the market is bullish? 
+        Let's define a smart trade to be the operation of either buying in bear market and selling in bullish
         How often do smart trades occur? 
-        How much caputail is traded cumulatives across ALL smart trades?
+        How much capital is traded cumulatively across ALL smart trades?
 
     Parameters:
         portfolio (dict): Covalent class A endpoint 'portfolio_v2'

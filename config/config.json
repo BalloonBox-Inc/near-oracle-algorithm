@@ -186,8 +186,8 @@
                                 "weight": 0.15,
                                 "metrics": {
                                     "coins": 0.25,
-                                    "methods": 0.2, 
-                                    "dexterity": 0.55
+                                    "methods": 0.65, 
+                                    "dexterity": 0.10
                                 }
                             }
                         }

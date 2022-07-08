@@ -103,7 +103,7 @@ There are three distinct models, one for each of our chosen validators, namely P
 - :bulb: analyze all transactions since Coinbase account inception
 - :moneybag: compute user's net profit
 
-**Covalent model** diagram and features:
+[**Covalent model**](./images/logic_covalent.png) diagram and features:
 
 - :fox_face: authenticate user via MetaMask 
 - :parachute: account for credits, debits transactions, transfers, frequency, cumulative balance now, and more

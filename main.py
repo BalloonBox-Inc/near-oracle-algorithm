@@ -158,6 +158,7 @@ async def credit_score_plaid(item: Plaid_Item):
         status_code = 400
         status = 'error'
         score = 0
+        risk = 'undefined'
         message = str(e)
         feedback = {}
 
@@ -317,6 +318,7 @@ async def credit_score_coinbase(item: Coinbase_Item):
         status_code = 400
         status = 'error'
         score = 0
+        risk = 'undefined'
         message = str(e)
         feedback = {}
 
@@ -375,7 +377,7 @@ async def credit_score_coinbase(item: Covalent_Item):
         ic(feedback)
 
        # data fetching
-        txn = covalent_get_transactions('1', item.eth_address, item.covalent_key, False, 10, 0)
+        txn = covalent_get_transactions('1', item.eth_address, item.covalent_key, False, 500, 0)
         balances = covalent_get_balances_or_portfolio('1', item.eth_address, 'balances_v2', item.covalent_key)
         portfolio = covalent_get_balances_or_portfolio('1', item.eth_address, 'portfolio_v2', item.covalent_key)
         
@@ -439,9 +441,9 @@ async def credit_score_coinbase(item: Covalent_Item):
         status_code = 400
         status = 'error'
         score = 0
+        risk = 'undefined'
         message = str(e)
         feedback = {}
-        risk = 'undefined'
 
     finally:
         timestamp = datetime.now(timezone.utc).strftime(
