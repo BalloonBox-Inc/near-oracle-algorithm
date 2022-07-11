@@ -103,6 +103,40 @@ def top_erc_only(data, feedback, top_erc):
     except Exception as e:
         feedback['fetch'][top_erc_only.__name__] = str(e)
 
+
+def covalent_kyc(balances, txn, feedback):
+    '''
+    Description:
+        returns 1 if the oracle believes this is a legitimate user
+        with some credible history. Returns 0 otherwise
+
+    Parameters:
+        balances (dict): Covalent class A endpoint 'balances_v2'
+        txn (dict): Covalent class A endpoint 'transactions_v2'
+        feedback (dict): score feedback
+
+    Returns:
+        score (float): 1 if user is legitimate and 0 otherwise
+        feedback (dict): updated score feedback
+    '''
+    try:
+        # Assign max score as long as the user owns a
+        # non-zero balance and a credible transaction history
+        if txn['items'] and sum([b['quote'] for b in balances['items']]) > 1:
+            score = 1
+            feedback['credibility']['pass_check'] = True
+        else:
+            score = 0
+            feedback['credibility']['pass_check'] = False
+
+    except Exception as e:
+        score = 0
+        feedback['credibility']['error'] = str(e)
+
+    finally:
+        return score, feedback
+
+
 # -------------------------------------------------------------------------- #
 #                            Metric #1 Credibility                           #
 # -------------------------------------------------------------------------- #

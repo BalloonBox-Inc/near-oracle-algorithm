@@ -69,6 +69,40 @@ def net_flow(txn, timeframe, feedback):
     finally:
         return df, feedback
 
+
+# @measure_time_and_memory
+def coinbase_kyc(acc, txn, feedback):
+    '''
+    Description:
+        returns 1 if the oracle believes this is a legitimate user
+        with some credible history. Returns 0 otherwise
+
+    Parameters:
+        acc (list): non-zero balance Coinbase accounts owned by the user in currencies of trusted reputation
+        txn (list): transactions history of above-listed accounts
+        feedback (dict): score feedback
+
+    Returns:
+        score (int): binary kyc verification 1|0
+        feedback (dict): score feedback
+    '''
+
+    try:
+        # Pass KYC check iff the Coinbase account has trusted data
+        if acc and txn:
+            score = 1
+            feedback['kyc']['pass_check'] = True
+        else:
+            score = 0
+            feedback['kyc']['pass_check'] = False
+
+    except Exception as e:
+        score = 0
+        feedback['kyc']['error'] = str(e)
+
+    finally:
+        return score, feedback
+
 # -------------------------------------------------------------------------- #
 #                                 Metric #1 KYC                              #
 # -------------------------------------------------------------------------- #
