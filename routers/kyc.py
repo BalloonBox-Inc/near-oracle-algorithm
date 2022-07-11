@@ -9,8 +9,7 @@ from validator.plaid import *
 from validator.coinbase import *
 from validator.covalent import *
 from schemas import *
-from fastapi import APIRouter, status, HTTPException, Depends
-from fastapi_limiter.depends import RateLimiter
+from fastapi import APIRouter, Request, Response, HTTPException, status
 from icecream import ic
 
 
@@ -21,13 +20,8 @@ router = APIRouter(
 
 
 # @measure_time_and_memory
-@router.post(
-    '/kyc',
-    status_code=status.HTTP_200_OK,
-    summary='KYC credit score',
-    dependencies=[Depends(RateLimiter(times=2, seconds=5))]
-)
-async def credit_score_kyc(item: KYC_Item):
+@router.post('/kyc', status_code=status.HTTP_200_OK, summary='KYC credit score')
+async def credit_score_kyc(request: Request, response: Response, item: KYC_Item):
     '''
     Calculates credit score based on KYC data from one of the validators.
 
@@ -45,4 +39,5 @@ async def credit_score_kyc(item: KYC_Item):
     Output:
     - **[object]**: kyc credit score
     '''
+
     return {'status': 'under construction'}

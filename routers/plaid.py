@@ -7,8 +7,7 @@ from support.score import *
 from market.coinmarketcap import *
 from validator.plaid import *
 from schemas import *
-from fastapi import APIRouter, status, HTTPException, Depends
-from fastapi_limiter.depends import RateLimiter
+from fastapi import APIRouter, Request, Response, HTTPException, status
 from icecream import ic
 from dotenv import load_dotenv
 from os import getenv
@@ -22,13 +21,8 @@ router = APIRouter(
 
 
 # @measure_time_and_memory
-@router.post(
-    '/plaid',
-    status_code=status.HTTP_200_OK,
-    summary='Plaid credit score',
-    dependencies=[Depends(RateLimiter(times=2, seconds=5))]
-)
-async def credit_score_plaid(item: Plaid_Item):
+@router.post('/plaid', status_code=status.HTTP_200_OK, summary='Plaid credit score')
+async def credit_score_plaid(request: Request, response: Response, item: Plaid_Item):
     '''
     Calculates credit score based on Plaid data.
 

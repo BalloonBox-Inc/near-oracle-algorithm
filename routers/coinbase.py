@@ -7,8 +7,7 @@ from support.score import *
 from market.coinmarketcap import *
 from validator.coinbase import *
 from schemas import *
-from fastapi import APIRouter, status, HTTPException, Depends
-from fastapi_limiter.depends import RateLimiter
+from fastapi import APIRouter, Request, Response, HTTPException, status
 from icecream import ic
 
 
@@ -19,13 +18,8 @@ router = APIRouter(
 
 
 # @measure_time_and_memory
-@router.post(
-    '/coinbase',
-    status_code=status.HTTP_200_OK,
-    summary='Coinbase credit score',
-    dependencies=[Depends(RateLimiter(times=2, seconds=5))]
-)
-async def credit_score_coinbase(item: Coinbase_Item):
+@router.post('/coinbase', status_code=status.HTTP_200_OK, summary='Coinbase credit score')
+async def credit_score_coinbase(request: Request, response: Response, item: Coinbase_Item):
     '''
     Calculates credit score based on Coinbase data.
 
