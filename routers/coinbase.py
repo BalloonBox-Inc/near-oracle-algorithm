@@ -173,6 +173,7 @@ async def credit_score_coinbase(request: Request, response: Response, item: Coin
 
     finally:
         output = {
+            'endpoint': '/credit_score/coinbase',
             'status': status,
             'score': int(score),
             'risk': risk,

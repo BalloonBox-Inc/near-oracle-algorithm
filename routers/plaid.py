@@ -153,6 +153,7 @@ async def credit_score_plaid(request: Request, response: Response, item: Plaid_I
 
     finally:
         output = {
+            'endpoint': '/credit_score/plaid',
             'status': status,
             'score': int(score),
             'risk': risk,

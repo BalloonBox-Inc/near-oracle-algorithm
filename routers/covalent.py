@@ -137,6 +137,7 @@ async def credit_score_covalent(request: Request, response: Response, item: Cova
 
     finally:
         output = {
+            'endpoint': '/credit_score/covalent',
             'status': status,
             'score': int(score),
             'risk': risk,
