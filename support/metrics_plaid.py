@@ -160,11 +160,42 @@ def balance_now_checking_only(data, feedback):
         feedback['fetch'][balance_now_checking_only.__name__] = str(e)
 
 
+def plaid_kyc(data, feedback):
+    '''
+    Description:
+        returns 1 if the oracle believes this is a legitimate user
+        with some credible history. Returns 0 otherwise
+
+    Parameters:
+        data (dict): Plaid 'Transactions' product
+        feedback (dict): score feedback
+
+    Returns: 
+        score (float): binary response 1|0, depending on whether the user is legitimate
+        feedback (dict): score feedback
+    '''
+
+    try:
+        # Pass KYC iff the account has some txn history
+        txn = data['transactions']
+        if txn:
+            score = 1
+            feedback['credit']['verified'] = True
+        else:
+            score = 0
+            feedback['credit']['verified'] = False
+
+    except Exception as e:
+        score = 0
+        feedback['credit']['error'] = str(e)
+
+    finally:
+        return score, feedback
+
+
 # -------------------------------------------------------------------------- #
 #                               Metric #1 Credit                             #
 # -------------------------------------------------------------------------- #
-
-
 # @measure_time_and_memory
 def credit_mix(data, feedback, duration, count_zero, m3x7_2_4):
     '''
