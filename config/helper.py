@@ -6,14 +6,18 @@ def read_config_file(loan_request):
     '''
     Returns all data stored in the config.json file as a dict
     '''
-    config_file = path.join(path.dirname(__file__), 'config.json')
+    try:
+        config_file = path.join(path.dirname(__file__), 'config.json')
 
-    with open(config_file) as f:
-        data = json.load(f)['data']
-        data = [d for d in data
-                if d['maximum_amount'] >= loan_request][0]
+        with open(config_file) as f:
+            data = json.load(f)['data']
+            data = [d for d in data
+                    if d['maximum_amount'] >= loan_request][0]
 
-    return data
+        return data
+
+    except Exception as e:
+        return str(e)
 
 
 def read_models_and_metrics(d):

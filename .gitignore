@@ -4,6 +4,9 @@
 # macOS custom attributes
 .DS_Store
 
+# VScode settings
+.vscode
+
 # python interpreter
 **.pyc
 
