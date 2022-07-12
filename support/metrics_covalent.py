@@ -6,6 +6,8 @@ NOW = datetime.now().date()
 # -------------------------------------------------------------------------- #
 #                               Helper Functions                             #
 # -------------------------------------------------------------------------- #
+
+
 def swiffer_duster(txn, feedback):
     '''
     Description:
@@ -19,10 +21,11 @@ def swiffer_duster(txn, feedback):
     Returns:
         txn (dict): formatted txn data containing only successful and non-dusty transactions
     '''
-    try: 
+    try:
         # keep only transactions that are successful and have a value > 0
         if txn['quote_currency'] == 'USD':
-            txn['items'] = [t for t in txn['items'] if t['successful'] and t['value_quote'] > 0]
+            txn['items'] = [t for t in txn['items']
+                            if t['successful'] and t['value_quote'] > 0]
 
             if txn['items']:
                 return txn
@@ -48,7 +51,7 @@ def purge_portfolio(portfolio, feedback):
     Returns:
         portfolio (dict): purged portfolio without dusty tokens
     '''
-    try: 
+    try:
         # ensure the quote currency is USD. If it isn't, then raise an exception
         if portfolio['quote_currency'] != 'USD':
             raise Exception('quote_currency should be USD')
@@ -70,9 +73,9 @@ def purge_portfolio(portfolio, feedback):
                     portfolio['items'].pop(i)
 
         return portfolio
-            
+
     except Exception as e:
-        feedback['fetch'][purge_portfolio.__name__] =  str(e)
+        feedback['fetch'][purge_portfolio.__name__] = str(e)
 
 
 def top_erc_only(data, feedback, top_erc):
@@ -80,7 +83,7 @@ def top_erc_only(data, feedback, top_erc):
     Description:
         filter the Covalent API data by keeping only the assets in the ETH 
         wallet address which are top ranked on Coinmarketcap as ERC20 tokens
-    
+
     Parameters:
         data (dict): can be either the 'balances_v2' or the 'portfolio_v2' Covalent class A endpoint
         feedback (dict): score feedback
@@ -104,7 +107,7 @@ def top_erc_only(data, feedback, top_erc):
         feedback['fetch'][top_erc_only.__name__] = str(e)
 
 
-def covalent_kyc(balances, txn, feedback):
+def covalent_kyc(balances, txn):
     '''
     Description:
         returns 1 if the oracle believes this is a legitimate user
@@ -113,28 +116,20 @@ def covalent_kyc(balances, txn, feedback):
     Parameters:
         balances (dict): Covalent class A endpoint 'balances_v2'
         txn (dict): Covalent class A endpoint 'transactions_v2'
-        feedback (dict): score feedback
 
     Returns:
-        score (float): 1 if user is legitimate and 0 otherwise
-        feedback (dict): updated score feedback
+        (boolean): 1 if user is legitimate and 0 otherwise
     '''
     try:
         # Assign max score as long as the user owns a
         # non-zero balance and a credible transaction history
         if txn['items'] and sum([b['quote'] for b in balances['items']]) > 1:
-            score = 1
-            feedback['credibility']['pass_check'] = True
+            return True
         else:
-            score = 0
-            feedback['credibility']['pass_check'] = False
+            return False
 
     except Exception as e:
-        score = 0
-        feedback['credibility']['error'] = str(e)
-
-    finally:
-        return score, feedback
+        return str(e)
 
 
 # -------------------------------------------------------------------------- #
@@ -188,7 +183,8 @@ def credibility_oldest_txn(txn, feedback, fico_medians, duration):
         feedback (dict): updated score feedback
     '''
     try:
-        oldest = datetime.strptime(txn['items'][-1]['block_signed_at'].split('T')[0], '%Y-%m-%d').date()
+        oldest = datetime.strptime(
+            txn['items'][-1]['block_signed_at'].split('T')[0], '%Y-%m-%d').date()
         how_long = (NOW - oldest).days
 
         score = fico_medians[np.digitize(how_long, duration, right=True)]
@@ -227,7 +223,8 @@ def wealth_capital_now(balances, feedback, fico_medians, volume_now):
             if total == 0:
                 score = 0
             else:
-                score = fico_medians[np.digitize(total, volume_now, right=True)]
+                score = fico_medians[np.digitize(
+                    total, volume_now, right=True)]
             feedback['wealth']['cum_balance_now'] = round(total, 2)
         else:
             raise Exception('quote_currency should be USD')
@@ -271,18 +268,20 @@ def wealth_capital_now_adjusted(balances, feedback, erc_rank, fico_medians, volu
                 balance = b['quote']
                 ticker = b['contract_ticker_symbol']
                 # multiply the balance owned per token by a weight proportional to that token's ranking on Coinmarketcap
-                penalty = np.e**(erc_rank[ticker]**(1/3.5) )
+                penalty = np.e**(erc_rank[ticker]**(1/3.5))
                 adjusted_balance += round(1 - penalty / 100, 2) * balance
 
-                score = fico_medians[np.digitize(adjusted_balance, volume_now, right=True)]
-                feedback['wealth']['cum_balance_now(adjusted)'] = round(adjusted_balance, 2)
+                score = fico_medians[np.digitize(
+                    adjusted_balance, volume_now, right=True)]
+                feedback['wealth']['cum_balance_now(adjusted)'] = round(
+                    adjusted_balance, 2)
 
     except Exception as e:
         score = 0
         feedback['wealth']['error'] = str(e)
 
     finally:
-        return score, feedback       
+        return score, feedback
 
 
 def wealth_volume_per_txn(txn, feedback, fico_medians, volume_per_txn):
@@ -303,13 +302,14 @@ def wealth_volume_per_txn(txn, feedback, fico_medians, volume_per_txn):
     try:
         # remove 'dust' transactions from youw dataset
         txn = swiffer_duster(txn, feedback)
-        
+
         volume = 0
         for t in txn['items']:
             volume += t['value_quote']
         volume_avg = volume/len(txn['items'])
 
-        score = fico_medians[np.digitize(volume_avg, volume_per_txn, right=True)]
+        score = fico_medians[np.digitize(
+            volume_avg, volume_per_txn, right=True)]
         feedback['wealth']['avg_volume_per_txn'] = round(volume_avg, 2)
 
     except Exception as e:
@@ -318,7 +318,7 @@ def wealth_volume_per_txn(txn, feedback, fico_medians, volume_per_txn):
 
     finally:
         return score, feedback
-    
+
 
 # -------------------------------------------------------------------------- #
 #                             Metric #3 Traffic                              #
@@ -353,9 +353,9 @@ def traffic_cred_deb(txn, feedback, operation, count_operations, cred_deb, mtx_t
             for t in txn['items']:
                 if t['to_address'] == eth_wallet:
                     counts += 1
-                    volume += t['value_quote']   
-            count_operations = count_operations/2 
-            cred_deb = cred_deb/2    
+                    volume += t['value_quote']
+            count_operations = count_operations/2
+            cred_deb = cred_deb/2
 
         # debit
         elif operation == 'debit':
@@ -373,17 +373,17 @@ def traffic_cred_deb(txn, feedback, operation, count_operations, cred_deb, mtx_t
                         counts += 1
                         volume += t['value_quote']
             count_operations = count_operations/5
-            cred_deb = cred_deb/2 
+            cred_deb = cred_deb/2
 
         # except
         else:
-            raise Exception("you passed an invalid param: accepts only 'credit', 'debit', or 'transfer'")
-
+            raise Exception(
+                "you passed an invalid param: accepts only 'credit', 'debit', or 'transfer'")
 
         m = np.digitize(counts, count_operations, right=True)
         n = np.digitize(volume, cred_deb, right=True)
         score = mtx_traffic[m][n]
-        feedback['traffic']['count_credit_txns'] =  counts
+        feedback['traffic']['count_credit_txns'] = counts
         feedback['traffic']['volume_credit_txns'] = round(volume, 2)
 
     except Exception as e:
@@ -410,8 +410,10 @@ def traffic_dustiness(txn, feedback, fico_medians):
         feedback (dict): updated score feedback
     '''
     try:
-        legit_ratio = (len(txn['items']) - len(swiffer_duster(txn, feedback)['items'])) / len(txn['items'])
-        score = fico_medians[np.digitize(legit_ratio, fico_medians*0.8, right=True)]
+        legit_ratio = (len(
+            txn['items']) - len(swiffer_duster(txn, feedback)['items'])) / len(txn['items'])
+        score = fico_medians[np.digitize(
+            legit_ratio, fico_medians*0.8, right=True)]
         feedback['traffic']['legit_txn_ratio'] = round(legit_ratio, 2)
 
     except Exception as e:
@@ -458,7 +460,8 @@ def traffic_running_balance(portfolio, feedback, fico_medians, avg_run_bal, erc_
 
         best_avg = max(overview.values())
         score = fico_medians[np.digitize(best_avg, avg_run_bal, right=True)]
-        feedback['traffic']['avg_running_balance(best_token)'] = round(best_avg, 2)
+        feedback['traffic']['avg_running_balance(best_token)'] = round(
+            best_avg, 2)
 
     except Exception as e:
         score = 0
@@ -486,12 +489,12 @@ def traffic_frequency(txn, feedback, fico_medians, frequency_txn):
     try:
         # remove 'dust' transactions from your dataset
         txn = swiffer_duster(txn, feedback)
-        
+
         datum = txn['items'][-1]['block_signed_at'].split('T')[0]
         oldest = datetime.strptime(datum, '%Y-%M-%d').date()
-        duration = int((NOW - oldest).days/30) # months
+        duration = int((NOW - oldest).days/30)  # months
 
-        frequency = round(len(txn['items']) / duration , 2)
+        frequency = round(len(txn['items']) / duration, 2)
         score = fico_medians[np.digitize(frequency, frequency_txn, right=True)]
         feedback['traffic']['txn_frequency'] = f'{frequency} txn/month over {duration} months'
 
@@ -533,7 +536,7 @@ def stamina_methods_count(txn, feedback, fico_medians, count_to_four):
                 method_name = t['log_events'][0]['decoded']['name']
                 if method_name in methods.keys():
                     methods[method_name] += amount
-                else: 
+                else:
                     methods[method_name] = amount
             else:
                 if 'unclassified' in methods.keys():
@@ -542,14 +545,15 @@ def stamina_methods_count(txn, feedback, fico_medians, count_to_four):
                     methods['unclassified'] = amount
 
         # keep only methods with cumulated traded volume > $10 USD
-        methods_count = len([k for k in methods.keys() if methods[k] > 10]) 
-        score = fico_medians[np.digitize(methods_count, count_to_four, right=True)]
+        methods_count = len([k for k in methods.keys() if methods[k] > 10])
+        score = fico_medians[np.digitize(
+            methods_count, count_to_four, right=True)]
         feedback['stamina']['unique_methods_count'] = methods_count
 
     except Exception as e:
         score = 0
         feedback['stamina']['error'] = str(e)
-    
+
     finally:
         return score, feedback
 
@@ -578,12 +582,13 @@ def stamina_coins_count(balances, feedback, count_to_four, volume_now, mtx_stami
 
         weighted_sum = 0
         volumes = [b['quote'] for b in balances['items'] if b['quote'] != 0]
-        ranks = [erc_rank[b['contract_ticker_symbol']] for b in balances['items'] if b['quote'] != 0]
+        ranks = [erc_rank[b['contract_ticker_symbol']]
+                 for b in balances['items'] if b['quote'] != 0]
         unique_coins = len(volumes)
 
         for b in balances['items']:
             if b['quote'] != 0:
-                weight = (min(ranks) / (b['quote']/min(ranks)) ) / sum(ranks)
+                weight = (min(ranks) / (b['quote']/min(ranks))) / sum(ranks)
                 weighted_sum += b['quote']*weight
 
         m = np.digitize(unique_coins, count_to_four, right=True)
@@ -623,7 +628,8 @@ def stamina_dexterity(portfolio, feedback, count_to_four, volume_now, mtx_stamin
 
         for p in portfolio['items']:
             quote_rates = np.array([q['quote_rate'] for q in p['holdings']])
-            trades = np.array([q['high']['quote'] - q['low']['quote'] for q in p['holdings']])
+            trades = np.array([q['high']['quote'] - q['low']['quote']
+                              for q in p['holdings']])
             x = int(len(p['holdings'])/3)
 
             # does this user buy when the market is bearish?
@@ -632,8 +638,8 @@ def stamina_dexterity(portfolio, feedback, count_to_four, volume_now, mtx_stamin
 
             # does this user sell when the market is bullish?
             bull_indeces = np.argpartition(quote_rates, x*2)[-x:]
-            bull_trades = [t for t in trades[bull_indeces] if t >0]
-            
+            bull_trades = [t for t in trades[bull_indeces] if t > 0]
+
         count = len(bear_trades) + len(bull_trades)
         traded = sum(bear_trades) + sum(bull_trades)
 
@@ -666,7 +672,7 @@ def stamina_loan_duedate(txn, feedback, due_date):
     try:
         # Read in the date of the oldest txn
         oldest_txn = datetime.strptime(
-                    txn['items'][-1]['block_signed_at'], '%Y-%m-%dT%H:%M:%SZ').date()
+            txn['items'][-1]['block_signed_at'], '%Y-%m-%dT%H:%M:%SZ').date()
         txn_length = int((NOW - oldest_txn).days/30)  # months
 
         # Loan duedate is equal to the month of txn history there are
