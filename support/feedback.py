@@ -501,6 +501,6 @@ def qualitative_feedback_covalent(
         metrics_w_errors = [k for k in feedback.keys(
         ) if 'error' in list(feedback[k].keys())]
         err = comma_separated_list(metrics_w_errors)
-        msg = msg + f' An error occurred while computing the score metric called {err}. ' \
+        msg = msg + f'. An error occurred while computing the score metric called {err}. ' \
             f'As a result, your score was rounded down. Try to log into MetaMask again later'
     return msg + '.'       

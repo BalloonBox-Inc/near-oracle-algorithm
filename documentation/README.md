@@ -103,9 +103,6 @@ Response: **200**
         risk_level: 'low' | 'medium' | 'high';
     };
     status: 'success' | 'error';
-    status_code: 200 | 400;
-    timestamp: string;
-    title: 'Credit Score';
     }
 ```
 
@@ -138,10 +135,7 @@ Response: **200**
         "risk_level": "medium"
     }
     "score": 300.0,
-    "status": "success",
-    "status_code": 200,
-    "timestamp": "03-22-2022 18:44:19 GMT",
-    "title": "Credit Score"
+    "status": "success"
 }
 ```
 
@@ -212,9 +206,6 @@ Response: **200**
             risk_level: 'low' | 'medium' | 'high';
     };
     status: 'success' | 'error';
-    status_code: 200 | 400;
-    timestamp: string;
-    title: 'Credit Score';
     }
 ```
 
@@ -223,10 +214,7 @@ Response: **200**
 ```bash
     {
         "endpoint": "/credit_score/plaid",
-        "title": "Credit Score",
-        "status_code": 200,
         "status": "success",
-        "timestamp": "06-06-2022 20:48:02 GMT",
         "score": 401,
         "risk": {
             "loan_amount": 500,
@@ -269,14 +257,11 @@ Sample error response from Plaid Sandbox environment
     {
         'endpoint': '/credit_score/plaid',
         'message': 'invalid client_id or secret provided',
-        'status': 'error',
-        'status_code': 400,
-        'timestamp': '03-22-2022 17:56:19 GMT',
-        'title': 'Credit Score'
+        'status': 'error'
     }
 ```
 
-## [NEAR WALLET](https://wallet.near.org/) : credit score model based on your NEAR wallet.
+## [COVALENT](https://www.covalenthq.com/) : credit score model based on your ETH wallet address.
 
 ```bash
     POST {base_url}/credit_score/covalent
@@ -340,9 +325,6 @@ Response: **200**
         risk_level: 'low' | 'medium' | 'high';
     };
     status: 'success' | 'error';
-    status_code: 200 | 400;
-    timestamp: string;
-    title: 'Credit Score';
     }
 ```
 
@@ -351,10 +333,7 @@ Response: **200**
 ```bash
     {
       "endpoint": "/credit_score/covalent",
-      "title": "Credit Score",
-      "status_code": 200,
       "status": "success",
-      "timestamp": "07-11-2022 19:28:14 GMT",
       "score": 701,
       "risk": {
         "loan_amount": 10000,
@@ -391,10 +370,7 @@ Sample error response for a non-existing ETH wallet address
 ```bash
     {
         'endpoint': "/credit_score/covalent",
-        'message': "'verified"
-        'title': "Credit Score",
-        'status_code': 400,
-        'status': "error",
-        'timestamp': "07-11-2022 19:40:53 GMT",
+        'message': "'verified",
+        'status': "error"
     }
 ```

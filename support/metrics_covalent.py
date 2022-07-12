@@ -383,8 +383,8 @@ def traffic_cred_deb(txn, feedback, operation, count_operations, cred_deb, mtx_t
         m = np.digitize(counts, count_operations, right=True)
         n = np.digitize(volume, cred_deb, right=True)
         score = mtx_traffic[m][n]
-        feedback['traffic']['count_credit_txns'] = counts
-        feedback['traffic']['volume_credit_txns'] = round(volume, 2)
+        feedback['traffic'][f'count_{operation}_txns'] =  counts
+        feedback['traffic'][f'volume_{operation}_txns'] = round(volume, 2)
 
     except Exception as e:
         score = 0
