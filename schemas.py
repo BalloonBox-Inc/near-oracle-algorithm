@@ -25,12 +25,12 @@ class Covalent_Item(BaseModel):
 
 
 class KYC_Item(BaseModel):
+    chosen_validator: str
     plaid_access_token: Optional[str]
     plaid_client_id: Optional[str]
     plaid_client_secret: Optional[str]
     coinbase_access_token: Optional[str]
     coinbase_refresh_token: Optional[str]
+    coinmarketcap_key: Optional[str]
     eth_address: Optional[str]
     covalent_key: Optional[str]
-    coinmarketcap_key: str
-    loan_request: int
