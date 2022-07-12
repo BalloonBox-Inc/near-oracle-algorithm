@@ -83,35 +83,3 @@ def covalent_get_transactions(chain_id, eth_address, api_key, no_logs, pagesize,
 
     finally:
         return r
-
-
-def covalent_get_transfers(chain_id, eth_address, api_key, pagesize, pagenumber):
-    '''
-    Description:
-        get ERC20 token transfers for an address
-
-    Parameters:
-        chain_id (int): blockchain id 
-        eth_address (str): wallet address to fetch txn data from
-        api_key (str): Covalent api key to for the https request
-        pagesize (int): number of results per page
-        pagenumber (int): the specific page to be returned
-
-    Returns: 
-        r (dict): the transfer history for a wallet address
-    '''
-    try:
-        endpoint = f'/{chain_id}/address/{eth_address}/transfers_v2/'\
-                f'?page-size={pagesize}&page-number={pagenumber}&key={api_key}'
-        url = 'https://api.covalenthq.com/v1' + endpoint
-        result = requests.get(url).json()
-        if result['error']:
-            r = format_err(result)
-        else:
-            r = result['data']
-    
-    except requests.exceptions.JSONDecodeError:
-        r = 'JSONDecodeError: invalid Covalent API key'
-
-    finally:
-        return r

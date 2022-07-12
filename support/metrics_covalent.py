@@ -60,15 +60,16 @@ def purge_portfolio(portfolio, feedback):
             for a in portfolio['items']:
                 count = 0
                 for b in a['holdings']:
-                    if b['close']['quote'] > 50:
-                        count += 1
-                    # exist the loop as soon as the count exceeds 3
-                    if count > 2:
-                        break
+                    if b['close']['quote'] != None:
+                        if b['close']['quote'] > 50:
+                            count += 1
+                        # exist the loop as soon as the count exceeds 3
+                        if count > 2:
+                            break
                 counts.append(count)
 
             # remove dusty token from the records
-            for i in range(len(counts)):
+            for i in reversed(range(len(counts))):
                 if counts[i] < 3:
                     portfolio['items'].pop(i)
 
@@ -152,7 +153,7 @@ def credibility_kyc(balances, txn, feedback):
     try:
         # Assign max score as long as the user owns a
         # non-zero balance and a credible transaction history
-        if txn['items'] and sum([b['quote'] for b in balances['items']]) > 1:
+        if txn['items'] and sum([b['quote'] for b in balances['items']]) > 50:
             score = 1
             feedback['credibility']['verified'] = True
         else:
