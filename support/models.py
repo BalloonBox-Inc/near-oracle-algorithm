@@ -338,7 +338,7 @@ def covalent_wealth(txn, balances, feedback, weights, params, erc_rank):
         params[1]
         )
 
-    volume_per_txn, feedback = wealth_volume_per_txn(
+    transactional_volume, feedback = wealth_volume_per_txn(
         txn, 
         feedback,
         params[9],
@@ -346,7 +346,7 @@ def covalent_wealth(txn, balances, feedback, weights, params, erc_rank):
         )
 
     a = list(weights.values())[2:5]
-    b = [capital_now, capital_now_adj, volume_per_txn]
+    b = [capital_now, capital_now_adj, transactional_volume]
 
     score = dot_product(a, b)
 
@@ -416,8 +416,9 @@ def covalent_stamina(txn, balances, portfolio, feedback, weights, params, erc_ra
     methods, feedback = stamina_methods_count(
         txn,
         feedback,
-        params[9],
-        params[0]
+        params[0],
+        params[1],
+        params[11]
         )
 
     dexterity, feedback = stamina_dexterity(
