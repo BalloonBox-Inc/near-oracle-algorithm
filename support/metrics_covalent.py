@@ -409,12 +409,11 @@ def traffic_dustiness(txn, feedback, fico_medians):
         fico_medians (array): scoring array
 
     Returns:
-        score (float): the more dusty txn the lower the score
+        score (float): the more the voluminous txn, the higher the score
         feedback (dict): updated score feedback
     '''
     try:
-        legit_ratio = (len(
-            txn['items']) - len(swiffer_duster(txn, feedback)['items'])) / len(txn['items'])
+        legit_ratio = len(swiffer_duster(txn, feedback)['items']) / len(txn['items'])
         score = fico_medians[np.digitize(
             legit_ratio, fico_medians[1:]*0.8, right=True)]
         feedback['traffic']['legit_txn_ratio'] = round(legit_ratio, 2)
@@ -544,9 +543,9 @@ def stamina_methods_count(txn, feedback, count_to_four, volume_now, mtx_stamina)
 
         else:
             score = 0
-            feedback['stamina']['unique_methods_count'] = 0
+            feedback['stamina']['methods_volume'] = 0
 
-        # keep only methods with cumulated traded volume > $10 USD
+        # keep only methods with cumulative traded volume > $10 USD
         count = len([k for k in methods.keys() if methods[k] > 10])
         volume = sum(list(methods.values()))
         m = np.digitize(count, count_to_four*2, right=True)
@@ -587,12 +586,12 @@ def stamina_coins_count(balances, feedback, count_to_four, volume_now, mtx_stami
         weighted_sum = 0
         volumes = [b['quote'] for b in balances['items'] if b['quote'] != 0]
         ranks = [erc_rank[b['contract_ticker_symbol']]
-                 for b in balances['items'] if b['quote'] != 0]
+                    for b in balances['items'] if b['quote'] != 0]
         unique_coins = len(volumes)
 
         for b in balances['items']:
             if b['quote'] != 0:
-                weight = (min(ranks) / (b['quote']/min(ranks))) / sum(ranks)
+                weight = (sum(ranks) / erc_rank[b['contract_ticker_symbol']]) / sum([sum(ranks)/r for r in ranks])
                 weighted_sum += b['quote']*weight
 
         m = np.digitize(unique_coins, count_to_four, right=True)
@@ -629,7 +628,8 @@ def stamina_dexterity(portfolio, feedback, count_to_four, volume_now, mtx_stamin
     '''
     try:
         portfolio = purge_portfolio(portfolio, feedback)
-
+        count = 0
+        traded = 0
         for p in portfolio['items']:
             quote_rates = np.array([q['quote_rate'] for q in p['holdings']])
             trades = np.array([q['high']['quote'] - q['low']['quote']
@@ -644,8 +644,8 @@ def stamina_dexterity(portfolio, feedback, count_to_four, volume_now, mtx_stamin
             bull_indeces = np.argpartition(quote_rates, x*2)[-x:]
             bull_trades = [t for t in trades[bull_indeces] if t > 0]
 
-        count = len(bear_trades) + len(bull_trades)
-        traded = sum(bear_trades) + sum(bull_trades)
+            count += len(bear_trades) + len(bull_trades)
+            traded += sum(bear_trades) + sum(bull_trades)
 
         m = np.digitize(count, count_to_four, right=True)
         n = np.digitize(traded, volume_now/10, right=True)

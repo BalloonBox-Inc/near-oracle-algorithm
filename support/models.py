@@ -404,6 +404,14 @@ def covalent_traffic(txn, portfolio, feedback, weights, params, erc_rank):
 
 def covalent_stamina(txn, balances, portfolio, feedback, weights, params, erc_rank):
 
+    methods, feedback = stamina_methods_count(
+        txn,
+        feedback,
+        params[0],
+        params[1],
+        params[11]
+        )
+
     coins, feedback = stamina_coins_count(
         balances, 
         feedback, 
@@ -411,14 +419,6 @@ def covalent_stamina(txn, balances, portfolio, feedback, weights, params, erc_ra
         params[1],
         params[11],
         erc_rank
-        )
-
-    methods, feedback = stamina_methods_count(
-        txn,
-        feedback,
-        params[0],
-        params[1],
-        params[11]
         )
 
     dexterity, feedback = stamina_dexterity(

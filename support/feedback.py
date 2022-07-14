@@ -484,7 +484,7 @@ def qualitative_feedback_covalent(
             lon = feedback['credibility']['longevity(days)']
             bal = feedback['wealth']['cum_balance_now']
             msg = msg + f' Your ETH wallet address has been active for {lon} days '\
-                f'and your total balance across all cryptocurrencies owned is ${bal:,.0f} USD'
+                f'and your total balance across all cryptocurrencies is ${bal:,.0f} USD'
         else:
             bal = feedback['wealth']['cum_balance_now']
             msg = msg + f' Your ETH wallet address has been active for {bal} days'
@@ -492,7 +492,7 @@ def qualitative_feedback_covalent(
     else:
         if ('cum_balance_now' in all_keys):
             bal = feedback['wealth']['cum_balance_now']
-            msg = msg + f' Your total balance across all cryptocurrencies owned is ${bal} USD'
+            msg = msg + f' Your total balance across all cryptocurrencies is ${bal} USD'
 
     # ADVICE
     # Case #1: there's error(s). 

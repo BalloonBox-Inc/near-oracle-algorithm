@@ -165,29 +165,29 @@
                                 }
                             },
                             "wealth": {
-                                "weight": 0.35,
+                                "weight": 0.3,
                                 "metrics": {
-                                    "capital_now": 0.35, 
-                                    "capital_now_adj": 0.40, 
-                                    "volume_per_txn": 0.25
+                                    "capital_now": 0.25, 
+                                    "capital_now_adj": 0.60, 
+                                    "volume_per_txn": 0.15
                                 }
                             },
                             "traffic": {
                                 "weight": 0.4,
                                 "metrics": {
-                                    "credit":0.15,
-                                    "debit": 0.15,
-                                    "dust": 0.15,
-                                    "run_balance": 0.35,
-                                    "frequency": 0.20
+                                    "credit":0.14,
+                                    "debit": 0.14,
+                                    "dust": 0.14,
+                                    "run_balance": 0.40,
+                                    "frequency": 0.18
                                 }
                             },
                             "stamina": {
-                                "weight": 0.15,
+                                "weight": 0.2,
                                 "metrics": {
-                                    "coins": 0.25,
-                                    "methods": 0.65, 
-                                    "dexterity": 0.10
+                                    "coins": 0.50,
+                                    "methods": 0.45,
+                                    "dexterity": 0.05
                                 }
                             }
                         }
