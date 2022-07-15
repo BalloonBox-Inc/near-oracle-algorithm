@@ -17,7 +17,7 @@ from validator.covalent import *
 load_dotenv()
 
 
-def write_to_json(count, eth_address, blockchain_id, covalent_key):
+def write_to_json(count, eth_address, blockchain_id, covalent_key, path):
     '''
     Write Covalent data to disk as json files
     '''
@@ -34,17 +34,15 @@ def write_to_json(count, eth_address, blockchain_id, covalent_key):
     dict = {'balances':balances, 'portfolio':portfolio, 'txn':txn}
 
     for name, dict_ in dict.items():
-        path = '/Users/irenefabris/Desktop/Projects/NEARoracle/data/covalent/'
         with open(f'{path}{count}_{name}.json', 'w') as f:
             json.dump(dict_, f, indent=3)
 
 
 
-def read_json(userid):
+def read_json(userid, path):
     '''
     Read Covalent json files from local storage
     '''
-    path = '/Users/irenefabris/Desktop/Projects/NEARoracle/data/covalent/'
     with open(f'{path}{str(userid)}_balances.json', 'r') as f:
         balances = json.load(f)
 
@@ -165,10 +163,10 @@ if __name__ == '__main__':
     # # write to json
     # addresses = getenv('WALLETS')
     # for x in addresses:
-    #     write_to_json(addresses.index(x), x, '1', getenv('COVALENT_KEY'))
+    #     write_to_json(addresses.index(x), x, '1', getenv('COVALENT_KEY'), getenv('COV_DIR'))
 
     # iteratively compute scores
     for y in range(11):
-        balances, txn, portfolio = read_json(y)
+        balances, txn, portfolio = read_json(y, getenv('COV_DIR'))
         print(balances['address'])
         r = compute_covalent_score(balances, txn, portfolio, getenv('COINMARKETCAP_KEY'), 24000)
