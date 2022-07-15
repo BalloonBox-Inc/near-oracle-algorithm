@@ -163,19 +163,19 @@ def covalent_params(params, score_range):
     count_to_four = immutable_array(
         np.array(params['metrics']['count_to_four']))
     volume_now = immutable_array(
-        np.array(params['metrics']['volume_now'])*10) #should be *1000
+        np.array(params['metrics']['volume_now'])*1000) #should be *1000
     volume_per_txn = immutable_array(
-        np.array(params['metrics']['volume_per_txn'])*10) #should be *100
+        np.array(params['metrics']['volume_per_txn'])*100) #should be *100
     duration = immutable_array(
         np.array(params['metrics']['duration']))
     count_operations = immutable_array(
         np.array(params['metrics']['count_operations']))
     cred_deb = immutable_array(
-        np.array(params['metrics']['cred_deb'])*1) #should be *1000
+        np.array(params['metrics']['cred_deb'])*1000) #should be *1000
     frequency_txn = immutable_array(
         np.array(params['metrics']['frequency_txn']))
     avg_run_bal = immutable_array(
-        np.array(params['metrics']['avg_run_bal'])) #should be *100
+        np.array(params['metrics']['avg_run_bal'])*100) #should be *100
     due_date = immutable_array(
         np.array(params['metrics']['due_date']))
 

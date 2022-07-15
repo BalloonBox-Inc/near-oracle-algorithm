@@ -298,11 +298,18 @@ def coinbase_activity(acc, txn, feedback, weights, params):
         frequency_txn, avg_run_bal, due_date, fico_medians, mtx_traffic, mtx_stamina
     ]
 '''
-def covalent_credibility(txn, balances, feedback, weights, params):
+def covalent_credibility(txn, balances, portfolio, feedback, weights, params):
+
+    feedback = fetch_covalent(
+        txn,
+        balances,
+        portfolio,
+        feedback
+        )
 
     kyc, feedback = credibility_kyc(
-        balances,
         txn, 
+        balances,
         feedback
         )
 
@@ -338,7 +345,7 @@ def covalent_wealth(txn, balances, feedback, weights, params, erc_rank):
         params[1]
         )
 
-    volume_per_txn, feedback = wealth_volume_per_txn(
+    transactional_volume, feedback = wealth_volume_per_txn(
         txn, 
         feedback,
         params[9],
@@ -346,7 +353,7 @@ def covalent_wealth(txn, balances, feedback, weights, params, erc_rank):
         )
 
     a = list(weights.values())[2:5]
-    b = [capital_now, capital_now_adj, volume_per_txn]
+    b = [capital_now, capital_now_adj, transactional_volume]
 
     score = dot_product(a, b)
 
@@ -404,6 +411,14 @@ def covalent_traffic(txn, portfolio, feedback, weights, params, erc_rank):
 
 def covalent_stamina(txn, balances, portfolio, feedback, weights, params, erc_rank):
 
+    methods, feedback = stamina_methods_count(
+        txn,
+        feedback,
+        params[0],
+        params[1],
+        params[11]
+        )
+
     coins, feedback = stamina_coins_count(
         balances, 
         feedback, 
@@ -411,13 +426,6 @@ def covalent_stamina(txn, balances, portfolio, feedback, weights, params, erc_ra
         params[1],
         params[11],
         erc_rank
-        )
-
-    methods, feedback = stamina_methods_count(
-        txn,
-        feedback,
-        params[9],
-        params[0]
         )
 
     dexterity, feedback = stamina_dexterity(
