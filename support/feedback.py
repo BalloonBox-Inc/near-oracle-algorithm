@@ -392,10 +392,11 @@ def interpret_score_covalent(score, feedback, score_range, loan_range, quality_r
         interpret = create_interpret_covalent()
 
         # Score
-        if 'credibility' in feedback.keys() and \
-            feedback['credibility']['verified'] == False:
-            interpret['score']['points'] = 300
-            interpret['score']['quality'] = 'very poor'
+        if ('credibility' in feedback.keys() and \
+            feedback['credibility']['verified'] == False) or \
+            ('fetch' in feedback.keys() and \
+            feedback['fetch']['JSONDecodeError'] == True):
+            pass
             
         else:
             interpret['score']['score_exist'] = True
@@ -454,53 +455,62 @@ def qualitative_feedback_covalent(
     all_keys = [x for y in [list(feedback[k].keys()) 
                 for k in feedback.keys()] for x in y]
 
-    # Case #1: NO score exists. 
+    # Case #1: Failed to fetch data.
     # --> return fetch error when the Oracle did not 
     # --> fetch any data and computed no score
-    if 'credibility' in feedback.keys() and \
+    if 'fetch' in feedback.keys() and \
+        feedback['fetch']['JSONDecodeError'] == True:
+        msg = messages['fetcherror']
+        return msg
+
+    # Case #2: User not verified.
+    # --> return fetch error when the user has 
+    # --> flow balance or no txn history
+    elif 'credibility' in feedback.keys() and \
         feedback['credibility']['verified'] == False:
         msg = messages['failed']
         return msg
 
-    # Case #2: a score exists. 
+    # Case #3: a score exists. 
     # --> return descriptive score feedback
     # Declare score variables
-    quality = quality_range[np.digitize(score, score_range, right=False)]
-    points = int(score)
-    loan_amount = int(loan_range[np.digitize(score, score_range, right=False)])
-
-    # Communicate the score
-    rate = coinmarketcap_rate(coinmarketcap_key, 'USD', 'NEAR')
-    msg = messages['success'].format(
-        quality.upper(), points, int(round(loan_amount*rate, 0)), loan_amount)
-
-    if ('loan_duedate' in list(feedback['stamina'].keys())):
-        payback = feedback['stamina']['loan_duedate']
-        msg = msg + f' over a recommended pay back period of {payback} monthly installments.'
-
-    # Covalent account duration
-    if ('longevity(days)' in all_keys):
-        if ('cum_balance_now' in all_keys):
-            lon = feedback['credibility']['longevity(days)']
-            bal = feedback['wealth']['cum_balance_now']
-            msg = msg + f' Your ETH wallet address has been active for {lon} days '\
-                f'and your total balance across all cryptocurrencies is ${bal:,.0f} USD'
-        else:
-            bal = feedback['wealth']['cum_balance_now']
-            msg = msg + f' Your ETH wallet address has been active for {bal} days'
-    # Tot balance
     else:
-        if ('cum_balance_now' in all_keys):
-            bal = feedback['wealth']['cum_balance_now']
-            msg = msg + f' Your total balance across all cryptocurrencies is ${bal} USD'
+        quality = quality_range[np.digitize(score, score_range, right=False)]
+        points = int(score)
+        loan_amount = int(loan_range[np.digitize(score, score_range, right=False)])
 
-    # ADVICE
-    # Case #1: there's error(s). 
-    # Either some functions broke or data is missing.
-    if 'error' in all_keys:
-        metrics_w_errors = [k for k in feedback.keys(
-        ) if 'error' in list(feedback[k].keys())]
-        err = comma_separated_list(metrics_w_errors)
-        msg = msg + f'. An error occurred while computing the score metric called {err}. ' \
-            f'As a result, your score was rounded down. Try to log into MetaMask again later'
-    return msg + '.'       
+        # Communicate the score
+        rate = coinmarketcap_rate(coinmarketcap_key, 'USD', 'NEAR')
+        msg = messages['success'].format(
+            quality.upper(), points, int(round(loan_amount*rate, 0)), loan_amount)
+
+        if ('loan_duedate' in list(feedback['stamina'].keys())):
+            payback = feedback['stamina']['loan_duedate']
+            msg = msg + f' over a recommended pay back period of {payback} monthly installments.'
+
+        # Covalent account duration
+        if ('longevity(days)' in all_keys):
+            if ('cum_balance_now' in all_keys):
+                lon = feedback['credibility']['longevity(days)']
+                bal = feedback['wealth']['cum_balance_now']
+                msg = msg + f' Your ETH wallet address has been active for {lon} days '\
+                    f'and your total balance across all cryptocurrencies is ${bal:,.0f} USD'
+            else:
+                bal = feedback['wealth']['cum_balance_now']
+                msg = msg + f' Your ETH wallet address has been active for {bal} days'
+        # Tot balance
+        else:
+            if ('cum_balance_now' in all_keys):
+                bal = feedback['wealth']['cum_balance_now']
+                msg = msg + f' Your total balance across all cryptocurrencies is ${bal} USD'
+
+        # ADVICE
+        # Case #1: there's error(s). 
+        # Either some functions broke or data is missing.
+        if 'error' in all_keys:
+            metrics_w_errors = [k for k in feedback.keys(
+            ) if 'error' in list(feedback[k].keys())]
+            err = comma_separated_list(metrics_w_errors)
+            msg = msg + f'. An error occurred while computing the score metric called {err}. ' \
+                f'As a result, your score was rounded down. Try to log into MetaMask again later'
+        return msg + '.'       

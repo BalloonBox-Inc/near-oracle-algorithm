@@ -130,17 +130,39 @@ def covalent_kyc(balances, txn):
         return str(e)
 
 
+def fetch_covalent(txn, balances, portfolio, feedback):
+    '''
+    Description:
+        checks whether Covalent data was fetched correctly, without errors
+
+    Parameters:
+        balances (dict): Covalent class A endpoint 'balances_v2'
+        txn (dict): Covalent class A endpoint 'transactions_v2'
+        portfolio (dict): Covalent class A endpoint 'portfolio_v2'
+        feedback (dict): score feedback
+
+    Returns:
+        feedback (dict): update 'fetch' key in feedback
+    '''
+    for x in [txn, balances, portfolio]:
+        if 'JSONDecodeError' in x:
+            feedback['fetch']['JSONDecodeError'] = True
+        else:
+            feedback['fetch']['JSONDecodeError'] = False
+    return feedback
+
+
 # -------------------------------------------------------------------------- #
 #                            Metric #1 Credibility                           #
 # -------------------------------------------------------------------------- #
-def credibility_kyc(balances, txn, feedback):
+def credibility_kyc(txn, balances, feedback):
     '''
     Description:
         checks whether an ETH wallet address has legitimate transaction history and active balances
 
     Parameters:
-        balances (dict): Covalent class A endpoint 'balances_v2'
         txn (dict): Covalent class A endpoint 'transactions_v2'
+        balances (dict): Covalent class A endpoint 'balances_v2'
         feedback (dict): score feedback
 
     Returns:
@@ -150,7 +172,7 @@ def credibility_kyc(balances, txn, feedback):
     try:
         # Assign max score as long as the user owns a
         # non-zero balance and a credible transaction history
-        if txn['items'] and sum([b['quote'] for b in balances['items']]) > 50:
+        if txn['items'] and sum([b['quote'] for b in balances['items']]) > 10:
             score = 1
             feedback['credibility']['verified'] = True
         else:

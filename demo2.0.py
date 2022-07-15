@@ -77,16 +77,6 @@ def compute_covalent_score(balances, txn, portfolio, coinmarketcap_key, loan_req
         feedback = create_feedback(models)
         feedback['fetch'] = {}
 
-        ic(loan_range)
-        ic(score_range)
-        ic(qualitative_range)
-        ic(thresholds)
-        ic(params)
-        ic(models)
-        ic(metrics)
-        ic(messages)
-        ic(feedback)
-
        # no need to fetch data, since data was already 
        # passed as arguments to this function
 
@@ -96,7 +86,6 @@ def compute_covalent_score(balances, txn, portfolio, coinmarketcap_key, loan_req
             thresholds['coinmarketcap_currencies'],
             thresholds['erc_tokens']
         )
-        ic(erc_rank)
 
         # compute score and feedback
         score, feedback = covalent_score(
@@ -181,5 +170,5 @@ if __name__ == '__main__':
     # iteratively compute scores
     for y in range(11):
         balances, txn, portfolio = read_json(y)
+        print(balances['address'])
         r = compute_covalent_score(balances, txn, portfolio, getenv('COINMARKETCAP_KEY'), 24000)
-        print(balances['address'], r)

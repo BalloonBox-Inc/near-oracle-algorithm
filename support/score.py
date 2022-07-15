@@ -84,7 +84,7 @@ def covalent_score(score_range, feedback, model_weights, metric_weigths, params,
     params = covalent_params(params, score_range)
 
     credibility, feedback = covalent_credibility(
-        txn, balances, feedback, metric_weigths, params)
+        txn, balances, portfolio, feedback, metric_weigths, params)
     wealth, feedback = covalent_wealth(
         txn, balances, feedback, metric_weigths, params, erc_rank)
     traffic, feedback = covalent_traffic(

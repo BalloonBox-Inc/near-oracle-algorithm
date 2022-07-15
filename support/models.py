@@ -298,11 +298,18 @@ def coinbase_activity(acc, txn, feedback, weights, params):
         frequency_txn, avg_run_bal, due_date, fico_medians, mtx_traffic, mtx_stamina
     ]
 '''
-def covalent_credibility(txn, balances, feedback, weights, params):
+def covalent_credibility(txn, balances, portfolio, feedback, weights, params):
+
+    feedback = fetch_covalent(
+        txn,
+        balances,
+        portfolio,
+        feedback
+        )
 
     kyc, feedback = credibility_kyc(
-        balances,
         txn, 
+        balances,
         feedback
         )
 
