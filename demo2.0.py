@@ -97,6 +97,7 @@ def compute_covalent_score(balances, txn, portfolio, coinmarketcap_key, loan_req
             balances,
             portfolio
         )
+        print(score)
         ic(score)
         ic(feedback)
 
@@ -170,3 +171,4 @@ if __name__ == '__main__':
         balances, txn, portfolio = read_json(y, getenv('COV_DIR'))
         print(balances['address'])
         r = compute_covalent_score(balances, txn, portfolio, getenv('COINMARKETCAP_KEY'), 24000)
+        print(r)
