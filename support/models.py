@@ -82,18 +82,16 @@ def coinbase_kyc(acc, txn, feedback):
 
 def coinbase_history(acc, feedback, params):
 
-    score, feedback = history_acc_longevity(acc, feedback, params[1], params[7])
+    score, feedback = history_acc_longevity(acc, feedback, params)
 
     return score, feedback
 
 
 def coinbase_liquidity(acc, txn, feedback, weights, params):
 
-    balance, feedback = liquidity_tot_balance_now(acc, feedback, params[2], params[7])
-    feedback = liquidity_loan_duedate(txn, feedback, params[0])
-    run_balance, feedback = liquidity_avg_running_balance(
-        acc, txn, feedback, params[1], params[2], params[6]
-    )
+    balance, feedback = liquidity_tot_balance_now(acc, feedback, params)
+    feedback = liquidity_loan_duedate(txn, feedback, params)
+    run_balance, feedback = liquidity_avg_running_balance(acc, txn, feedback, params)
 
     a = list(weights.values())[:2]
     b = [balance, run_balance]
@@ -106,20 +104,14 @@ def coinbase_liquidity(acc, txn, feedback, weights, params):
 def coinbase_activity(acc, txn, feedback, weights, params):
 
     credit_volume, feedback = activity_tot_volume_tot_count(
-        txn, "credit", feedback, params[2], params[4], params[5]
+        txn, "credit", feedback, params
     )
     debit_volume, feedback = activity_tot_volume_tot_count(
-        txn, "debit", feedback, params[2], params[4], params[5]
+        txn, "debit", feedback, params
     )
-    credit_consistency, feedback = activity_consistency(
-        txn, "credit", feedback, params[1], params[3], params[6]
-    )
-    debit_consistency, feedback = activity_consistency(
-        txn, "debit", feedback, params[1], params[3], params[6]
-    )
-    inception, feedback = activity_profit_since_inception(
-        acc, txn, feedback, params[3], params[7]
-    )
+    credit_consistency, feedback = activity_consistency(txn, "credit", feedback, params)
+    debit_consistency, feedback = activity_consistency(txn, "debit", feedback, params)
+    inception, feedback = activity_profit_since_inception(acc, txn, feedback, params)
 
     a = list(weights.values())[2:]
     b = [credit_volume, debit_volume, credit_consistency, debit_consistency, inception]
@@ -132,12 +124,6 @@ def coinbase_activity(acc, txn, feedback, weights, params):
 # -------------------------------------------------------------------------- #
 #                               Covalent Model                               #
 # -------------------------------------------------------------------------- #
-"""
-    params = [
-        count_to_four, volume_now, volume_per_txn, duration, count_operations, cred_deb,
-        frequency_txn, avg_run_bal, due_date, fico_medians, mtx_traffic, mtx_stamina
-    ]
-"""
 
 
 def covalent_credibility(txn, balances, portfolio, feedback, weights, params):
