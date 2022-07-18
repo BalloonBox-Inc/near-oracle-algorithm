@@ -170,3 +170,4 @@ if __name__ == '__main__':
         balances, txn, portfolio = read_json(y, getenv('COV_DIR'))
         print(balances['address'])
         r = compute_covalent_score(balances, txn, portfolio, getenv('COINMARKETCAP_KEY'), 24000)
+        print(r)

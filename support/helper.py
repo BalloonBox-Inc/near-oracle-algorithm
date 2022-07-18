@@ -195,6 +195,11 @@ def covalent_params(params, score_range):
     fico_medians.append(1)
     fico_medians = immutable_array(np.array(fico_medians))
 
-    r = [count_to_four, volume_now, volume_per_txn, duration, count_operations, cred_deb,
+
+    k = ['count_to_four', 'volume_now', 'volume_per_txn', 'duration', 'count_operations', 'cred_deb',
+        'frequency_txn', 'avg_run_bal', 'due_date', 'fico_medians', 'mtx_traffic', 'mtx_stamina']
+
+    v = [count_to_four, volume_now, volume_per_txn, duration, count_operations, cred_deb,
         frequency_txn, avg_run_bal, due_date, fico_medians, mtx_traffic, mtx_stamina]
-    return r
+
+    return dict(zip(k,v))
