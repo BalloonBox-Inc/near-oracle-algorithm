@@ -171,7 +171,7 @@ def covalent_params(params, score_range):
     count_operations = immutable_array(
         np.array(params['metrics']['count_operations']))
     cred_deb = immutable_array(
-        np.array(params['metrics']['cred_deb'])*100) #should be *1000
+        np.array(params['metrics']['cred_deb'])*1000) #should be *1000
     frequency_txn = immutable_array(
         np.array(params['metrics']['frequency_txn']))
     avg_run_bal = immutable_array(

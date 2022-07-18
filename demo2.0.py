@@ -97,7 +97,6 @@ def compute_covalent_score(balances, txn, portfolio, coinmarketcap_key, loan_req
             balances,
             portfolio
         )
-        print(score)
         ic(score)
         ic(feedback)
 
