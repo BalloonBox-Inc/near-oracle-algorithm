@@ -1,4 +1,4 @@
-from support.metrics_plaid import *  # import code to get tested
+from support.metrics_plaid import *
 from support.helper import *
 from config.helper import *
 from datetime import datetime

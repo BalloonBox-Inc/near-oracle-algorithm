@@ -1,4 +1,4 @@
-from support.metrics_coinbase import *  # import code to get tested
+from support.metrics_coinbase import *
 from config.helper import *
 from support.helper import *
 from datetime import datetime
@@ -12,7 +12,6 @@ dummy_data = 'test_coinbase.json'
 
 json_file = os.path.join(os.path.dirname(
     __file__).replace('/tests', '/data'), dummy_data)
-
 
 # -------------------------------------------------------------------------- #
 #                               Helper Functions                             #
