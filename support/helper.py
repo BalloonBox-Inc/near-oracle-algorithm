@@ -252,8 +252,7 @@ def coinbase_params(params, score_range):
         fico_medians,
     ]
 
-    # return dict(zip(k, v))
-    return v
+    return dict(zip(k, v))
 
 
 def covalent_params(params, score_range):
