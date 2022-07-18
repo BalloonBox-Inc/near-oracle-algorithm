@@ -396,7 +396,8 @@ def interpret_score_covalent(score, feedback, score_range, loan_range, quality_r
             feedback['credibility']['verified'] == False) or \
             ('fetch' in feedback.keys() and \
             feedback['fetch']['JSONDecodeError'] == True):
-            pass
+                interpret['score']['points'] = 300
+                interpret['score']['quality'] = 'very poor'
             
         else:
             interpret['score']['score_exist'] = True
