@@ -104,14 +104,6 @@ async def credit_score_plaid(request: Request, response: Response, item: Plaid_I
         ic(score)
         ic(feedback)
 
-        # collect feedback
-        collect = dict(feedback)
-        collect['score'] = score
-        collect['validator'] = 'plaid'
-        collect['loan_request'] = item.loan_request
-        file = path.join(root_dir(), 'support/feedback.json')
-        append_json(collect, file)
-
         # validate loan request and transaction history
         if not validate_loan_request(
             loan_range, feedback, "stability", "cumulative_current_balance"

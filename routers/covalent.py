@@ -96,14 +96,6 @@ async def credit_score_covalent(request: Request, response: Response, item: Cova
         ic(score)
         ic(feedback)
 
-        # collect feedback
-        collect = dict(feedback)
-        collect['score'] = score
-        collect['validator'] = 'covalent'
-        collect['loan_request'] = item.loan_request
-        file = path.join(root_dir(), 'support/feedback.json')
-        append_json(collect, file)
-
         # compute risk
         risk = calc_risk(
             score,
