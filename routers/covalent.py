@@ -46,7 +46,7 @@ async def credit_score_covalent(request: Request, response: Response, item: Cova
         qualitative_range = configs['qualitative_range']
 
         thresholds = configs['minimum_requirements']['covalent']['thresholds']
-        params = configs['minimum_requirements']['covalent']['params']
+        parm = configs['minimum_requirements']['covalent']['params']
 
         models, metrics = read_models_and_metrics(
             configs['minimum_requirements']['covalent']['scores']['models'])
@@ -59,7 +59,7 @@ async def credit_score_covalent(request: Request, response: Response, item: Cova
         ic(score_range)
         ic(qualitative_range)
         ic(thresholds)
-        ic(params)
+        ic(parm)
         ic(models)
         ic(metrics)
         ic(messages)
@@ -87,7 +87,7 @@ async def credit_score_covalent(request: Request, response: Response, item: Cova
             feedback,
             models,
             metrics,
-            params,
+            parm,
             erc_rank,
             txn,
             balances,

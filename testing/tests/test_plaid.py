@@ -19,13 +19,16 @@ json_file = os.path.join(os.path.dirname(
 # -------------------------------------------------------------------------- #
 
 def str_to_datetime(plaid_txn, feedback):
-    """
-    serialize a Python data structure converting string instances into datetime objects
-            Parameters:
-                plaid_txn (list): locally stored Plaid data used for testing purposes
-            Returns:
-                tx (dict): serialized dict containing user accounts and transactions. String dates are converted to datetime objects
-     """
+    '''
+    Description:
+        serialize a Python data structure converting string instances into datetime objects
+    
+    Parameters:
+        plaid_txn (list): locally stored Plaid data used for testing purposes
+    
+    Returns:
+        tx (dict): serialized dict containing user accounts and transactions. String dates are converted to datetime objects
+     '''
     try:
         # Keep only completed transactions (filter out pending transactions)
         all_txn = []
