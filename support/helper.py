@@ -1,5 +1,39 @@
+from ndicts.ndicts import NestedDict
+from datetime import datetime
+from datetime import timezone
 from operator import mul
+from os import path
 import numpy as np
+import json
+
+
+def root_dir():
+    return path.dirname(__file__).replace('./support', '')
+
+
+def append_json(d, filename):
+    d['timestamp'] = datetime.now(
+        timezone.utc).strftime('%m-%d-%Y %H:%M:%S GMT')
+
+    nd = NestedDict(d)
+    for k, value in nd.items():
+        ln = len(k)
+        if isinstance(value, np.integer):
+            if ln == 1:
+                nd[k] = int(value)
+            elif ln == 2:
+                nd[k[0], k[1]] = int(value)
+        elif isinstance(value, np.floating):
+            if ln == 1:
+                nd[k] = float(value)
+            elif ln == 2:
+                nd[k[0], k[1]] = float(value)
+
+    with open(filename, 'r+') as f:
+        data = json.load(f)
+        data['data'].append(nd.to_dict())
+        f.seek(0)
+        json.dump(data, f, ensure_ascii=False, indent=4)
 
 
 def dot_product(l1, l2):
@@ -75,12 +109,14 @@ def build_normalized_matrix(size, scalar):
     """
     m = np.zeros(size)
     # evaluate the bottom right element in the matrix and use it to normalize the matrix
-    extrema = round(scalar[0] * np.log(m.shape[0]) + scalar[1] * np.log(m.shape[1]), 2)
+    extrema = round(scalar[0] * np.log(m.shape[0]) +
+                    scalar[1] * np.log(m.shape[1]), 2)
 
     for a in range(m.shape[0]):
         for b in range(m.shape[1]):
             m[a][b] = round(
-                (scalar[0] * np.log(a + 1) + scalar[1] * np.log(b + 1)) / extrema, 2
+                (scalar[0] * np.log(a + 1) + scalar[1]
+                 * np.log(b + 1)) / extrema, 2
             )
     return m
 
@@ -91,8 +127,10 @@ def plaid_params(params, score_range):
     duration = immutable_array(np.array(params["metrics"]["duration"]))
     count_zero = immutable_array(np.array(params["metrics"]["count_zero"]))
     count_invest = immutable_array(np.array(params["metrics"]["count_invest"]))
-    volume_credit = immutable_array(np.array(params["metrics"]["volume_credit"]) * 1000)
-    volume_invest = immutable_array(np.array(params["metrics"]["volume_invest"]) * 1000)
+    volume_credit = immutable_array(
+        np.array(params["metrics"]["volume_credit"]) * 1000)
+    volume_invest = immutable_array(
+        np.array(params["metrics"]["volume_invest"]) * 1000)
     volume_balance = immutable_array(
         np.array(params["metrics"]["volume_balance"]) * 1000
     )
@@ -132,12 +170,17 @@ def plaid_params(params, score_range):
     fico_medians.append(1)
     fico_medians = immutable_array(np.array(fico_medians))
 
-    count_lively = immutable_array(np.array([round(x, 0) for x in fico * 25])[1:])
+    count_lively = immutable_array(
+        np.array([round(x, 0) for x in fico * 25])[1:])
     count_txn = immutable_array(np.array([round(x, 0) for x in fico * 40])[1:])
-    volume_flow = immutable_array(np.array([round(x, 0) for x in fico * 1500])[1:])
-    volume_withdraw = immutable_array(np.array([round(x, 0) for x in fico * 1500])[1:])
-    volume_deposit = immutable_array(np.array([round(x, 0) for x in fico * 7000])[1:])
-    volume_min = immutable_array(np.array([round(x, 0) for x in fico * 10000])[1:])
+    volume_flow = immutable_array(
+        np.array([round(x, 0) for x in fico * 1500])[1:])
+    volume_withdraw = immutable_array(
+        np.array([round(x, 0) for x in fico * 1500])[1:])
+    volume_deposit = immutable_array(
+        np.array([round(x, 0) for x in fico * 7000])[1:])
+    volume_min = immutable_array(
+        np.array([round(x, 0) for x in fico * 10000])[1:])
     credit_util_pct = immutable_array(
         np.array([round(x, 2) for x in reversed(fico * 0.9)][:-1])
     )
@@ -207,7 +250,8 @@ def coinbase_params(params, score_range):
     volume_balance = immutable_array(
         np.array(params["metrics"]["volume_balance"]) * 1000
     )
-    volume_profit = immutable_array(np.array(params["metrics"]["volume_profit"]) * 1000)
+    volume_profit = immutable_array(
+        np.array(params["metrics"]["volume_profit"]) * 1000)
     count_txn = immutable_array(np.array(params["metrics"]["count_txn"]))
     activity_vol_mtx = immutable_array(
         build_2d_matrix(
@@ -257,7 +301,8 @@ def coinbase_params(params, score_range):
 
 def covalent_params(params, score_range):
 
-    count_to_four = immutable_array(np.array(params["metrics"]["count_to_four"]))
+    count_to_four = immutable_array(
+        np.array(params["metrics"]["count_to_four"]))
     volume_now = immutable_array(
         np.array(params["metrics"]["volume_now"]) * 1000
     )  # should be *1000
@@ -265,11 +310,13 @@ def covalent_params(params, score_range):
         np.array(params["metrics"]["volume_per_txn"]) * 100
     )  # should be *100
     duration = immutable_array(np.array(params["metrics"]["duration"]))
-    count_operations = immutable_array(np.array(params["metrics"]["count_operations"]))
+    count_operations = immutable_array(
+        np.array(params["metrics"]["count_operations"]))
     cred_deb = immutable_array(
         np.array(params["metrics"]["cred_deb"]) * 1000
     )  # should be *1000
-    frequency_txn = immutable_array(np.array(params["metrics"]["frequency_txn"]))
+    frequency_txn = immutable_array(
+        np.array(params["metrics"]["frequency_txn"]))
     avg_run_bal = immutable_array(
         np.array(params["metrics"]["avg_run_bal"]) * 100
     )  # should be *100
