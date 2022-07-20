@@ -132,6 +132,12 @@ async def credit_score_coinbase(request: Request, response: Response, item: Coin
         ic(score)
         ic(feedback)
 
+       # validate loan request
+        if not validate_loan_request(
+            loan_range, feedback, "liquidity", "avg_running_balance"
+        ):
+            raise Exception(messages["not_qualified"].format(loan_range[0]))
+
         # compute risk
         risk = calc_risk(
             score,

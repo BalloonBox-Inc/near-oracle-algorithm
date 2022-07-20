@@ -112,6 +112,14 @@ async def credit_score_plaid(request: Request, response: Response, item: Plaid_I
         ic(score)
         ic(feedback)
 
+        # validate loan request and transaction history
+        if not validate_loan_request(
+            loan_range, feedback, "stability", "cumulative_current_balance"
+        ) or not validate_txn_history(
+            thresholds["transactions_period"], feedback, "stability", "txn_history"
+        ):
+            raise Exception(messages["not_qualified"].format(loan_range[0]))
+
         # compute risk
         risk = calc_risk(
             score,
