@@ -132,6 +132,14 @@ async def credit_score_coinbase(request: Request, response: Response, item: Coin
         ic(score)
         ic(feedback)
 
+        # collect feedback
+        collect = dict(feedback)
+        collect['score'] = score
+        collect['validator'] = 'coinbase'
+        collect['loan_request'] = item.loan_request
+        file = path.join(root_dir(), 'support/feedback.json')
+        append_json(collect, file)
+
        # validate loan request
         if not validate_loan_request(
             loan_range, feedback, "liquidity", "avg_running_balance"

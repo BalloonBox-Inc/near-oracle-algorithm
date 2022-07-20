@@ -120,6 +120,14 @@ async def credit_score_plaid(request: Request, response: Response, item: Plaid_I
         ):
             raise Exception(messages["not_qualified"].format(loan_range[0]))
 
+        # collect feedback
+        collect = dict(feedback)
+        collect['score'] = score
+        collect['validator'] = 'plaid'
+        collect['loan_request'] = item.loan_request
+        file = path.join(root_dir(), 'support/feedback.json')
+        append_json(collect, file)
+
         # compute risk
         risk = calc_risk(
             score,
