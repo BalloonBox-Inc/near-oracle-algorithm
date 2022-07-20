@@ -14,19 +14,21 @@ NOW = datetime.now().date()
 
 
 def dynamic_select(acc, txn, acc_name, feedback):
-    """
-    dynamically pick the best credit account,
-    i.e. the account that performs best in 2 out of these 3 categories:
-    highest credit limit / largest txn count / longest txn history
+    '''
+    Description:
+        dynamically pick the best credit account,
+        i.e. the account that performs best in 2 out of these 3 categories:
+        highest credit limit / largest txn count / longest txn history
+    
+    Parameters:
+        acc (list): Plaid 'Accounts' product
+        txn (list): Plaid 'Transactions' product
+        acc_name (str): acccepts 'credit' or 'checking'
+        feedback (dict): feedback describing the score
 
-            Parameters:
-                data (dict): Plaid 'Transactions' product
-                acc_name (str): acccepts 'credit' or 'checking'
-                feedback (dict): feedback describing the score
-
-            Returns:
-                best (str or dict): Plaid account_id of best credit account
-    """
+    Returns:
+        best (str or dict): Plaid account_id of best credit account     
+    '''
     try:
         info = list()
         matrix = []
@@ -50,7 +52,8 @@ def dynamic_select(acc, txn, acc_name, feedback):
                 matrix.append([limit, txn_count, length])
 
         if len(info) != 0:
-            # Build a matrix where each column is a different account. Choose the one performing best among the 3 categories
+            # Build a matrix where each column is a different account. 
+            # Choose the one performing best among the 3 categories
             m = np.array(matrix).T
             m[0] = m[0] * 1  # assign 1pt to credit limit
             m[1] = m[1] * 10  # assign 10pt to txn count
@@ -70,17 +73,19 @@ def dynamic_select(acc, txn, acc_name, feedback):
 
 
 def flows(acc, txn, how_many_months, feedback):
-    """
-    returns monthly net flow
+    '''
+    Description:
+        returns monthly net flow
+    
+    Parameters:
+        acc (list): Plaid 'Accounts' product
+        txn (list): Plaid 'Transactions' product
+        how_many_month (float): how many months of transaction history are you considering?
+        feedback (dict): feedback describing the score
 
-            Parameters:
-                data (dict): Plaid 'Transactions' product
-                how_many_month (float): how many months of transaction history are you considering?
-                feedback (dict): feedback describing the score
-
-            Returns:
-                flow (df): pandas dataframe with amounts for net monthly flow and datetime index
-    """
+    Returns:
+        flow (df): pandas dataframe with amounts for net monthly flow and datetime index    
+    '''
     try:
         dates = list()
         amounts = list()
@@ -132,16 +137,17 @@ def flows(acc, txn, how_many_months, feedback):
 
 
 def balance_now_checking_only(acc, feedback):
-    """
-    returns total balance available now in the user's checking accounts
+    '''
+    Description:
+        returns total balance available now in the user's checking accounts
+    
+    Parameters:
+        acc (list): Plaid 'Accounts' product
+        feedback (dict): feedback describing the score
 
-            Parameters:
-                data (dict): Plaid 'Transactions' product
-                feedback (dict): feedback describing the score
-
-            Returns:
-                balance (float): cumulative current balance in checking accounts
-    """
+    Returns:
+        balance (float): cumulative current balance in checking accounts    
+    '''
     try:
         balance = 0
         for a in acc:
@@ -156,18 +162,17 @@ def balance_now_checking_only(acc, feedback):
 
 
 def plaid_kyc(txn):
-    """
+    '''
     Description:
         returns 1 if the oracle believes this is a legitimate user
         with some credible history. Returns 0 otherwise
 
     Parameters:
-        txn (dict): Plaid 'Transactions' product
+        txn (list): Plaid 'Transactions' product
 
     Returns:
         (boolean): binary response 1|0, depending on whether the user is legitimate
-    """
-
+    '''
     try:
         # Pass KYC if the account has some txn history
         if txn:
@@ -184,28 +189,31 @@ def plaid_kyc(txn):
 # -------------------------------------------------------------------------- #
 # @measure_time_and_memory
 def credit_mix(txn, credit, feedback, params):
-    """
+    '''
     Description:
         A score based on user's credit accounts composition and status
 
     Parameters:
-        data (dict): Plaid 'Transactions' product
+        txn (list): Plaid 'Transactions' product
+        credit (list): Plaid 'Accounts' product - credit accounts only
         feedback (dict): score feedback
+        params (dict): model parameters, i.e. coefficients
 
     Returns:
         score (float): gained based on number of credit accounts owned and duration
         feedback (dict): score feedback
-    """
+    '''
 
     try:
         if credit:
-            card_names = [
+            credit_mix.card_names = [
                 d["name"].lower().replace("credit", "").title().strip()
                 for d in credit
                 if (isinstance(d["name"], str)) and (d["name"].lower() != "credit card")
             ]
 
-            credit_ids = [d["account_id"] for d in credit_mix.credit]
+            credit_mix.credit = credit # for unittests
+            credit_ids = [d["account_id"] for d in credit]
             credit_txn = [d for d in txn if d["account_id"] in credit_ids]
 
             first_txn = credit_txn[-1]["date"]
@@ -217,7 +225,7 @@ def credit_mix(txn, credit, feedback, params):
             score = params["credit_mix_mtx"][m][n]
 
             feedback["credit"]["credit_cards"] = size
-            feedback["credit"]["card_names"] = card_names
+            feedback["credit"]["card_names"] = credit_mix.card_names
         else:
             raise Exception("no credit card")
 
@@ -231,18 +239,20 @@ def credit_mix(txn, credit, feedback, params):
 
 # @measure_time_and_memory
 def credit_limit(txn, credit, feedback, params):
-    """
+    '''
     Description:
         A score for the cumulative credit limit of a user across ALL of his credit accounts
 
     Parameters:
-        data (dict): Plaid 'Transactions' product
+        txn (list): Plaid 'Transactions' product
+        credit (list): Plaid 'Accounts' product - credit accounts only
         feedback (dict): score feedback
+        params (dict): model parameters, i.e. coefficients
 
     Returns:
         score (float): gained based on the cumulative credit limit across all credit accounts
         feedback (dict): score feedback
-    """
+    '''
 
     try:
         if credit:
@@ -277,19 +287,20 @@ def credit_limit(txn, credit, feedback, params):
 
 # @measure_time_and_memory
 def credit_util_ratio(acc, txn, feedback, params):
-    """
+    '''
     Description:
         A score reflective of the user's credit utilization ratio, that is credit_used/credit_limit
 
     Parameters:
-        data (dict): Plaid 'Transactions' product
+        acc (list): Plaid 'Accounts' product
+        txn (list): Plaid 'Transactions' product
         feedback (dict): score feedback
+        params (dict): model parameters, i.e. coefficients
 
     Returns:
         score (float): score for avg percent of credit limit used
         feedback (dict): score feedback
-    """
-
+    '''
     try:
         # Dynamically select best credit account
         dynamic = dynamic_select(acc, txn, "credit", feedback)
@@ -349,17 +360,21 @@ def credit_util_ratio(acc, txn, feedback, params):
 
 # @measure_time_and_memory
 def credit_interest(acc, txn, feedback, params):
-    """
-    returns score based on number of times user was charged credit card interest fees in past 24 months
+    '''
+    Description:
+        returns score based on number of times user was charged 
+        credit card interest fees in past 24 months
 
-            Parameters:
-                data (dict): Plaid 'Transactions' product
-                feedback (dict): feedback describing the score
+    Parameters:
+        acc (list): Plaid 'Accounts' product
+        txn (list): Plaid 'Transactions' product
+        feedback (dict): score feedback
+        params (dict): model parameters, i.e. coefficients
 
-            Returns:
-                score (float): gained based on interest charged
-                feedback (dict): feedback describing the score
-    """
+    Returns:
+        score (float): gained based on interest charged
+        feedback (dict): feedback describing the score
+    '''
     try:
         id = dynamic_select(acc, txn, "credit", feedback)["id"]
 
@@ -403,17 +418,20 @@ def credit_interest(acc, txn, feedback, params):
 
 # @measure_time_and_memory
 def credit_length(acc, txn, feedback, params):
-    """
-    returns score based on length of user's best credit account
+    '''
+    Description:
+        returns score based on length of user's best credit account
 
-            Parameters:
-                data (dict): Plaid 'Transactions' product
-                feedback (dict): feedback describing the score
+    Parameters:
+        acc (list): Plaid 'Accounts' product
+        txn (list): Plaid 'Transactions' product
+        feedback (dict): score feedback
+        params (dict): model parameters, i.e. coefficients
 
-            Returns:
-                score (float): gained because of credit account duration
-                feedback (dict): feedback describing the score
-    """
+    Returns:
+        score (float): gained because of credit account duration
+        feedback (dict): feedback describing the score
+    '''
     try:
         id = dynamic_select(acc, txn, "credit", feedback)["id"]
         alltxn = [t for t in txn if t["account_id"] == id]
@@ -441,17 +459,20 @@ def credit_length(acc, txn, feedback, params):
 
 # @measure_time_and_memory
 def credit_livelihood(acc, txn, feedback, params):
-    """
-    returns score quantifying the avg monthly txn count for your best credit account
+    '''
+    Description:
+        returns score quantifying the avg monthly txn count for your best credit account
 
-            Parameters:
-                data (dict): Plaid 'Transactions' product
-                feedback (dict): feedback describing the score
+    Parameters:
+        acc (list): Plaid 'Accounts' product
+        txn (list): Plaid 'Transactions' product
+        feedback (dict): score feedback
+        params (dict): model parameters, i.e. coefficients
 
-            Returns:
-                score (float): based on avg monthly txn count
-                feedback (dict): feedback describing the score
-    """
+    Returns:
+        score (float): based on avg monthly txn count
+        feedback (dict): feedback describing the score
+    '''
     try:
         id = dynamic_select(acc, txn, "credit", feedback)["id"]
         alltxn = [t for t in txn if t["account_id"] == id]
@@ -501,17 +522,19 @@ def credit_livelihood(acc, txn, feedback, params):
 
 # @measure_time_and_memory
 def velocity_withdrawals(txn, feedback, params):
-    """
-    returns score based on count and volumne of monthly automated withdrawals
+    '''
+    Description:
+        returns score based on count and volumne of monthly automated withdrawals
 
-            Parameters:
-                data (dict): Plaid 'Transactions' product
-                feedback (dict): feedback describing the score
+    Parameters:
+        txn (list): Plaid 'Transactions' product
+        feedback (dict): score feedback
+        params (dict): model parameters, i.e. coefficients
 
-            Returns:
-                score (float): score associated with reccurring monthly withdrawals
-                feedback (dict): feedback describing the score
-    """
+    Returns:
+        score (float): score associated with reccurring monthly withdrawals
+        feedback (dict): feedback describing the score
+    '''
     try:
         withdraw = [
             ["Service", "Subscription"],
@@ -558,17 +581,19 @@ def velocity_withdrawals(txn, feedback, params):
 
 # @measure_time_and_memory
 def velocity_deposits(txn, feedback, params):
-    """
-    returns score based on count and volumne of monthly automated deposits
+    '''
+    Description:
+        returns score based on count and volumne of monthly automated deposits
 
-            Parameters:
-                data (dict): Plaid 'Transactions' product
-                feedback (dict): feedback describing the score
+    Parameters:
+        txn (list): Plaid 'Transactions' product
+        feedback (dict): score feedback
+        params (dict): model parameters, i.e. coefficients
 
-            Returns:
-                score (float): score associated with direct deposits
-                feedback (dict): feedback describing the score
-    """
+    Returns:
+        score (float): score associated with direct deposits
+        feedback (dict): feedback describing the score
+    '''
     try:
         dates = list()
         amounts = list()
@@ -609,17 +634,20 @@ def velocity_deposits(txn, feedback, params):
 
 # @measure_time_and_memory
 def velocity_month_net_flow(acc, txn, feedback, params):
-    """
-    returns score for monthly net flow
+    '''
+    Description:
+        returns score for monthly net flow
 
-            Parameters:
-                data (dict): Plaid 'Transactions' product
-                feedback (dict): feedback describing the score
+    Parameters:
+        acc (list): Plaid 'Accounts' product
+        txn (list): Plaid 'Transactions' product
+        feedback (dict): score feedback
+        params (dict): model parameters, i.e. coefficients
 
-            Returns:
-                score (float): score associated with monthly new flow
-                feedback (dict): feedback describing the score
-    """
+    Returns:
+        score (float): score associated with monthly new flow
+        feedback (dict): feedback describing the score
+    '''
     try:
         flow = flows(acc, txn, 12, feedback)
 
@@ -653,17 +681,20 @@ def velocity_month_net_flow(acc, txn, feedback, params):
 
 # @measure_time_and_memory
 def velocity_month_txn_count(acc, txn, feedback, params):
-    """
-    returns score based on count of mounthly transactions
+    '''
+    Description:
+        returns score based on count of mounthly transactions
 
-            Parameters:
-                data (dict): Plaid 'Transactions' product
-                feedback (dict): feedback describing the score
+    Parameters:
+        acc (list): Plaid 'Accounts' product
+        txn (list): Plaid 'Transactions' product
+        feedback (dict): score feedback
+        params (dict): model parameters, i.e. coefficients
 
-            Returns:
-                score (float): the larger the monthly count the larger the score
-                feedback (dict): feedback describing the score
-    """
+    Returns:
+        score (float): the larger the monthly count the larger the score
+        feedback (dict): feedback describing the score
+    '''
     try:
         dates = list()
         amounts = list()
@@ -716,17 +747,20 @@ def velocity_month_txn_count(acc, txn, feedback, params):
 
 # @measure_time_and_memory
 def velocity_slope(acc, txn, feedback, params):
-    """
-    returns score for the historical behavior of the net monthly flow for past 24 months
+    '''
+    Description:
+        returns score for the historical behavior of the net monthly flow for past 24 months
+ 
+    Parameters:
+        acc (list): Plaid 'Accounts' product
+        txn (list): Plaid 'Transactions' product
+        feedback (dict): score feedback
+        params (dict): model parameters, i.e. coefficients
 
-            Parameters:
-                data (dict): Plaid 'Transactions' product
-                feedback (dict): feedback describing the score
-
-            Returns:
-                score (float): score for flow net behavior over past 24 months
-                feedback (dict): feedback describing the score
-    """
+    Returns:
+        score (float): score for flow net behavior over past 24 months
+        feedback (dict): feedback describing the score
+    '''
     try:
         flow = flows(acc, txn, 24, feedback)
 
@@ -778,18 +812,20 @@ def velocity_slope(acc, txn, feedback, params):
 
 # @measure_time_and_memory
 def stability_tot_balance_now(depository, non_depository, feedback, params):
-    """
+    '''
     Description:
         A score based on total balance now across ALL accounts owned by the user
 
     Parameters:
-        data (dict): Plaid 'Transactions' product
+        depository (list): Plaid 'Accounts' product - depository accounts only
+        non_depository (list): Plaid 'Accounts' product - except depository accounts
         feedback (dict): score feedback
+        params (dict): model parameters, i.e. coefficients
 
     Returns:
         score (float): cumulative current balance
         feedback (dict): score feedback
-    """
+    '''
     try:
         x = sum(
             [
@@ -825,17 +861,19 @@ def stability_tot_balance_now(depository, non_depository, feedback, params):
 
 # @measure_time_and_memory
 def stability_loan_duedate(txn, feedback, params):
-    """
+    '''
     Description:
         returns how many months it'll take the user to pay back their loan
 
     Parameters:
-        data (dict): Plaid 'Transactions' product
+        txn (list): Plaid 'Transactions' product
         feedback (dict): score feedback
+        params (dict): model parameters, i.e. coefficients
 
     Returns:
-        feedback (dict): score feedback with a new key-value pair 'loan_duedate':float (# of months in range [3,6])
-    """
+        feedback (dict): score feedback with a new key-value pair 
+        'loan_duedate':float (# of months in range [3,6])
+    '''
 
     try:
         # Read in the date of the oldest txn
@@ -857,18 +895,20 @@ def stability_loan_duedate(txn, feedback, params):
 
 # @measure_time_and_memory
 def stability_min_running_balance(acc, txn, feedback, params):
-    """
+    '''
     Description:
         A score based on the average minimum balance maintained for 12 months
 
     Parameters:
-        data (dict): Plaid 'Transactions' product
+        acc (list): Plaid 'Accounts' product
+        txn (list): Plaid 'Transactions' product
         feedback (dict): score feedback
+        params (dict): model parameters, i.e. coefficients
 
     Returns:
         score (float): volume of minimum balance and duration
         feedback (dict): score feedback
-    """
+    '''
 
     try:
         # Calculate net flow each month for past 12 months i.e, |income-expenses|
@@ -917,18 +957,20 @@ def stability_min_running_balance(acc, txn, feedback, params):
 
 # @measure_time_and_memory
 def diversity_acc_count(acc, txn, feedback, params):
-    """
+    '''
     Description:
         A score based on count of accounts owned by the user and account duration
 
     Parameters:
-        data (dict): Plaid 'Transactions' product
+        acc (list): Plaid 'Accounts' product
+        txn (list): Plaid 'Transactions' product
         feedback (dict): score feedback
+        params (dict): model parameters, i.e. coefficients
 
     Returns:
         score (float): score for accounts count
         feedback (dict): score feedback
-    """
+    '''
 
     try:
         size = len(acc)
@@ -951,18 +993,19 @@ def diversity_acc_count(acc, txn, feedback, params):
 
 # @measure_time_and_memory
 def diversity_profile(acc, feedback, params):
-    """
+    '''
     Description:
         A score for number of saving and investment accounts owned
 
     Parameters:
-        data (dict): Plaid 'Transactions' product
+        acc (list): Plaid 'Accounts' product
         feedback (dict): score feedback
+        params (dict): model parameters, i.e. coefficients
 
     Returns:
         score (float): points scored for accounts owned
         feedback (dict): score feedback
-    """
+    '''
 
     try:
         myacc = list()

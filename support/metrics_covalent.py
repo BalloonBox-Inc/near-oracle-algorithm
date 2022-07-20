@@ -196,7 +196,7 @@ def credibility_kyc(txn, balances, feedback):
         return score, feedback
 
 
-def credibility_oldest_txn(txn, feedback, fico_medians, duration):
+def credibility_oldest_txn(txn, feedback, params):
     '''
     Description:
         reads the date of the oldest recorded transaction, and rewards a score accondingly
@@ -216,7 +216,7 @@ def credibility_oldest_txn(txn, feedback, fico_medians, duration):
             txn['items'][-1]['block_signed_at'].split('T')[0], '%Y-%m-%d').date()
         how_long = (NOW - oldest).days
 
-        score = fico_medians[np.digitize(how_long, duration, right=True)]
+        score = params['fico_medians'][np.digitize(how_long, params['duration'], right=True)]
         feedback['credibility']['longevity(days)'] = how_long
 
     except Exception as e:
@@ -230,7 +230,7 @@ def credibility_oldest_txn(txn, feedback, fico_medians, duration):
 # -------------------------------------------------------------------------- #
 #                              Metric #2 Wealth                              #
 # -------------------------------------------------------------------------- #
-def wealth_capital_now(balances, feedback, fico_medians, volume_now):
+def wealth_capital_now(balances, feedback, params):
     '''
     Description:
         returns score based on total volume of token owned (USD) now
@@ -252,8 +252,8 @@ def wealth_capital_now(balances, feedback, fico_medians, volume_now):
             if total == 0:
                 score = 0
             else:
-                score = fico_medians[np.digitize(
-                    total, volume_now, right=True)]
+                score = params['fico_medians'][np.digitize(
+                    total, params['volume_now'], right=True)]
             feedback['wealth']['cum_balance_now'] = round(total, 2)
         else:
             raise Exception('quote_currency should be USD')
@@ -266,7 +266,7 @@ def wealth_capital_now(balances, feedback, fico_medians, volume_now):
         return score, feedback
 
 
-def wealth_capital_now_adjusted(balances, feedback, erc_rank, fico_medians, volume_now):
+def wealth_capital_now_adjusted(balances, feedback, erc_rank, params):
     ''' 
     Description:
         adjusted tot balance of token owned (USD). Accounts for the Coinmarketcap ranking of the token owned
@@ -301,8 +301,8 @@ def wealth_capital_now_adjusted(balances, feedback, erc_rank, fico_medians, volu
                 penalty = np.e**(erc_rank[ticker]**(1/3.5))
                 adjusted_balance += round(1 - penalty / 100, 2) * balance
 
-                score = fico_medians[np.digitize(
-                    adjusted_balance, volume_now, right=True)]
+                score = params['fico_medians'][np.digitize(
+                    adjusted_balance, params['volume_now'], right=True)]
                 feedback['wealth']['cum_balance_now(adjusted)'] = round(
                     adjusted_balance, 2)
 
@@ -314,7 +314,7 @@ def wealth_capital_now_adjusted(balances, feedback, erc_rank, fico_medians, volu
         return score, feedback
 
 
-def wealth_volume_per_txn(txn, feedback, fico_medians, volume_per_txn):
+def wealth_volume_per_txn(txn, feedback, params):
     '''
     Description:
        returns a score for the avg volume per transaction
@@ -338,8 +338,8 @@ def wealth_volume_per_txn(txn, feedback, fico_medians, volume_per_txn):
                 volume += t['value_quote']
             volume_avg = volume/len(txn['items'])
 
-            score = fico_medians[np.digitize(
-                volume_avg, volume_per_txn, right=True)]
+            score = params['fico_medians'][np.digitize(
+                volume_avg, params['volume_per_txn'], right=True)]
             feedback['wealth']['avg_volume_per_txn'] = round(volume_avg, 2)
 
         else:
@@ -356,7 +356,7 @@ def wealth_volume_per_txn(txn, feedback, fico_medians, volume_per_txn):
 # -------------------------------------------------------------------------- #
 #                             Metric #3 Traffic                              #
 # -------------------------------------------------------------------------- #
-def traffic_cred_deb(txn, feedback, operation, count_operations, cred_deb, mtx_traffic):
+def traffic_cred_deb(txn, feedback, operation, params):
     '''
     Description:
         rewarding points proportionally to the count and volume of credit and debit transactions
@@ -387,8 +387,8 @@ def traffic_cred_deb(txn, feedback, operation, count_operations, cred_deb, mtx_t
                     if t['to_address'] == eth_wallet:
                         counts += 1
                         volume += t['value_quote']
-                count_operations = count_operations/2
-                cred_deb = cred_deb/2
+                count_operations = params['count_operations']/2
+                cred_deb = params['cred_deb']/2
 
             # debit
             elif operation == 'debit':
@@ -396,6 +396,8 @@ def traffic_cred_deb(txn, feedback, operation, count_operations, cred_deb, mtx_t
                     if t['from_address'] == eth_wallet:
                         counts += 1
                         volume += t['value_quote']
+                count_operations = params['count_operations']
+                cred_deb = params['cred_deb']
 
             # transfer
             elif operation == 'transfer':
@@ -403,8 +405,8 @@ def traffic_cred_deb(txn, feedback, operation, count_operations, cred_deb, mtx_t
                     if eth_wallet not in [t['from_address'], t['to_address']]:
                         counts += 1
                         volume += t['value_quote']
-                count_operations = count_operations/2.5
-                cred_deb = cred_deb/2
+                count_operations = params['count_operations']/2.5
+                cred_deb = params['cred_deb']/2
                 
             # except
             else:
@@ -417,7 +419,7 @@ def traffic_cred_deb(txn, feedback, operation, count_operations, cred_deb, mtx_t
 
         m = np.digitize(counts, count_operations, right=True)
         n = np.digitize(volume, cred_deb, right=True)
-        score = mtx_traffic[m][n]
+        score = params['mtx_traffic'][m][n]
         feedback['traffic'][f'count_{operation}_txns'] =  counts
         feedback['traffic'][f'volume_{operation}_txns'] = round(volume, 2)
 
@@ -429,7 +431,7 @@ def traffic_cred_deb(txn, feedback, operation, count_operations, cred_deb, mtx_t
         return score, feedback
 
 
-def traffic_dustiness(txn, feedback, fico_medians):
+def traffic_dustiness(txn, feedback, params):
     '''
     Description:
         accounts for legitimate transactions over total transactions
@@ -446,8 +448,8 @@ def traffic_dustiness(txn, feedback, fico_medians):
     '''
     try:
         legit_ratio = len(swiffer_duster(txn, feedback)['items']) / len(txn['items'])
-        score = fico_medians[np.digitize(
-            legit_ratio, fico_medians[1:]*0.8, right=True)]
+        score = params['fico_medians'][np.digitize(
+            legit_ratio, params['fico_medians'][1:]*0.8, right=True)]
         feedback['traffic']['legit_txn_ratio'] = round(legit_ratio, 2)
 
     except Exception as e:
@@ -458,7 +460,7 @@ def traffic_dustiness(txn, feedback, fico_medians):
         return score, feedback
 
 
-def traffic_running_balance(portfolio, feedback, fico_medians, avg_run_bal, erc_rank):
+def traffic_running_balance(portfolio, feedback, params, erc_rank):
     '''
     Description:
         score earned based on the average volume per txn
@@ -494,7 +496,7 @@ def traffic_running_balance(portfolio, feedback, fico_medians, avg_run_bal, erc_
 
         best_avg = max(overview.values())
         traffic_running_balance.best_token = list(overview.keys())[list(overview.values()).index(best_avg)]
-        score = fico_medians[np.digitize(best_avg, avg_run_bal, right=True)]
+        score = params['fico_medians'][np.digitize(best_avg, params['avg_run_bal'], right=True)]
         feedback['traffic']['avg_running_balance(best_token)'] = round(
             best_avg, 2)
 
@@ -506,7 +508,7 @@ def traffic_running_balance(portfolio, feedback, fico_medians, avg_run_bal, erc_
         return score, feedback
 
 
-def traffic_frequency(txn, feedback, fico_medians, frequency_txn):
+def traffic_frequency(txn, feedback, params):
     '''
     Description:
         reward wallet address with frequent monthly transactions
@@ -530,7 +532,7 @@ def traffic_frequency(txn, feedback, fico_medians, frequency_txn):
             duration = int((NOW - oldest).days/30)  # months
 
             frequency = round(len(txn['items']) / duration, 2)
-            score = fico_medians[np.digitize(frequency, frequency_txn, right=True)]
+            score = params['fico_medians'][np.digitize(frequency, params['frequency_txn'], right=True)]
             feedback['traffic']['txn_frequency'] = f'{frequency} txn/month over {duration} months'
         else:
             score = 0
@@ -547,7 +549,7 @@ def traffic_frequency(txn, feedback, fico_medians, frequency_txn):
 # -------------------------------------------------------------------------- #
 #                             Metric #4 Stamina                              #
 # -------------------------------------------------------------------------- #
-def stamina_methods_count(txn, feedback, count_to_four, volume_now, mtx_stamina):
+def stamina_methods_count(txn, feedback, params):
     '''
     Description:
         rewards the user for the number of distinct methods they performed in their 
@@ -582,9 +584,9 @@ def stamina_methods_count(txn, feedback, count_to_four, volume_now, mtx_stamina)
         # keep only methods with cumulative traded volume > $10 USD
         count = len([k for k in methods.keys() if methods[k] > 10])
         volume = sum(list(methods.values()))
-        m = np.digitize(count, count_to_four*2, right=True)
-        n = np.digitize(volume, volume_now*1.5, right=True)
-        score = mtx_stamina[m][n]
+        m = np.digitize(count, params['count_to_four']*2, right=True)
+        n = np.digitize(volume, params['volume_now']*1.5, right=True)
+        score = params['mtx_stamina'][m][n]
         feedback['stamina']['methods_volume'] = volume
 
     except Exception as e:
@@ -595,7 +597,7 @@ def stamina_methods_count(txn, feedback, count_to_four, volume_now, mtx_stamina)
         return score, feedback
 
 
-def stamina_coins_count(balances, feedback, count_to_four, volume_now, mtx_stamina, erc_rank):
+def stamina_coins_count(balances, feedback, params, erc_rank):
     '''
     Description:
         How many cryptocurrencies does the wallet address own? 
@@ -628,9 +630,9 @@ def stamina_coins_count(balances, feedback, count_to_four, volume_now, mtx_stami
                 weight = (sum(ranks) / erc_rank[b['contract_ticker_symbol']]) / sum([sum(ranks)/r for r in ranks])
                 weighted_sum += b['quote']*weight
 
-        m = np.digitize(stamina_coins_count.unique_coins, count_to_four, right=True)
-        n = np.digitize(weighted_sum, volume_now*0.5, right=True)
-        score = mtx_stamina[m][n]
+        m = np.digitize(stamina_coins_count.unique_coins, params['count_to_four'], right=True)
+        n = np.digitize(weighted_sum, params['volume_now']*0.5, right=True)
+        score = params['mtx_stamina'][m][n]
         feedback['stamina']['coins_count'] = stamina_coins_count.unique_coins
 
     except Exception as e:
@@ -641,7 +643,7 @@ def stamina_coins_count(balances, feedback, count_to_four, volume_now, mtx_stami
         return score, feedback
 
 
-def stamina_dexterity(portfolio, feedback, count_to_four, volume_now, mtx_stamina):
+def stamina_dexterity(portfolio, feedback, params):
     '''
     Description:
         does this user buy when the market is bearish and sell when the market is bullish? 
@@ -681,9 +683,9 @@ def stamina_dexterity(portfolio, feedback, count_to_four, volume_now, mtx_stamin
             count += len(bear_trades) + len(bull_trades)
             traded += sum(bear_trades) + sum(bull_trades)
 
-        m = np.digitize(count, count_to_four, right=True)
-        n = np.digitize(traded, volume_now/10, right=True)
-        score = mtx_stamina[m][n]
+        m = np.digitize(count, params['count_to_four'], right=True)
+        n = np.digitize(traded, params['volume_now']/10, right=True)
+        score = params['mtx_stamina'][m][n]
         feedback['stamina']['count_smart_trades'] = count
 
     except Exception as e:
@@ -694,7 +696,7 @@ def stamina_dexterity(portfolio, feedback, count_to_four, volume_now, mtx_stamin
         return score, feedback
 
 
-def stamina_loan_duedate(txn, feedback, due_date):
+def stamina_loan_duedate(txn, feedback, params):
     '''
     Description:
         returns how many months it'll take the user to pay back their loan
@@ -714,8 +716,8 @@ def stamina_loan_duedate(txn, feedback, due_date):
         txn_length = int((NOW - oldest_txn).days/30)  # months
 
         # Loan duedate is equal to the month of txn history there are
-        due = np.digitize(txn_length, due_date, right=True)
-        how_many_months = np.append(due_date, 6)
+        due = np.digitize(txn_length, params['due_date'], right=True)
+        how_many_months = np.append(params['due_date'], 6)
 
         feedback['stamina']['loan_duedate'] = how_many_months[due]
 

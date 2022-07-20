@@ -133,7 +133,7 @@ def covalent_credibility(txn, balances, portfolio, feedback, weights, params):
     kyc, feedback = credibility_kyc(txn, balances, feedback)
 
     inception, feedback = credibility_oldest_txn(
-        txn, feedback, params["fico_medians"], params["duration"]
+        txn, feedback, params
     )
 
     a = list(weights.values())[:2]
@@ -147,15 +147,15 @@ def covalent_credibility(txn, balances, portfolio, feedback, weights, params):
 def covalent_wealth(txn, balances, feedback, weights, params, erc_rank):
 
     capital_now, feedback = wealth_capital_now(
-        balances, feedback, params["fico_medians"], params["volume_now"]
+        balances, feedback, params
     )
 
     capital_now_adj, feedback = wealth_capital_now_adjusted(
-        balances, feedback, erc_rank, params["fico_medians"], params["volume_now"]
+        balances, feedback, erc_rank, params
     )
 
     volume_per_txn, feedback = wealth_volume_per_txn(
-        txn, feedback, params["fico_medians"], params["volume_per_txn"]
+        txn, feedback, params
     )
 
     a = list(weights.values())[2:5]
@@ -172,28 +172,24 @@ def covalent_traffic(txn, portfolio, feedback, weights, params, erc_rank):
         txn,
         feedback,
         "credit",
-        params["count_operations"],
-        params["cred_deb"],
-        params["mtx_traffic"],
+        params
     )
 
     debit, feedback = traffic_cred_deb(
         txn,
         feedback,
         "debit",
-        params["count_operations"],
-        params["cred_deb"],
-        params["mtx_traffic"],
+        params
     )
 
-    dust, feedback = traffic_dustiness(txn, feedback, params["fico_medians"])
+    dust, feedback = traffic_dustiness(txn, feedback, params)
 
     run_balance, feedback = traffic_running_balance(
-        portfolio, feedback, params["fico_medians"], params["avg_run_bal"], erc_rank
+        portfolio, feedback, params, erc_rank
     )
 
     frequency, feedback = traffic_frequency(
-        txn, feedback, params["fico_medians"], params["frequency_txn"]
+        txn, feedback, params
     )
 
     a = list(weights.values())[5:10]
@@ -209,29 +205,23 @@ def covalent_stamina(txn, balances, portfolio, feedback, weights, params, erc_ra
     methods, feedback = stamina_methods_count(
         txn,
         feedback,
-        params["count_to_four"],
-        params["volume_now"],
-        params["mtx_stamina"],
+        params
     )
 
     coins, feedback = stamina_coins_count(
         balances,
         feedback,
-        params["count_to_four"],
-        params["volume_now"],
-        params["mtx_stamina"],
-        erc_rank,
+        params,
+        erc_rank
     )
 
     dexterity, feedback = stamina_dexterity(
         portfolio,
         feedback,
-        params["count_to_four"],
-        params["volume_now"],
-        params["mtx_stamina"],
+        params
     )
 
-    feedback = stamina_loan_duedate(txn, feedback, params["due_date"])
+    feedback = stamina_loan_duedate(txn, feedback, params)
 
     a = list(weights.values())[10:]
     b = [coins, methods, dexterity]
