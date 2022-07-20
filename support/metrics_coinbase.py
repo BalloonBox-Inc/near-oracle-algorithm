@@ -19,7 +19,7 @@ def nested_dict(d, keys, value):
 
 
 def net_flow(txn, timeframe, feedback):
-    """
+    '''
     Description:
         Returns monthly net flow (income - expenses)
 
@@ -30,7 +30,7 @@ def net_flow(txn, timeframe, feedback):
 
     Returns:
         flow (dataframe): net monthly flow by datetime
-    """
+    '''
 
     try:
         accepted_types = {
@@ -86,18 +86,19 @@ def net_flow(txn, timeframe, feedback):
 
 # @measure_time_and_memory
 def coinbase_kyc(acc, txn):
-    """
+    '''
     Description:
         returns 1 if the oracle believes this is a legitimate user
         with some credible history. Returns 0 otherwise
 
     Parameters:
-        acc (list): non-zero balance Coinbase accounts owned by the user in currencies of trusted reputation
+        acc (list): non-zero balance Coinbase accounts owned by 
+            the user in currencies of trusted reputation
         txn (list): transactions history of above-listed accounts
 
     Returns:
         (boolean): binary kyc verification 1|0
-    """
+    '''
 
     try:
         # Pass KYC check iff the Coinbase account has trusted data
@@ -117,19 +118,19 @@ def coinbase_kyc(acc, txn):
 
 # @measure_time_and_memory
 def kyc(acc, txn, feedback):
-    """
+    '''
     Description:
         A score based on Coinbase KYC verification process
 
     Parameters:
-        acc (list): non-zero balance Coinbase accounts owned by the user in currencies of trusted reputation
+        acc (list): non-zero balance Coinbase accounts owned by the user
         txn (list): transactions history of above-listed accounts
         feedback (dict): score feedback
 
     Returns:
         score (int): binary kyc verification
         feedback (dict): score feedback
-    """
+    '''
 
     try:
         # Assign max score as long as the user owns some credible non-zero balance accounts with some transaction history
@@ -156,18 +157,19 @@ def kyc(acc, txn, feedback):
 
 
 def history_acc_longevity(acc, feedback, params):
-    """
+    '''
     Description:
         A score based on the longevity of user's best Coinbase accounts
 
     Parameters:
-        acc (list): non-zero balance Coinbase accounts owned by the user in currencies of trusted reputation
+        acc (list): non-zero balance Coinbase accounts owned by the user
         feedback (dict): score feedback
+        params (dict): model parameters, i.e. coefficients
 
     Returns:
         score (float): score gained based on account longevity
         feedback (dict): score feedback
-    """
+    '''
 
     try:
         # Retrieve creation date of oldest user account
@@ -198,18 +200,19 @@ def history_acc_longevity(acc, feedback, params):
 
 # @measure_time_and_memory
 def liquidity_tot_balance_now(acc, feedback, params):
-    """
+    '''
     Description:
         A score based on cumulative balance of user's accounts
 
     Parameters:
-        acc (list): non-zero balance Coinbase accounts owned by the user in currencies of trusted reputation
+        acc (list): non-zero balance Coinbase accounts owned by the user
         feedback (dict): score feedback
+        params (dict): model parameters, i.e. coefficients
 
     Returns:
         score (float): score gained based on cumulative balance across accounts
         feedback (dict): score feedback
-    """
+    '''
 
     try:
         # Calculate tot balance now
@@ -241,17 +244,19 @@ def liquidity_tot_balance_now(acc, feedback, params):
 
 # @measure_time_and_memory
 def liquidity_loan_duedate(txn, feedback, params):
-    """
+    '''
     Description:
         returns how many months it'll take the user to pay back their loan
 
     Parameters:
         txn (list): transactions history of above-listed accounts
         feedback (dict): score feedback
+        params (dict): model parameters, i.e. coefficients
 
     Returns:
-        feedback (dict): score feedback with a new key-value pair 'loan_duedate':float (# of months in range [3,6])
-    """
+        feedback (dict): score feedback with a new key-value pair 
+            'loan_duedate':float (# of months in range [3,6])
+    '''
 
     try:
         # Read in the date of the oldest txn
@@ -275,19 +280,20 @@ def liquidity_loan_duedate(txn, feedback, params):
 
 # @measure_time_and_memory
 def liquidity_avg_running_balance(acc, txn, feedback, params):
-    """
+    '''
     Description:
         A score based on the average running balance maintained for the past 12 months
 
     Parameters:
-        acc (list): non-zero balance Coinbase accounts owned by the user in currencies of trusted reputation
+        acc (list): non-zero balance Coinbase accounts owned by the user
         txn (list): transactions history of above-listed accounts
         feedback (dict): score feedback
+        params (dict): model parameters, i.e. coefficients
 
     Returns:
         score (float): score gained for mimimum running balance
         feedback (dict): score feedback
-    """
+    '''
 
     try:
         if txn:
@@ -339,18 +345,21 @@ def liquidity_avg_running_balance(acc, txn, feedback, params):
 
 # @measure_time_and_memory
 def activity_tot_volume_tot_count(txn, type, feedback, params):
-    """
+    '''
     Description:
-        A score based on the count and volume of credit OR debit transactions across user's Coinbase accounts
+        A score based on the count and volume of credit OR 
+        debit transactions across user's Coinbase accounts
 
     Parameters:
-        txn (list): transactions history of non-zero balance Coinbase accounts owned by the user in currencies of trusted reputation
+        txn (list): transactions history of non-zero balance Coinbase accounts owned by the user
         type (str): accepts 'credit' or 'debit'
+        feedback (dict): score feedback
+        params (dict): model parameters, i.e. coefficients
 
     Returns:
         score (float): score gained for count and volume of credit transactions
         feedback (dict): score feedback
-    """
+    '''
 
     try:
         # Calculate total volume of credit OR debit and txn counts
@@ -386,18 +395,20 @@ def activity_tot_volume_tot_count(txn, type, feedback, params):
 
 # @measure_time_and_memory
 def activity_consistency(txn, type, feedback, params):
-    """
+    '''
     Description:
         A score based on the the weigthed monthly average credit OR debit volume over time
 
     Parameters:
-        txn (list): transactions history of non-zero balance Coinbase accounts owned by the user in currencies of trusted reputation
+        txn (list): transactions history of non-zero balance Coinbase accounts owned by the user
         type (str): accepts 'credit' or 'debit'
+        feedback (dict): score feedback
+        params (dict): model parameters, i.e. coefficients
 
     Returns:
         score (float): score for consistency of credit OR debit weighted avg monthly volume
         feedback (dict): score feedback
-    """
+    '''
 
     try:
         if txn:
@@ -456,19 +467,21 @@ def activity_consistency(txn, type, feedback, params):
 
 # @measure_time_and_memory
 def activity_profit_since_inception(acc, txn, feedback, params):
-    """
+    '''
     Description:
         A score based on total user profit since account inception. We define net profit as:
-            net profit = (tot withdrawals) + (tot Coinbase balance now) - (tot injections into your wallet)
+        net profit = (tot withdrawals) + (tot Coinbase balance now) - (tot injections into your wallet)
 
     Parameters:
-        acc (list): non-zero balance Coinbase accounts owned by the user in currencies of trusted reputation
+        acc (list): non-zero balance Coinbase accounts owned by the user
         txn (list): transaction history of above-listed accounts
+        feedback (dict): score feedback
+        params (dict): model parameters, i.e. coefficients
 
     Returns:
         score (int): for user total net profit thus far
         feedback (dict): score feedback
-    """
+    '''
 
     try:
         accepted_types = {

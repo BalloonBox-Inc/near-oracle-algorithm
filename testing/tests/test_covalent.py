@@ -58,17 +58,16 @@ class TestMetricCredibility(unittest.TestCase):
         length = credibility_oldest_txn(
             self.txn, 
             self.fb, 
-            self.parm['fico_medians'], 
-            self.parm['duration']
+            self.parm
             )
 
         if length[1]['credibility']['longevity(days)'] >= 270: #days
             self.assertEqual(length[0], 1)
 
         self.assertRaises(
-            Exception, 
+            Exception,
             credibility_oldest_txn, 
-            ({}, self.fb, self.parm['fico_medians'], self.parm['duration'])
+            ({}, self.fb, self.parm)
             )
 
 
@@ -103,20 +102,19 @@ class TestMetricWealth(unittest.TestCase):
         # cumulative capital now should match the sum of all balances now
         tot = sum([b['quote'] for b in self.bal['items']])
         tot_bal = wealth_capital_now(
-            self.bal, self.fb, self.parm['fico_medians'], self.parm['volume_now']
+            self.bal, self.fb, self.parm
             )
 
         self.assertEqual(int(tot_bal[1]['wealth']['cum_balance_now']), int(tot))
         self.assertIn('error', wealth_capital_now({}, 
             self.fb, 
-            self.parm['fico_medians'], 
-            self.parm['volume_now'])[1]['wealth']
+            self.parm)[1]['wealth']
             )
         self.bal['quote_currency'] = 'EUR'
         self.assertRaises(
             Exception, 
             wealth_capital_now, 
-            (self.bal, self.fb, self.parm['fico_medians'], self.parm['volume_now']) 
+            (self.bal, self.fb, self.parm) 
             )
 
     def test_wealth_capital_now_adjusted(self):
@@ -125,8 +123,7 @@ class TestMetricWealth(unittest.TestCase):
             self.bal,
             self.fb,
             ERC_RANK,
-            self.parm['fico_medians'],
-            self.parm['volume_now']
+            self.parm
         )
         keep_erc = [b['contract_ticker_symbol'] for b in wealth_capital_now_adjusted.top['items']]
         for erc in keep_erc:
@@ -141,12 +138,11 @@ class TestMetricWealth(unittest.TestCase):
         avg1 = wealth_volume_per_txn(
             self.txn,
             self.fb,
-            self.parm['fico_medians'],
-            self.parm['volume_per_txn']
+            self.parm
             )
         self.assertEqual(int(avg1[1]['wealth']['avg_volume_per_txn']), int(avg0))
         self.assertEqual(
-            wealth_volume_per_txn({}, self.fb, self.parm['fico_medians'], self.parm['volume_per_txn'])[0], 0)
+            wealth_volume_per_txn({}, self.fb, self.parm)[0], 0)
         self.assertRaises(Exception, wealth_volume_per_txn, ({}, self.fb, {}, None))
 
 
@@ -186,27 +182,23 @@ class TestMetricTraffic(unittest.TestCase):
             self.txn,
             self.fb,
             'credit',
-            self.parm['count_operations'],
-            self.parm['cred_deb'],
-            self.parm['mtx_traffic']
+            self.parm
         )
         self.assertTrue('volume_credit_txns' in list(out[1]['traffic'].keys()))
         self.assertRaises(Exception, traffic_cred_deb, traffic_cred_deb(
             self.txn,
             self.fb,
             'swap',
-            self.parm['count_operations'],
-            self.parm['cred_deb'],
-            self.parm['mtx_traffic']
+            self.parm
         ), "you passed an invalid param: accepts only 'credit', 'debit', or 'transfer'")
 
 
     def test_traffic_dustiness(self):
         # when all txn are voluminous, the user should earn the max score of 1
         if len(swiffer_duster(self.txn, self.fb)['items']) == len(self.txn['items']):
-            self.assertEqual(traffic_dustiness(self.txn, self.fb, self.parm['fico_medians'])[0], 1)
+            self.assertEqual(traffic_dustiness(self.txn, self.fb, self.parm)[0], 1)
         self.assertIn('error',
-            list(traffic_dustiness(self.bal, self.fb, self.parm['fico_medians'])[1]['traffic'].keys())
+            list(traffic_dustiness(self.bal, self.fb, self.parm)[1]['traffic'].keys())
             )
 
     def test_traffic_running_balance(self):
@@ -214,8 +206,7 @@ class TestMetricTraffic(unittest.TestCase):
         a = traffic_running_balance(
             self.por,
             self.fb,
-            self.parm['fico_medians'],
-            self.parm['avg_run_bal'],
+            self.parm,
             ERC_RANK
             )
         quotes = [y['close']['quote'] for x in self.por['items'] for y in x['holdings']\
@@ -226,7 +217,7 @@ class TestMetricTraffic(unittest.TestCase):
 
     def test_traffic_frequency(self):
         # score > 0.5 when monthly_txn_frequency > 0.5
-        a = traffic_frequency(self.txn, self.fb, self.parm['fico_medians'], self.parm['frequency_txn'])
+        a = traffic_frequency(self.txn, self.fb, self.parm)
         frequency = float(a[1]['traffic']['txn_frequency'].split(' ')[0])
         if frequency > 0.5:
             self.assertGreater(a[0], 0.5)
@@ -269,9 +260,7 @@ class TestMetricStamina(unittest.TestCase):
         stamina_methods_count(
             self.txn,
             self.fb,
-            self.parm['count_to_four'],
-            self.parm['volume_now'],
-            self.parm['mtx_stamina']
+            self.parm
         )
         methods = list(set([t['log_events'][0]['decoded']['name']\
             for t in self.txn['items'] if t['log_events']]))
@@ -283,9 +272,7 @@ class TestMetricStamina(unittest.TestCase):
         stamina_coins_count(
             self.bal,
             self.fb,
-            self.parm['count_to_four'],
-            self.parm['volume_now'],
-            self.parm['mtx_stamina'],
+            self.parm,
             ERC_RANK
             )
         coins = [c['contract_ticker_symbol'] for c in self.bal['items']\
@@ -298,9 +285,7 @@ class TestMetricStamina(unittest.TestCase):
             (
                 self.txn,
                 self.fb,
-                self.parm['count_to_four'],
-                self.parm['volume_now'],
-                self.parm['mtx_stamina'],
+                self.parm,
                 ERC_RANK
             )
         )
@@ -310,9 +295,7 @@ class TestMetricStamina(unittest.TestCase):
         smart_trades = stamina_dexterity(
             self.por, 
             self.fb, 
-            self.parm['count_to_four'], 
-            self.parm['volume_now'], 
-            self.parm['mtx_stamina']
+            self.parm,
             )
         self.assertIsInstance(smart_trades[1]['stamina']['count_smart_trades'], int)
         self.assertRaises(Exception, stamina_dexterity, ({}, self.fb, None, None, None))
@@ -323,13 +306,12 @@ class TestMetricStamina(unittest.TestCase):
         longevity = credibility_oldest_txn(
             self.txn, 
             self.fb, 
-            self.parm['fico_medians'], 
-            self.parm['duration']
+            self.parm,
             )[1]['credibility']['longevity(days)']
         duedate = stamina_loan_duedate(
             self.txn,
             self.fb,
-            self.parm['due_date']
+            self.parm
             )['stamina']['loan_duedate']
 
         self.assertGreater(longevity/30, duedate)
@@ -471,18 +453,18 @@ class TestParametrizeCovalent(unittest.TestCase):
 
         self.args2 = [
             list(),
-            [self.parm['fico_medians'], self.parm['duration']],
-            [self.parm['fico_medians'], self.parm['volume_now']],
-            [ERC_RANK, self.parm['fico_medians'], self.parm['volume_now']],
-            [self.parm['fico_medians'], self.parm['volume_per_txn']],
-            ['credit', self.parm['count_operations'], self.parm['cred_deb'], self.parm['mtx_traffic']],
-            ['debit', self.parm['count_operations'], self.parm['cred_deb'], self.parm['mtx_traffic']],
-            [self.parm['fico_medians']],
-            [self.parm['fico_medians'], self.parm['avg_run_bal'], ERC_RANK],
-            [self.parm['fico_medians'], self.parm['frequency_txn']],
-            [self.parm['count_to_four'], self.parm['volume_now'], self.parm['mtx_stamina']],
-            [self.parm['count_to_four'], self.parm['volume_now'], self.parm['mtx_stamina'], ERC_RANK],
-            [self.parm['count_to_four'], self.parm['volume_now'], self.parm['mtx_stamina']]
+            [self.parm],
+            [self.parm],
+            [ERC_RANK, self.parm],
+            [self.parm],
+            ['credit', self.parm],
+            ['debit', self.parm],
+            [self.parm],
+            [self.parm, ERC_RANK],
+            [self.parm],
+            [self.parm],
+            [self.parm, ERC_RANK],
+            [self.parm],
         ]
 
         self.fn = {
