@@ -18,13 +18,16 @@ json_file = os.path.join(os.path.dirname(
 #                                                                            #
 # -------------------------------------------------------------------------- #
 def str_to_date(acc, feedback):
-    """
-    serialize a Python data structure converting string instances into datetime objects
-            Parameters:
-                tx (list): locally stored Coinbase data. Either account OR transactions data
-            Returns:
-                all_txn (list): serialized list containing user accounts OR transactions. String dates are converted to datetime objects
-     """
+    '''
+    Description:
+        serialize a Python data structure converting string instances into datetime objects
+    
+    Parameters:
+        tx (list): locally stored Coinbase data. Either account OR transactions data
+            
+    Returns:
+        all_txn (list): serialized list containing user accounts OR transactions. String dates are converted to datetime objects
+    '''
     try:
         converted = []
         for x in acc:

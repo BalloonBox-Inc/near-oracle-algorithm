@@ -105,23 +105,32 @@ def top_erc_only(data, feedback, top_erc):
         feedback['fetch'][top_erc_only.__name__] = str(e)
 
 
-def covalent_kyc(balances, txn):
+def covalent_kyc(txn, balances, portfolio):
     '''
     Description:
         returns 1 if the oracle believes this is a legitimate user
         with some credible history. Returns 0 otherwise
 
     Parameters:
-        balances (dict): Covalent class A endpoint 'balances_v2'
         txn (dict): Covalent class A endpoint 'transactions_v2'
+        balances (dict): Covalent class A endpoint 'balances_v2'
+        portfolio (dict): Covalent class A endpoint 'portfolio_v2'
 
     Returns:
         (boolean): 1 if user is legitimate and 0 otherwise
     '''
     try:
+        oldest = datetime.strptime(
+            txn['items'][-1]['block_signed_at'].split('T')[0], '%Y-%m-%d').date()
+        how_long = (NOW - oldest).days
+
         # Assign max score as long as the user owns a
-        # non-zero balance and a credible transaction history
-        if txn['items'] and sum([b['quote'] for b in balances['items']]) > 1:
+        # non-zero balance, a credible transaction history,
+        # a portfolio, and a wallet opened > 3 months ago
+        if txn['items']\
+            and portfolio['items']\
+                and sum([b['quote'] for b in balances['items']]) > 1\
+                    and how_long >= 90:
             return True
         else:
             return False
@@ -276,18 +285,19 @@ def wealth_capital_now_adjusted(balances, feedback, erc_rank, fico_medians, volu
     try:
         # Keep only balances data of top rankes ERC tokens
         top_erc = list(erc_rank.keys())
-        balances = top_erc_only(balances, feedback, top_erc)
+        wealth_capital_now_adjusted.top = top_erc_only(balances, feedback, top_erc)
 
-        total = sum([b['quote'] for b in balances['items']])
+        total = sum([b['quote'] for b in wealth_capital_now_adjusted.top['items']])
         if total == 0:
             score = 0
             feedback['wealth']['cum_balance_now(adjusted)'] = 0
         else:
             adjusted_balance = 0
-            for b in balances['items']:
+            for b in wealth_capital_now_adjusted.top['items']:
                 balance = b['quote']
                 ticker = b['contract_ticker_symbol']
-                # multiply the balance owned per token by a weight proportional to that token's ranking on Coinmarketcap
+                # multiply the balance owned per token by a weight inversely
+                # proportional to that token's ranking on Coinmarketcap
                 penalty = np.e**(erc_rank[ticker]**(1/3.5))
                 adjusted_balance += round(1 - penalty / 100, 2) * balance
 
@@ -483,6 +493,7 @@ def traffic_running_balance(portfolio, feedback, fico_medians, avg_run_bal, erc_
             overview[ticker] = avg
 
         best_avg = max(overview.values())
+        traffic_running_balance.best_token = list(overview.keys())[list(overview.values()).index(best_avg)]
         score = fico_medians[np.digitize(best_avg, avg_run_bal, right=True)]
         feedback['traffic']['avg_running_balance(best_token)'] = round(
             best_avg, 2)
@@ -511,7 +522,7 @@ def traffic_frequency(txn, feedback, fico_medians, frequency_txn):
         feedback (dict): updated score feedback
     '''
     try:
-        # remove 'dust' transactions from your dataset
+        # remove 'dusty' transactions
         txn = swiffer_duster(txn, feedback)
         if txn['items']:
             datum = txn['items'][-1]['block_signed_at'].split('T')[0]
@@ -553,15 +564,16 @@ def stamina_methods_count(txn, feedback, count_to_four, volume_now, mtx_stamina)
         feedback (dict): updated score feedback
     '''
     try:
-        # remove 'dust' transactions from your dataset
+        # remove 'dusty' transactions
         txn = swiffer_duster(txn, feedback)
         if txn['items']:
             all = [(t['log_events'][0]['decoded']['name'], t['value_quote'])\
                 for t in txn['items'] if t['log_events'] and t['log_events'][0]['decoded']]
 
-            methods = {}
+            stamina_methods_count.methods = {}
             for a in set([x[0] for x in all]):
-                methods[a] = int(sum([y[1] for y in all if a == y[0]]))
+                stamina_methods_count.methods[a] = int(sum([y[1] for y in all if a == y[0]]))
+            methods = stamina_methods_count.methods
 
         else:
             score = 0
@@ -609,17 +621,17 @@ def stamina_coins_count(balances, feedback, count_to_four, volume_now, mtx_stami
         volumes = [b['quote'] for b in balances['items'] if b['quote'] != 0]
         ranks = [erc_rank[b['contract_ticker_symbol']]
                     for b in balances['items'] if b['quote'] != 0]
-        unique_coins = len(volumes)
+        stamina_coins_count.unique_coins = len(volumes)
 
         for b in balances['items']:
             if b['quote'] != 0:
                 weight = (sum(ranks) / erc_rank[b['contract_ticker_symbol']]) / sum([sum(ranks)/r for r in ranks])
                 weighted_sum += b['quote']*weight
 
-        m = np.digitize(unique_coins, count_to_four, right=True)
+        m = np.digitize(stamina_coins_count.unique_coins, count_to_four, right=True)
         n = np.digitize(weighted_sum, volume_now*0.5, right=True)
         score = mtx_stamina[m][n]
-        feedback['stamina']['coins_count'] = unique_coins
+        feedback['stamina']['coins_count'] = stamina_coins_count.unique_coins
 
     except Exception as e:
         score = 0
