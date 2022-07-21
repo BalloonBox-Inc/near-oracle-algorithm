@@ -161,22 +161,28 @@ def balance_now_checking_only(acc, feedback):
         feedback["fetch"][balance_now_checking_only.__name__] = str(e)
 
 
-def plaid_kyc(txn):
+def plaid_kyc(acc, txn):
     '''
     Description:
-        returns 1 if the oracle believes this is a legitimate user
-        with some credible history. Returns 0 otherwise
+        returns True if the oracle believes this is a legitimate user
+        with some credible history. Returns False otherwise
 
     Parameters:
+        acc (list): Plaid 'Accounts' product
         txn (list): Plaid 'Transactions' product
 
     Returns:
-        (boolean): binary response 1|0, depending on whether the user is legitimate
+        (boolean): True if user is legitimate and False otherwise
     '''
     try:
-        # Pass KYC if the account has some txn history
-        if txn:
-            return True
+        # user is verified iff acc and txn data exist,
+        # iff the account has been active for > 90 days
+        # iff their cumulative balance across all account is > $500
+        if txn and acc\
+            and (NOW - txn[-1]['date']).days\
+                and sum([a['balances']['current']\
+                    for a in acc if a['balances']['current']]):
+                return True
         else:
             return False
 

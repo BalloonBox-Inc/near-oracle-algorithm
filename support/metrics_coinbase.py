@@ -88,8 +88,8 @@ def net_flow(txn, timeframe, feedback):
 def coinbase_kyc(acc, txn):
     '''
     Description:
-        returns 1 if the oracle believes this is a legitimate user
-        with some credible history. Returns 0 otherwise
+        returns True if the oracle believes this is a legitimate user
+        with some credible history. Returns False otherwise
 
     Parameters:
         acc (list): non-zero balance Coinbase accounts owned by 
@@ -97,13 +97,18 @@ def coinbase_kyc(acc, txn):
         txn (list): transactions history of above-listed accounts
 
     Returns:
-        (boolean): binary kyc verification 1|0
+        (boolean): binary kyc verification True|False
     '''
 
     try:
-        # Pass KYC check iff the Coinbase account has trusted data
-        if acc and txn:
-            return True
+        # Pass KYC check iff the Coinbase account has more than 10 txns,
+        # has been active for > 90 days, with cumulative balance > $150
+        if acc and txn\
+            and len(txn) > 10\
+                and (NOW - min([d["created_at"] for d in acc if d["created_at"]])).days > 90\
+                    and sum([float(a["native_balance"]["amount"])\
+                        for a in acc if float(a["native_balance"]["amount"])]) > 150:
+                        return True
         else:
             return False
 

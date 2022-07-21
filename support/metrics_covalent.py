@@ -108,8 +108,8 @@ def top_erc_only(data, feedback, top_erc):
 def covalent_kyc(txn, balances, portfolio):
     '''
     Description:
-        returns 1 if the oracle believes this is a legitimate user
-        with some credible history. Returns 0 otherwise
+        returns True if the oracle believes this is a legitimate user
+        with some credible history. Returns False otherwise
 
     Parameters:
         txn (dict): Covalent class A endpoint 'transactions_v2'
@@ -117,7 +117,7 @@ def covalent_kyc(txn, balances, portfolio):
         portfolio (dict): Covalent class A endpoint 'portfolio_v2'
 
     Returns:
-        (boolean): 1 if user is legitimate and 0 otherwise
+        (boolean): True if user is legitimate and False otherwise
     '''
     try:
         oldest = datetime.strptime(
@@ -125,11 +125,11 @@ def covalent_kyc(txn, balances, portfolio):
         how_long = (NOW - oldest).days
 
         # Assign max score as long as the user owns a
-        # non-zero balance, a credible transaction history,
+        # tot balance > $150, a credible transaction history,
         # a portfolio, and a wallet opened > 3 months ago
         if txn['items']\
             and portfolio['items']\
-                and sum([b['quote'] for b in balances['items']]) > 1\
+                and sum([b['quote'] for b in balances['items']]) > 150\
                     and how_long >= 90:
             return True
         else:
