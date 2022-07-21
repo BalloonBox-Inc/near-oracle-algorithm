@@ -1,3 +1,4 @@
+from icecream import ic
 import requests
 
 
@@ -55,8 +56,9 @@ def coinmarektcap_top_erc(api_key, limit, erc_tokens):
         # retrieve top cryptos from coinmarketcap
         top_currencies = coinmarketcap_currencies(api_key, limit)
         # keep only ERC tokens
-        top_erc_tokens = {k:v[0] for (k, v) in top_currencies.items() if k in erc_tokens}
-        top_erc_tokens['WETH'] = top_erc_tokens['ETH']*1.25     
+        top_erc_tokens = {k: v[0]
+                          for (k, v) in top_currencies.items() if k in erc_tokens}
+        top_erc_tokens['WETH'] = top_erc_tokens['ETH']*1.25
 
     except Exception as e:
         top_erc_tokens = str(e)
@@ -98,6 +100,7 @@ def coinmarketcap_rate(api_key, coin_in, coin_out):
         rate = r['data'][0]['quote'][coin_out]['price']
 
     except Exception as e:
-        rate = str(e)
+        ic(str(e))
+        rate = 0
 
     return rate
