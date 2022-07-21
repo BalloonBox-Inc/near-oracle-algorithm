@@ -134,7 +134,6 @@ async def credit_score_coinbase(request: Request, response: Response, item: Coin
 
         # keep feedback data
         data = keep_feedback(feedback, score, item.loan_request, 'coinbase')
-        ic(data)
 
        # validate loan request
         if not validate_loan_request(

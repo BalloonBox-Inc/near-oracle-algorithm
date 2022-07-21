@@ -122,7 +122,6 @@ async def credit_score_plaid(request: Request, response: Response, item: Plaid_I
 
         # keep feedback data
         data = keep_feedback(feedback, score, item.loan_request, 'plaid')
-        ic(data)
 
         # compute risk
         risk = calc_risk(

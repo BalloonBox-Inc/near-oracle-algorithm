@@ -98,7 +98,6 @@ async def credit_score_covalent(request: Request, response: Response, item: Cova
 
         # keep feedback data
         data = keep_feedback(feedback, score, item.loan_request, 'covalent')
-        ic(data)
 
         # compute risk
         risk = calc_risk(
