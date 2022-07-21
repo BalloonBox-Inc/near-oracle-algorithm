@@ -158,10 +158,10 @@ async def credit_score_plaid(request: Request, response: Response, item: Plaid_I
         ic(feedback)
 
         # return success
-        status = 'success'
+        status_msg = 'success'
 
     except Exception as e:
-        status = 'error'
+        status_msg = 'error'
         score = 0
         risk = 'undefined'
         message = str(e)
@@ -170,7 +170,7 @@ async def credit_score_plaid(request: Request, response: Response, item: Plaid_I
     finally:
         output = {
             'endpoint': '/credit_score/plaid',
-            'status': status,
+            'status': status_msg,
             'score': int(score),
             'risk': risk,
             'message': message,

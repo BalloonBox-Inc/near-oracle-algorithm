@@ -176,10 +176,10 @@ async def credit_score_coinbase(request: Request, response: Response, item: Coin
         ic(feedback)
 
         # return success
-        status = 'success'
+        status_msg = 'success'
 
     except Exception as e:
-        status = 'error'
+        status_msg = 'error'
         score = 0
         risk = 'undefined'
         message = str(e)
@@ -188,7 +188,7 @@ async def credit_score_coinbase(request: Request, response: Response, item: Coin
     finally:
         output = {
             'endpoint': '/credit_score/coinbase',
-            'status': status,
+            'status': status_msg,
             'score': int(score),
             'risk': risk,
             'message': message,
