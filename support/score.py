@@ -10,39 +10,25 @@ NOW = datetime.now().date()
 def plaid_score(
     data, score_range, feedback, model_weights, model_penalties, metric_weigths, params
 ):
-    txn = data["transactions"]
-    acc = data["accounts"]
-    txn = merge_dict(txn, acc, "account_id", ["type", "subtype"])
-    txn = sorted(txn, key=lambda d: d["date"])
 
-    # transactions
-    credit = filter_dict(txn, "type", "credit")
-    depository = filter_dict(txn, "type", "depository")
-    savings = filter_dict(txn, "subtype", "savings")
-    checking = filter_dict(txn, "subtype", "checking")
+    txn = data['transactions']
+    acc = data['accounts']
+    dataset = format_plaid_data(txn, acc)
+
+    credit_card = filter_dict(dataset, 'type', 'credit')
+    checking = filter_dict(dataset, 'subtype', 'checking')
+    savings = filter_dict(dataset, 'subtype', 'savings')
 
     # account age in months
-    longevity = abs((NOW - checking[0]["date"]).days)
-    feedback["stability"]["txn_history"] = longevity
+    longevity = abs((NOW - dataset[0]['date']).days)
+    feedback['stability']['txn_history'] = longevity
     longevity = longevity / 30
     ic(longevity)
 
-    # transactions count
-    volume = len(checking)
-    ic(volume)
-
-    # monthly transactions
-    m_volume = volume / longevity
-    ic(m_volume)
-
-    # monthly balance
-    m_amount = sum(d["amount"] for d in checking) / longevity
-    ic(m_amount)
-
     # accounts
-    cred = [d for d in acc if d["type"].lower() == "credit"]
-    dep = [d for d in acc if d["type"].lower() == "depository"]
-    n_dep = [d for d in acc if d["type"].lower() != "depository"]
+    cred = [d for d in acc if d['type'].lower() == 'credit']
+    dep = [d for d in acc if d['type'].lower() == 'depository']
+    n_dep = [d for d in acc if d['type'].lower() != 'depository']
 
     params = plaid_params(params, score_range)
 
