@@ -1,5 +1,6 @@
 from pandas.io.json._normalize import nested_to_record
 from datetime import datetime, timezone
+from support.database import *
 from operator import mul
 import numpy as np
 
@@ -8,14 +9,16 @@ def flatten_dict(d):
     return nested_to_record(d, sep='_')
 
 
-def my_func(feedback, score, loan_request, validator):
+def keep_feedback(feedback, score, loan_request, validator):
     d = dict(feedback)
     d['score'] = score
     d['validator'] = validator
     d['loan_request'] = loan_request
     d['timestamp'] = datetime.now(
         timezone.utc).strftime('%m-%d-%Y %H:%M:%S GMT')
-    return flatten_dict(d)
+    d = flatten_dict(d)
+    add_row_to_table(validator, d)
+    return d
 
 
 def dot_product(l1, l2):
