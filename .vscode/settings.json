@@ -5,5 +5,6 @@
 {
     "editor.wordWrap": "on",
     "files.trimTrailingWhitespace": true,
-    "python.formatting.autopep8Path": "autopep8"
+    "python.formatting.autopep8Path": "autopep8",
+    "python.formatting.autopep8Args": ["--max-line-length", "120"]
 }
