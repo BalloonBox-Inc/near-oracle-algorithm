@@ -134,10 +134,10 @@ async def credit_score_covalent(request: Request, response: Response, item: Cova
         ic(feedback)
 
         # return success
-        status = 'success'
+        status_msg = 'success'
 
     except Exception as e:
-        status = 'error'
+        status_msg = 'error'
         score = 0
         risk = 'undefined'
         message = str(e)
@@ -146,7 +146,7 @@ async def credit_score_covalent(request: Request, response: Response, item: Cova
     finally:
         output = {
             'endpoint': '/credit_score/covalent',
-            'status': status,
+            'status': status_msg,
             'score': int(score),
             'risk': risk,
             'message': message,
