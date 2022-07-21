@@ -4,7 +4,6 @@ from support.helper import *
 from support.risk import *
 from support.feedback import *
 from support.score import *
-from support.database import *
 from market.coinmarketcap import *
 from validator.plaid import *
 from schemas import *
@@ -122,8 +121,7 @@ async def credit_score_plaid(request: Request, response: Response, item: Plaid_I
             raise Exception(messages["not_qualified"].format(loan_range[0]))
 
         # keep feedback data
-        data = my_func(feedback, score, item.loan_request, 'plaid')
-        add_row_to_table('plaid', data)
+        data = keep_feedback(feedback, score, item.loan_request, 'plaid')
         ic(data)
 
         # compute risk
