@@ -3,8 +3,8 @@
 // override default and user settins
 
 {
+    "editor.wordWrap": "on",
     "files.trimTrailingWhitespace": true,
-    "python.linting.enabled": true,
     "python.formatting.autopep8Path": "autopep8",
-    "python.formatting.autopep8Args": ["--max-line-length", "180"]
+    "python.formatting.autopep8Args": ["--max-line-length", "120"]
 }
