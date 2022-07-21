@@ -134,17 +134,17 @@ async def credit_score_kyc(request: Request, response: Response, item: KYC_Item)
             kyc_verified = covalent_kyc(balances, transactions)
 
         # return success
-        status = 'success'
+        status_msg = 'success'
         ic(kyc_verified)
 
     except Exception as e:
-        status = 'error'
+        status_msg = 'error'
         kyc_verified = False
 
     finally:
         return {
             'endpoint': '/credit_score/kyc',
-            'status': status,
+            'status': status_msg,
             'validator': item.chosen_validator,
             'kyc_verified': kyc_verified
         }
