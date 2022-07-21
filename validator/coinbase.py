@@ -127,5 +127,6 @@ def coinbase_accounts_and_transactions(client, currencies, txn_types):
 
     except Exception as e:
         acc = str(e)
+        txn = str(e)
 
     return acc, txn

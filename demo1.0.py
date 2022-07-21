@@ -200,7 +200,6 @@ def hit_coinbase_api(coinbase_client_id, coinbase_client_secret, coinmarketcap_k
         ic(output)
         return make_response(output, output['status_code'])
 
-
 # ------------------------------------- #
 #                  DEMO                 #
 # ------------------------------------- #

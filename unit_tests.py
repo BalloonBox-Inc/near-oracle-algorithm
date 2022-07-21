@@ -1,4 +1,5 @@
 from testing.tests.test_coinbase import *
+from testing.tests.test_covalent import *
 from testing.tests.test_plaid import *
 import unittest
 
@@ -7,7 +8,7 @@ import unittest
 def suite():
     suite = unittest.TestSuite()
 
-    # # Plaid
+    # Plaid
     suite.addTest(unittest.makeSuite(TestMetricCredit))
     suite.addTest(unittest.makeSuite(TestMetricVelocity))
     suite.addTest(unittest.makeSuite(TestMetricStability))
@@ -18,6 +19,14 @@ def suite():
     # Coinbase
     suite.addTest(unittest.makeSuite(TestMetricsCoinbase))
     suite.addTest(unittest.makeSuite(TestParametrizeCoinbase))
+
+    # Covalent
+    suite.addTest(unittest.makeSuite(TestMetricCredibility))
+    suite.addTest(unittest.makeSuite(TestMetricWealth))
+    suite.addTest(unittest.makeSuite(TestMetricTraffic))
+    suite.addTest(unittest.makeSuite(TestMetricStamina))
+    suite.addTest(unittest.makeSuite(TestCovHelperFunctions))
+    suite.addTest(unittest.makeSuite(TestParametrizeCovalent))
 
     return suite
 

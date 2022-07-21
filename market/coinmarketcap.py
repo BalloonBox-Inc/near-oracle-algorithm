@@ -30,12 +30,39 @@ def coinmarketcap_currencies(api_key, limit):
         r = requests.get(url, headers=headers, params=params).json()
 
         top_currencies = dict(
-            [(n['symbol'], n['quote']['USD']['price']) for n in r['data']])
+            [(n['symbol'], (n['cmc_rank'], n['quote']['USD']['price'])) for n in r['data']])
 
     except Exception as e:
         top_currencies = str(e)
 
     return top_currencies
+
+
+def coinmarektcap_top_erc(api_key, limit, erc_tokens):
+    '''
+    Description: 
+        returns ERC tokens ranked highest on Coinmarketcap
+
+    Parameters:
+        api_key (str): bearer token to authenticate into coinmarketcap API
+        limit (float): number of top cryptos you want to keep
+        erc_tokens (lits): list of coins which are ERC20 tokens
+
+    Returns:
+        top_erc_tokens (dict): top ERC tokens based on Coinmarketcap rankings
+    '''
+    try:
+        # retrieve top cryptos from coinmarketcap
+        top_currencies = coinmarketcap_currencies(api_key, limit)
+        # keep only ERC tokens
+        top_erc_tokens = {k:v[0] for (k, v) in top_currencies.items() if k in erc_tokens}
+        top_erc_tokens['WETH'] = top_erc_tokens['ETH']*1.25     
+
+    except Exception as e:
+        top_erc_tokens = str(e)
+
+    finally:
+        return top_erc_tokens
 
 
 def coinmarketcap_rate(api_key, coin_in, coin_out):

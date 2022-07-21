@@ -1,4 +1,4 @@
-from support.metrics_plaid import *  # import code to get tested
+from support.metrics_plaid import *
 from support.helper import *
 from config.helper import *
 from datetime import datetime
@@ -19,13 +19,16 @@ json_file = os.path.join(os.path.dirname(
 # -------------------------------------------------------------------------- #
 
 def str_to_datetime(plaid_txn, feedback):
-    """
-    serialize a Python data structure converting string instances into datetime objects
-            Parameters:
-                plaid_txn (list): locally stored Plaid data used for testing purposes
-            Returns:
-                tx (dict): serialized dict containing user accounts and transactions. String dates are converted to datetime objects
-     """
+    '''
+    Description:
+        serialize a Python data structure converting string instances into datetime objects
+    
+    Parameters:
+        plaid_txn (list): locally stored Plaid data used for testing purposes
+    
+    Returns:
+        tx (dict): serialized dict containing user accounts and transactions. String dates are converted to datetime objects
+     '''
     try:
         # Keep only completed transactions (filter out pending transactions)
         all_txn = []
@@ -60,7 +63,12 @@ class TestMetricCredit(unittest.TestCase):
         self.fb['fetch'] = {}
 
         with open(json_file) as f:
-            self.data = str_to_datetime(json.load(f), self.fb)
+            data = str_to_datetime(json.load(f), self.fb)
+        self.acc = data['accounts']
+        txn = data['transactions']
+        txn = merge_dict(txn, self.acc, "account_id", ["type", "subtype"])
+        self.txn = sorted(txn, key=lambda d: d["date"])
+        self.cred = [d for d in self.acc if d["type"].lower() == "credit"]
 
         # import params
         score_range = configs['score_range']
@@ -70,7 +78,9 @@ class TestMetricCredit(unittest.TestCase):
     # clean up code at the end of this test class
     def tearDown(self):
         self.fb = None
-        self.data = None
+        self.acc = None
+        self.txn = None
+        self.cred = None
         self.par =  None
 
     def test_credit_mix(self):
@@ -79,18 +89,19 @@ class TestMetricCredit(unittest.TestCase):
         - ensure we store the names of ALL owned credit cards
         - if a user owns no credit card, then raise exception 'no credit card'
         '''
-        self.assertNotIn('credit', credit_mix(self.data, self.fb, self.par[1], self.par[2], self.par[11]))
+        a = credit_mix(self.txn, self.cred, self.fb, self.par)
+        self.assertNotIn('credit', a)
         self.assertEqual(len(credit_mix.credit), len(credit_mix.card_names))
-        self.assertIn('error', credit_mix([], self.fb, self.par[1], self.par[2], self.par[11])[1]['credit'].keys())
+        self.assertIn('error', credit_mix(self.txn, [], self.fb, self.par)[1]['credit'].keys())
 
     def test_credit_limit(self):
         '''
         - return a float for the credit limit
         - if a user's credit limit is not defined, then raise exception
         '''
-        self.assertIsInstance(credit_limit(self.data, self.fb, self.par[1], self.par[4], self.par[10])[
+        self.assertIsInstance(credit_limit(self.txn, self.cred, self.fb, self.par)[
                               1]['credit']['credit_limit'], (float, int))
-        self.assertIn('error', credit_limit([], self.fb, self.par[1], self.par[4], self.par[10])[1]['credit'].keys())
+        self.assertIn('error', credit_limit([], self.cred, self.fb, self.par)[1]['credit'].keys())
 
     def test_credit_util_ratio(self):
         '''
@@ -98,26 +109,26 @@ class TestMetricCredit(unittest.TestCase):
         - the credit util ration should be at most 2 (if exceeds this upper bound, then something's wrong)
         - ensure bad data returns an error
         '''
-        a = credit_util_ratio(self.data, self.fb, self.par[1], self.par[21], self.par[11])
+        a = credit_util_ratio(self.acc, self.txn, self.fb, self.par)
 
-        if dynamic_select(self.data, 'credit', self.fb)['id'] != 'inexistent':
+        if dynamic_select(self.acc, self.txn, 'credit', self.fb)['id'] != 'inexistent':
             self.assertIn('utilization_ratio', a[1]['credit'].keys())
             self.assertIsInstance(
                 a[1]['credit']['utilization_ratio'], (float, int))
             self.assertGreaterEqual(a[0], 0.3)
         self.assertLess(a[0], 2)
 
-        self.assertIn('error', credit_util_ratio(
-            [], self.fb, self.par[1], self.par[21], self.par[11])[1]['credit'].keys())
+        self.assertEqual(credit_util_ratio(
+            [], [], self.fb, self.par)[0], 0)
 
     def test_credit_interest(self):
         '''
         - Plaid Sandbox data has an impeccable credit card pedigree and thus should score 1/1
         - bad data should raise an exception because the dynamic_select() function will break
         '''
-        self.assertEqual(credit_interest(self.data, self.fb, self.par[14], self.par[22])[0], 1)
+        self.assertEqual(credit_interest(self.acc, self.txn, self.fb, self.par)[0], 1)
         self.assertIn('dynamic_select',  credit_interest(
-            [], self.fb, self.par[14], self.par[22])[1]['fetch'].keys())
+            None, None, self.fb, self.par)[1]['fetch'].keys())
 
     def test_credit_length(self):
         '''
@@ -125,24 +136,24 @@ class TestMetricCredit(unittest.TestCase):
         - if a credit card exists, then there should be a positive length
         - bad data should raise an exception
         '''
-        a = credit_length(self.data, self.fb, self.par[14], self.par[1])
+        a = credit_length(self.acc, self.txn, self.fb, self.par)
 
-        if dynamic_select(self.data, 'credit', self.fb)['id']:
+        if dynamic_select(self.acc, self.txn, 'credit', self.fb)['id']:
             self.assertIsInstance(
                 a[1]['credit']['credit_duration_(days)'], (float, int))
             self.assertGreater(a[1]['credit']['credit_duration_(days)'], 0)
-        self.assertIn('error', credit_length([], self.fb, self.par[14], self.par[1])[1]['credit'].keys())
+        self.assertIn('error', credit_length([], [], self.fb, self.par)[1]['credit'].keys())
 
     def test_credit_livelihood(self):
         '''
         - if there exist a non-empty dataframe containing the txn means, then the mean should be positive
         - bad data should raise an error
         '''
-        a = credit_livelihood(self.data, self.fb, self.par[14], self.par[15])
+        a = credit_livelihood(self.acc, self.txn, self.fb, self.par)
         if len(credit_livelihood.d):
             self.assertGreater(a[1]['credit']['avg_count_monthly_txn'], 0)
         self.assertIn('error', credit_livelihood(
-            [], self.fb, self.par[14], self.par[15])[1]['credit'].keys())
+            [], [], self.fb, self.par)[1]['credit'].keys())
 
 
 class TestMetricVelocity(unittest.TestCase):
@@ -158,7 +169,11 @@ class TestMetricVelocity(unittest.TestCase):
         self.fb['fetch'] = {}
 
         with open(json_file) as f:
-            self.data = str_to_datetime(json.load(f), self.fb)
+            data = str_to_datetime(json.load(f), self.fb)
+        self.acc = data['accounts']
+        txn = data['transactions']
+        txn = merge_dict(txn, self.acc, "account_id", ["type", "subtype"])
+        self.txn = sorted(txn, key=lambda d: d["date"])
 
         # import params
         score_range = configs['score_range']
@@ -168,7 +183,8 @@ class TestMetricVelocity(unittest.TestCase):
     # clean up code at the end of this test class
     def tearDown(self):
         self.fb = None
-        self.data = None
+        self.acc = None
+        self.txn = None
         self.par =  None
 
     def test_velocity_withdrawals(self):
@@ -177,20 +193,20 @@ class TestMetricVelocity(unittest.TestCase):
         - good data but without withdrawals raises the 'no withdrawals' exception
         - bad data returns an error
         '''
-        self.assertIsNone(velocity_withdrawals(self.data, None, self.par[2], self.par[18], self.par[13])[1])
-        self.assertRegex(velocity_withdrawals(self.data, self.fb, self.par[2], self.par[18], self.par[13])[
+        self.assertIsNone(velocity_withdrawals(self.txn, None, self.par)[1])
+        self.assertRegex(velocity_withdrawals(self.txn, self.fb, self.par)[
                          1]['velocity']['error'], 'no withdrawals')
         self.assertIn('error', velocity_withdrawals(
-            [], self.fb, self.par[2], self.par[18], self.par[13])[1]['velocity'].keys())
+            [], self.fb, self.par)[1]['velocity'].keys())
 
     def test_velocity_deposits(self):
         '''
         - if there are some 'payroll' trasactions, then the score should be positive
         - bad data returns an error
         '''
-        a = velocity_deposits(self.data, self.fb, self.par[2], self.par[19], self.par[13])
+        a = velocity_deposits(self.txn, self.fb, self.par)
 
-        if [t for t in self.data['transactions'] if t['amount'] < -200 and 'payroll' in [x.lower() for x in t['category']]]:
+        if [t for t in self.txn if t['amount'] < -200 and 'payroll' in [x.lower() for x in t['category']]]:
             self.assertGreater(a[0], 0)
         self.assertRegex(a[1]['velocity']['error'], 'no deposits')
 
@@ -199,20 +215,20 @@ class TestMetricVelocity(unittest.TestCase):
         - the avg net flow should be a large positive integer
         - bad input data results into an error
         '''
-        self.assertGreater(velocity_month_net_flow(self.data, self.fb, self.par[7], self.par[17], self.par[10])[
+        self.assertGreater(velocity_month_net_flow(self.acc, self.txn, self.fb, self.par)[
                            1]['velocity']['avg_net_flow'], 0)
         self.assertIn('error', velocity_month_net_flow(
-            [], self.fb, self.par[7], self.par[17], self.par[10])[1]['velocity'].keys())
+            [], self.txn, self.fb, self.par)[1]['velocity'].keys())
 
     def test_velocity_month_txn_count(self):
         '''
         - if there is a legit checking account, then the score should be positive
         '''
         checking_acc = [a['account_id']
-                        for a in self.data['accounts'] if a['subtype'].lower() == 'checking']
-        if [t for t in self.data['transactions'] if t['account_id'] in checking_acc]:
+                        for a in self.acc if a['subtype'].lower() == 'checking']
+        if [t for t in self.txn if t['account_id'] in checking_acc]:
             self.assertGreater(velocity_month_txn_count(
-                self.data, self.fb, self.par[14], self.par[16])[0], 0)
+                self.acc, self.txn, self.fb, self.par)[0], 0)
 
     def test_velocity_slope(self):
         '''
@@ -220,15 +236,15 @@ class TestMetricVelocity(unittest.TestCase):
             otherwise it'll simply calculate the monthly flow as 2 rations
         - bad input data returns error
         '''
-        if len(flows(self.data, 24, self.fb)) >= 10:
+        if len(flows(self.acc, self.txn, 24, self.fb)) >= 10:
             self.assertIn('slope', velocity_slope(
-                self.data, self.fb, self.par[14], self.par[9], self.par[8], self.par[10])[1]['velocity'].keys())
+                self.acc, self.txn, self.fb, self.par)[1]['velocity'].keys())
         else:
             self.assertIn('monthly_flow', velocity_slope(
-                self.data, self.fb, self.par[14], self.par[9], self.par[8], self.par[10])[1]['velocity'].keys())
+                self.acc, self.txn, self.fb, self.par)[1]['velocity'].keys())
 
         self.assertIn('error', velocity_slope(
-            [], self.fb, self.par[14], self.par[9], self.par[8], self.par[10])[1]['velocity'].keys())
+            [], self.txn, self.fb, self.par)[1]['velocity'].keys())
 
 
 class TestMetricStability(unittest.TestCase):
@@ -244,7 +260,13 @@ class TestMetricStability(unittest.TestCase):
         self.fb['fetch'] = {}
 
         with open(json_file) as f:
-            self.data = str_to_datetime(json.load(f), self.fb)
+            data = str_to_datetime(json.load(f), self.fb)
+        self.acc = data['accounts']
+        txn = data['transactions']
+        txn = merge_dict(txn, self.acc, "account_id", ["type", "subtype"])
+        self.txn = sorted(txn, key=lambda d: d["date"])
+        self.dep = [d for d in self.acc if d["type"].lower() == "depository"]
+        self.n_dep = [d for d in self.acc if d["type"].lower() != "depository"]
 
         # import params
         score_range = configs['score_range']
@@ -254,7 +276,10 @@ class TestMetricStability(unittest.TestCase):
     # clean up code at the end of this test class
     def tearDown(self):
         self.fb = None
-        self.data = None
+        self.acc = None
+        self.txn = None
+        self.dep = None
+        self.n_dep = None
         self.par =  None
 
     def test_stability_tot_balance_now(self):
@@ -262,12 +287,12 @@ class TestMetricStability(unittest.TestCase):
         - if tot balance variable exists, then the score should be > 0
         - no account data returns an error
         '''
-        a = stability_tot_balance_now(self.data, self.fb, self.par[14], self.par[6])
+        a = stability_tot_balance_now(self.dep, self.n_dep, self.fb, self.par)
 
         if stability_tot_balance_now.balance:
             self.assertGreater(a[0], 0)
         self.assertIn('error', stability_tot_balance_now(
-            [], self.fb, self.par[14], self.par[6])[1]['stability'].keys())
+            [], self.n_dep, self.fb, self.par)[1]['stability'].keys())
 
     def test_stability_min_running_balance(self):
         '''
@@ -275,13 +300,13 @@ class TestMetricStability(unittest.TestCase):
         - good data should return 2 dict keys under the 'stability' scope of the 'feedback' dict
         - bad input data should return error
         '''
-        a = stability_min_running_balance(self.data, self.fb, self.par[1], self.par[20], self.par[11])
+        a = stability_min_running_balance(self.acc, self.txn, self.fb, self.par)
 
         self.assertIsInstance(a[1]['stability']['min_running_timeframe'], int)
         self.assertEqual(['min_running' in x for x in a[1]
                          ['stability']].count(True), 2)
         self.assertIn('error', stability_min_running_balance(
-            [], self.fb, self.par[1], self.par[20], self.par[11])[1]['stability'].keys())
+            [], self.txn, self.fb, self.par)[1]['stability'].keys())
 
     def test_stability_loan_duedate(self):
         '''
@@ -289,10 +314,10 @@ class TestMetricStability(unittest.TestCase):
         - the max allowed loan duedate is 6 months
         - feeding NoneTypes as function parameters should still return a feedback dict containing an error message
         '''
-        a = stability_loan_duedate(self.data, self.fb, self.par[0])
+        a = stability_loan_duedate(self.txn, self.fb, self.par)
         self.assertIsInstance(a, dict)
         self.assertLessEqual(a['stability']['loan_duedate'], 6)
-        self.assertRegex(stability_loan_duedate(None, self.fb, self.par[0])[
+        self.assertRegex(stability_loan_duedate(None, self.fb, self.par)[
                          'stability']['error'], "'NoneType' object is not subscriptable")
 
 
@@ -309,7 +334,11 @@ class TestMetricDiversity(unittest.TestCase):
         self.fb['fetch'] = {}
 
         with open(json_file) as f:
-            self.data = str_to_datetime(json.load(f), self.fb)
+            data = str_to_datetime(json.load(f), self.fb)
+        self.acc = data['accounts']
+        txn = data['transactions']
+        txn = merge_dict(txn, self.acc, "account_id", ["type", "subtype"])
+        self.txn = sorted(txn, key=lambda d: d["date"])
 
         # import params
         score_range = configs['score_range']
@@ -319,7 +348,8 @@ class TestMetricDiversity(unittest.TestCase):
     # clean up code at the end of this test class
     def tearDown(self):
         self.fb = None
-        self.data = None
+        self.acc = None
+        self.txn = None
         self.par =  None
 
     def test_diversity_acc_count(self):
@@ -328,14 +358,14 @@ class TestMetricDiversity(unittest.TestCase):
         - users with at least 2 accounts get a positive score
         - missing data raises an exception
         '''
-        a = diversity_acc_count(self.data, self.fb, self.par[2], self.par[1], self.par[13])
+        a = diversity_acc_count(self.acc, self.txn, self.fb, self.par)
 
-        if (datetime.now().date() - self.data['transactions'][-1]['date']).days > 120:
+        if (datetime.now().date() - self.txn[-1]['date']).days > 120:
             self.assertGreater(a[0], 0.25)
-        if len(self.data['accounts']) >= 2:
+        if len(self.acc) >= 2:
             self.assertGreater(a[0], 0)
         self.assertRaises(TypeError, 'tuple indices must be integers or slices, not str',
-                          diversity_acc_count, (None, self.fb, self.par[2], self.par[1], self.par[13]))
+                          diversity_acc_count, (None, self.txn, self.fb, self.par))
 
     def test_diversity_profile(self):
         '''
@@ -344,10 +374,10 @@ class TestMetricDiversity(unittest.TestCase):
         '''
         bonus_acc = ['401k', 'cd', 'money market', 'mortgage', 'student', 'isa', 'ebt', 'non-taxable brokerage account', 'rdsp', 'rrif', 'pension', 'retirement', 'roth',
                      'roth 401k', 'stock plan', 'tfsa', 'trust', 'paypal', 'savings', 'prepaid', 'business', 'commercial', 'construction', 'loan', 'cash management', 'mutual fund', 'rewards']
-        if [a['account_id'] for a in self.data['accounts'] if a['subtype'] in bonus_acc]:
+        if [a['account_id'] for a in self.acc if a['subtype'] in bonus_acc]:
             self.assertGreaterEqual(
-                diversity_profile(self.data, self.fb, self.par[14], self.par[5])[0], 0.17)
-        self.assertEqual(diversity_profile(self.data, self.fb, self.par[14], self.par[5])[0], 1)
+                diversity_profile(self.acc, self.fb, self.par)[0], 0.17)
+        self.assertEqual(diversity_profile(self.acc, self.fb, self.par)[0], 1)
 
 
 class TestHelperFunctions(unittest.TestCase):
@@ -362,7 +392,11 @@ class TestHelperFunctions(unittest.TestCase):
         self.fb['fetch'] = {}
 
         with open(json_file) as f:
-            self.data = str_to_datetime(json.load(f), self.fb)
+            data = str_to_datetime(json.load(f), self.fb)
+        self.acc = data['accounts']
+        txn = data['transactions']
+        txn = merge_dict(txn, self.acc, "account_id", ["type", "subtype"])
+        self.txn = sorted(txn, key=lambda d: d["date"])
 
         # import params
         score_range = configs['score_range']
@@ -371,7 +405,8 @@ class TestHelperFunctions(unittest.TestCase):
 
     def tearDown(self):
         self.fb = None
-        self.data = None
+        self.acc = None
+        self.txn = None
         self.par = None
 
     def test_dynamic_select(self):
@@ -381,9 +416,9 @@ class TestHelperFunctions(unittest.TestCase):
         - bad data should still return a dict with 'inexistent' id for the best account
         (Notice that 'credit' and 'checking' are used interchangeably here and are both equally valid input parameters)
         '''
-        a = dynamic_select(self.data, 'credit', self.fb)
-        b = dynamic_select([], 'credit', self.fb)
-        c = dynamic_select(None, 'credit', self.fb)
+        a = dynamic_select(self.acc, self.txn, 'credit', self.fb)
+        b = dynamic_select(self.acc, [], 'credit', self.fb)
+        c = dynamic_select(None, self.txn, 'credit', self.fb)
         fn = [a, b, c]
 
         for x in fn:
@@ -391,7 +426,7 @@ class TestHelperFunctions(unittest.TestCase):
                 self.assertIsInstance(x, dict)
 
         self.assertEqual(len(a.keys()), 2)
-        self.assertIs(dynamic_select([], 'checking', self.fb)
+        self.assertIs(dynamic_select([], self.txn, 'checking', self.fb)
                       ['id'], 'inexistent')
 
     def test_flows(self):
@@ -401,9 +436,9 @@ class TestHelperFunctions(unittest.TestCase):
         - bad input data should return a NoneType
         - bad input parameters should return an error in feedback['fetch']
         '''
-        a = flows(self.data, 6, self.fb)
-        b = flows([], 6, self.fb)
-        c = flows(None, 6, self.fb)
+        a = flows(self.acc, self.txn, 6, self.fb)
+        b = flows([], self.txn, 6, self.fb)
+        c = flows(self.acc, None, 6, self.fb)
 
         self.assertIsInstance(a, pd.DataFrame)
         self.assertEqual(len(a), 6)
@@ -418,15 +453,13 @@ class TestHelperFunctions(unittest.TestCase):
         - output should be of type float or int
         - bad input data should return an error
         '''
-        b = balance_now_checking_only(self.data, self.fb)
+        b = balance_now_checking_only(self.acc, self.fb)
         expected_b = sum([a['balances']['current']
-                         for a in self.data['accounts'] if a['subtype'] == 'checking'])
+                         for a in self.acc if a['subtype'] == 'checking'])
 
         self.assertEqual(b, expected_b)
         self.assertIsInstance(b, (float, int))
-
-        balance_now_checking_only([], self.fb)
-        self.assertIn('balance_now_checking_only', self.fb['fetch'].keys())
+        self.assertRaises(Exception, balance_now_checking_only, ([], self.fb))
 
 
 # -------------------------------------------------------------------------- #
@@ -455,39 +488,64 @@ class TestParametrizePlaid(unittest.TestCase):
         self.fb['fetch'] = {}
 
         with open(json_file) as f:
-            self.data = str_to_datetime(json.load(f), self.fb)
+            data = str_to_datetime(json.load(f), self.fb)
+        self.acc = data['accounts']
+        txn = data['transactions']
+        txn = merge_dict(txn, self.acc, "account_id", ["type", "subtype"])
+        self.txn = sorted(txn, key=lambda d: d["date"])
+        self.cred = [d for d in self.acc if d["type"].lower() == "credit"]
+        self.dep = [d for d in self.acc if d["type"].lower() == "depository"]
+        self.n_dep = [d for d in self.acc if d["type"].lower() != "depository"]
 
         # import params
         score_range = configs['score_range']
         params = configs['minimum_requirements']['plaid']['params']
         self.par = plaid_params(params, score_range)
 
-        self.args1 = {
-            'good': [self.data, self.fb],
-            'empty': [[], self.fb],
-            'none': [None, self.fb]
+        self.args = {
+            'good': 
+            [
+                [self.txn, self.cred, self.fb, self.par],
+                [self.txn, self.cred, self.fb, self.par],
+                [self.acc, self.txn, self.fb, self.par],
+                [self.acc, self.txn, self.fb, self.par],
+                [self.acc, self.txn, self.fb, self.par],
+                [self.acc, self.txn, self.fb, self.par],
+
+                [self.txn, self.fb, self.par],
+                [self.txn, self.fb, self.par],
+                [self.acc, self.txn, self.fb, self.par],
+                [self.acc, self.txn, self.fb, self.par],
+                [self.acc, self.txn, self.fb, self.par],
+
+                [self.dep, self.n_dep, self.fb, self.par],
+                [self.acc, self.txn, self.fb, self.par],
+
+                [self.acc, self.txn, self.fb, self.par],
+                [self.acc, self.fb, self.par]
+            ],
+            'empty': 
+            [
+                [[], [], self.fb, self.par],
+                [[], [], self.fb, self.par],
+                [[], None, self.fb, self.par],
+                [None, None, self.fb, self.par],
+                [None, [], self.fb, self.par],
+                [[], [], self.fb, self.par],
+
+                [None, self.fb, self.par],
+                [[], self.fb, self.par],
+                [[], [], self.fb, self.par],
+                [None, [], self.fb, self.par],
+                [[], None, self.fb, self.par],
+
+                [[], [], self.fb, self.par],
+                [[], None, self.fb, self.par],
+
+                [None, None, self.fb, self.par],
+                [[], self.fb, self.par]        
+            ]
         }
-
-        self.args2 = [
-            [self.par[1], self.par[2], self.par[11]],
-            [self.par[1], self.par[4], self.par[10]],
-            [self.par[1], self.par[21], self.par[11]],
-            [self.par[14], self.par[22]],
-            [self.par[14], self.par[1]],
-            [self.par[14], self.par[15]],
-
-            [self.par[2], self.par[18], self.par[13]], 
-            [self.par[2], self.par[19], self.par[13]],
-            [self.par[7], self.par[17], self.par[10]],
-            [self.par[14], self.par[16]],
-            [self.par[14], self.par[9], self.par[8], self.par[10]],
-
-            [self.par[14], self.par[6]],
-            [self.par[1], self.par[20], self.par[11]],
-
-            [self.par[2], self.par[1], self.par[13]], 
-            [self.par[14], self.par[5]]  
-        ]
 
         self.fn = {
             'fn_good': [
@@ -513,16 +571,12 @@ class TestParametrizePlaid(unittest.TestCase):
         }
 
     def tearDown(self):
-        self.fb = None
-        self.data = None
-        self.args1 = None
-        self.args2 = None
-        self.fn = None
-        self.par = None
+        for y in [self.acc, self.txn, self.fb, self.args, self.fn, self.par, self.dep, self.n_dep]:
+            y = None
 
     def test_output_good(self):
-        for (f, a) in zip(self.fn['fn_good'], self.args2):
-            z = f(*self.args1['good'], *a)
+        for (f, a) in zip(self.fn['fn_good'], self.args['good']):
+            z = f(*a)
             with self.subTest():
                 self.assertIsInstance(z, tuple)
                 self.assertLessEqual(z[0], 1)
@@ -530,20 +584,12 @@ class TestParametrizePlaid(unittest.TestCase):
                 self.assertIsInstance(z[1], dict)
 
     def test_output_empty(self):
-        for (f, a) in zip(self.fn['fn_good'], self.args2):
-            z = f(*self.args1['empty'], *a)
+        for (f, a) in zip(self.fn['fn_good'], self.args['empty']):
+            z = f(*a)
             with self.subTest():
                 self.assertIsInstance(z, tuple)
                 self.assertEqual(z[0], 0)
                 self.assertIsInstance(z[0], (float, int))
-                self.assertIsInstance(z[1], dict)
-
-    def test_output_none(self):
-        for (f, a) in zip(self.fn['fn_good'], self.args2):
-            z = f(*self.args1['none'], *a)
-            with self.subTest():
-                self.assertIsInstance(z, tuple)
-                self.assertIsNotNone(z[0])
                 self.assertIsInstance(z[1], dict)
 
 

@@ -3,25 +3,29 @@ import json
 
 
 def read_config_file(loan_request):
-    """
+    '''
     Returns all data stored in the config.json file as a dict
-    """
-    config_file = path.join(path.dirname(__file__), 'config.json')
+    '''
+    try:
+        config_file = path.join(path.dirname(__file__), 'config.json')
 
-    with open(config_file) as f:
-        data = json.load(f)['data']
-        data = [d for d in data
-                if d['maximum_amount'] >= loan_request][0]
+        with open(config_file) as f:
+            data = json.load(f)['data']
+            data = [d for d in data
+                    if d['maximum_amount'] >= loan_request][0]
 
-    return data
+        return data
+
+    except Exception as e:
+        return str(e)
 
 
 def read_models_and_metrics(d):
-    """
+    '''
     Returns 2 distinct dict objects:
         - all metrics and their associated weights
         - all functions (within each metric) and their associated weights
-    """
+    '''
     keys = [*d]
     values = list(d.values())
 
@@ -35,9 +39,9 @@ def read_models_and_metrics(d):
 
 
 def read_model_penalties(d):
-    """
+    '''
     Returns a dict with model metrics and their associated penalty values
-    """
+    '''
     keys = [*d]
     values = list(d.values())
 
@@ -48,7 +52,7 @@ def read_model_penalties(d):
 
 
 def create_feedback(models):
-    """
+    '''
     Returns a dict of empty dict for each metric
-    """
+    '''
     return {k: {} for k, v in models.items()}

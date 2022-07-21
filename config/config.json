@@ -86,8 +86,9 @@
                         }
                     },
                     "messages": {
-                        "failed": "NEAR Oracle could not calculate your credit score as there is no active credit line nor transaction history associated with your Plaid bank account. Please use a different bank account",
-                        "success": "Congrats, you have successfully obtained a credit score! Your NEAR Oracle score is {} - {} points. This score qualifies you for a short term loan of up to {} NEAR which is equivalent to {} USD"
+                        "failed": "NEAR Oracle could not calculate your credit score as there is no active credit line nor transaction history associated with your Plaid bank account. Please use a different bank account.",
+                        "success": "Congrats, you have successfully obtained a credit score! Your NEAR Oracle score is {} - {} points. This score qualifies you for a short term loan of up to {} NEAR which is equivalent to {} USD",
+                        "not_qualified": "Unfortunately it looks like you do not qualify for the requested loan amount. Please try another time for a loan lower than USD {}."
                     }
                 },
                 "coinbase": {
@@ -146,22 +147,81 @@
                         }
                     },
                     "messages": {
-                        "failed": "NEAR Oracle could not calculate your credit score as there is no active wallet nor transaction history associated with your Coinbase account. Please use a different account",
-                        "success": "Congrats, you have successfully obtained a credit score! Your NEAR Oracle score is {} - {} points. This score qualifies you for a short term loan of up to {} NEAR which is equivalent to {} USD"
+                        "failed": "NEAR Oracle could not calculate your credit score as there is no active wallet nor transaction history associated with your Coinbase account. Please use a different account.",
+                        "success": "Congrats, you have successfully obtained a credit score! Your NEAR Oracle score is {} - {} points. This score qualifies you for a short term loan of up to {} NEAR which is equivalent to {} USD",
+                        "not_qualified": "Unfortunately it looks like you do not qualify for the requested loan amount. Please try another time for a loan lower than USD {}."
                     }
                 },
-                "near": {
-                    "thresholds": {},
+                "covalent": {
+                    "thresholds": {
+                        "coinmarketcap_currencies": 100,
+                        "erc_tokens": ["ETH", "WETH", "USDT", "MATIC", "MKR", "BAT", "CRO", "USDC", "TUSD", "REP", "OMG", "LINK", "PAX", "HOT", "ZRX", "IOST", "HT", "AOA", "ENJ", "MCO", "NEXO", "NET", "GUSD", "ENG", "LAMB"]
+                    },
                     "scores": {
-                        "models": {}
+                        "models": {
+                            "credibility": {
+                                "weight": 0.1,
+                                "metrics": {
+                                    "kyc": 0.3,
+                                    "inception": 0.7
+                                }
+                            },
+                            "wealth": {
+                                "weight": 0.33,
+                                "metrics": {
+                                    "capital_now": 0.25, 
+                                    "capital_now_adj": 0.55, 
+                                    "volume_per_txn": 0.20
+                                }
+                            },
+                            "traffic": {
+                                "weight": 0.37,
+                                "metrics": {
+                                    "credit":0.14,
+                                    "debit": 0.14,
+                                    "dust": 0.14,
+                                    "run_balance": 0.40,
+                                    "frequency": 0.18
+                                }
+                            },
+                            "stamina": {
+                                "weight": 0.2,
+                                "metrics": {
+                                    "coins": 0.50,
+                                    "methods": 0.45,
+                                    "dexterity": 0.05
+                                }
+                            }
+                        }
                     },
                     "params": {
-                        "metrics": {},
-                        "matrices": {}
+                        "metrics": {
+                            "count_to_four": [1, 2, 3],
+                            "volume_now": [0.25, 0.9, 4, 8, 13, 15],
+                            "volume_per_txn": [1.4, 3.5, 5.3, 6.3, 7, 8],
+                            "duration": [90, 120, 150, 180, 210, 270],
+                            "count_operations": [10, 20, 33, 40, 45, 50],
+                            "cred_deb": [3.5, 7.5, 10, 13, 15.5, 20],
+                            "frequency_txn": [0.3, 0.5, 0.8, 1.3, 2, 4],
+                            "avg_run_bal": [5, 19, 38, 59, 73, 85],
+                            "due_date": [3, 4, 5]
+                        },
+                        "matrices": {
+                            "mtx_traffic": {
+                                "shape": [7, 7],
+                                "scalars": [4, 12]
+                            },
+                            "mtx_stamina": {
+                                "shape": [4, 7],
+                                "scalars": [7, 8]
+                            }
+                        }
                     },
                     "messages": {
-                        "failed": "",
-                        "success": ""
+                        "failed": "NEAR Oracle could not calculate your credit score since there is either no transaction history associated with your ETH wallet address or your cumulative balance is too low. Please top up your wallet or use a different wallet address.",
+                        "fetcherror": "NEAR Oracle was unable to retrieve data from your ETH wallet and therefore it could not calculate your credit score. Please use a different ETH wallet address.",
+                        "success": "Congrats, you have successfully obtained a credit score! Your NEAR Oracle score is {} - {} points. This score qualifies you for a short term loan of up to {} NEAR which is equivalent to {} USD",
+                        "not_qualified": "Unfortunately it looks like you do not qualify for the requested loan amount. Please try another time for a loan lower than USD {}."
                     }
                 }
             }
@@ -178,45 +238,83 @@
                         "transactions_period": 720
                     },
                     "scores": {
-                        "models": {}
+                        "models": {
+                            "credit": {
+                                "weight": 0.4,
+                                "penalty_weight": 0.0,
+                                "metrics": {
+                                    "limit": 0.45,
+                                    "util_ratio": 0.12,
+                                    "interest": 0.05,
+                                    "length": 0.26,
+                                    "livelihood": 0.12
+                                }
+                            },
+                            "velocity": {
+                                "weight": 0.15,
+                                "penalty_weight": 0.3,
+                                "metrics": {
+                                    "withdrawals": 0.16,
+                                    "deposits": 0.25,
+                                    "net_flow": 0.31,
+                                    "txn_count": 0.1,
+                                    "slope": 0.18
+                                }
+                            },
+                            "stability": {
+                                "weight": 0.3,
+                                "penalty_weight": 0.4,
+                                "metrics": {
+                                    "balance": 0.6,
+                                    "running_balance": 0.4
+                                }
+                            },
+                            "diversity": {
+                                "weight": 0.15,
+                                "penalty_weight": 0.2,
+                                "metrics": {
+                                    "acc_count": 0.45,
+                                    "profile": 0.55
+                                }
+                            }
+                        }
                     },
                     "params": {
-                        "metrics": {},
-                        "matrices": {}
+                        "metrics": {
+                            "due_date": [3, 4, 5],
+                            "duration": [90, 120, 150, 180, 210, 270],
+                            "count_zero": [1, 2],
+                            "count_invest": [1, 2, 3, 4, 5, 6],
+                            "volume_credit": [0.5, 1, 5, 8, 13, 18],
+                            "volume_invest": [0.5, 1, 2, 4, 6, 8],
+                            "volume_balance": [3, 5, 9, 12, 15, 18],
+                            "flow_ratio": [0.7, 1, 1.4, 2, 3, 4],
+                            "slope": [0.5, 0.8, 1, 1.3, 1.6, 2],
+                            "slope_lr": [-0.5, 0, 0.5, 1, 1.5, 2]
+                        },
+                        "matrices": {
+                            "activity_volume": {
+                                "shape": [7, 7],
+                                "scalars": [3.03, 1.17]
+                            },
+                            "activity_consistency": {
+                                "shape": [7, 7],
+                                "scalars": [1.85, 1.55]
+                            },
+                            "credit_mix": {
+                                "shape": [3, 7],
+                                "scalars": [1.2, 1.4]
+                            },
+                            "diversity_velocity": {
+                                "shape": [3, 7],
+                                "scalars": [1.73, 1.17]
+                            }
+                        }
                     },
                     "messages": {
-                        "failed": "",
-                        "success": ""
-                    }
-                },
-                "coinbase": {
-                    "thresholds": {
-                        "coinmarketcap_currencies": 25
-                    },
-                    "scores": {
-                        "models": {}
-                    },
-                    "params": {
-                        "metrics": {},
-                        "matrices": {}
-                    },
-                    "messages": {
-                        "failed": "",
-                        "success": ""
-                    }
-                },
-                "near": {
-                    "thresholds": {},
-                    "scores": {
-                        "models": {}
-                    },
-                    "params": {
-                        "metrics": {},
-                        "matrices": {}
-                    },
-                    "messages": {
-                        "failed": "",
-                        "success": ""
+                        "failed": "NEAR Oracle could not calculate your credit score as there is no active credit line nor transaction history associated with your Plaid bank account. Please use a different bank account",
+                        "success": "Congrats, you have successfully obtained a credit score! Your NEAR Oracle score is {} - {} points. This score qualifies you for a short term loan of up to {} NEAR which is equivalent to {} USD",
+                        "not_qualified": "Unfortunately it looks like you do not qualify for the requested loan amount. Please try another time for a loan lower than USD {}."
                     }
                 }
             }
@@ -232,36 +330,6 @@
                     "thresholds": {
                         "transactions_period": 1800
                     },
-                    "scores": {
-                        "models": {}
-                    },
-                    "params": {
-                        "metrics": {},
-                        "matrices": {}
-                    },
-                    "messages": {
-                        "failed": "",
-                        "success": ""
-                    }
-                },
-                "coinbase": {
-                    "thresholds": {
-                        "coinmarketcap_currencies": 10
-                    },
-                    "scores": {
-                        "models": {}
-                    },
-                    "params": {
-                        "metrics": {},
-                        "matrices": {}
-                    },
-                    "messages": {
-                        "failed": "",
-                        "success": ""
-                    }
-                },
-                "near": {
-                    "thresholds": {},
                     "scores": {
                         "models": {}
                     },
