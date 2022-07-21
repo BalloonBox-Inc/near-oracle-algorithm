@@ -1,0 +1,10 @@
+// These are Workplace settings which are specific to the NEARoracle project
+// and are shared among developers on the project. The settings in this file
+// override default and user settins
+
+{
+    "editor.wordWrap": "on",
+    "files.trimTrailingWhitespace": true,
+    "python.formatting.autopep8Path": "autopep8",
+    "python.formatting.autopep8Args": ["--max-line-length", "120"]
+}
