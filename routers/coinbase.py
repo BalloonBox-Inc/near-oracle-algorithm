@@ -4,6 +4,7 @@ from support.helper import *
 from support.risk import *
 from support.feedback import *
 from support.score import *
+from support.database import *
 from market.coinmarketcap import *
 from validator.coinbase import *
 from schemas import *
@@ -132,13 +133,10 @@ async def credit_score_coinbase(request: Request, response: Response, item: Coin
         ic(score)
         ic(feedback)
 
-        # collect feedback
-        collect = dict(feedback)
-        collect['score'] = score
-        collect['validator'] = 'coinbase'
-        collect['loan_request'] = item.loan_request
-        file = path.join(root_dir(), 'support/feedback.json')
-        append_json(collect, file)
+        # keep feedback data
+        data = my_func(feedback, score, item.loan_request, 'coinbase')
+        add_row_to_table('plaid', data)
+        ic(data)
 
        # validate loan request
         if not validate_loan_request(

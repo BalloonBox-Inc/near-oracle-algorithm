@@ -4,6 +4,7 @@ from support.helper import *
 from support.risk import *
 from support.feedback import *
 from support.score import *
+from support.database import *
 from market.coinmarketcap import *
 from validator.plaid import *
 from schemas import *
@@ -101,13 +102,13 @@ async def credit_score_plaid(request: Request, response: Response, item: Plaid_I
 
         # compute score and feedback
         score, feedback = plaid_score(
+            transactions,
             score_range,
             feedback,
             models,
             penalties,
             metrics,
-            parm,
-            transactions
+            parm
         )
         ic(score)
         ic(feedback)
@@ -120,13 +121,10 @@ async def credit_score_plaid(request: Request, response: Response, item: Plaid_I
         ):
             raise Exception(messages["not_qualified"].format(loan_range[0]))
 
-        # collect feedback
-        collect = dict(feedback)
-        collect['score'] = score
-        collect['validator'] = 'plaid'
-        collect['loan_request'] = item.loan_request
-        file = path.join(root_dir(), 'support/feedback.json')
-        append_json(collect, file)
+        # keep feedback data
+        data = my_func(feedback, score, item.loan_request, 'plaid')
+        add_row_to_table('plaid', data)
+        ic(data)
 
         # compute risk
         risk = calc_risk(

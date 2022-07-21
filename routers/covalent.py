@@ -4,6 +4,7 @@ from support.helper import *
 from support.risk import *
 from support.feedback import *
 from support.score import *
+from support.database import *
 from market.coinmarketcap import *
 from validator.covalent import *
 from schemas import *
@@ -96,13 +97,10 @@ async def credit_score_covalent(request: Request, response: Response, item: Cova
         ic(score)
         ic(feedback)
 
-        # collect feedback
-        collect = dict(feedback)
-        collect['score'] = score
-        collect['validator'] = 'covalent'
-        collect['loan_request'] = item.loan_request
-        file = path.join(root_dir(), 'support/feedback.json')
-        append_json(collect, file)
+        # keep feedback data
+        data = my_func(feedback, score, item.loan_request, 'covalent')
+        add_row_to_table('plaid', data)
+        ic(data)
 
         # compute risk
         risk = calc_risk(
