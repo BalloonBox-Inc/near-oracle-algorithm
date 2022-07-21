@@ -1,8 +1,10 @@
 from market.coinmarketcap import *
 import numpy as np
-
+from icecream import ic
 
 # Some helper functions
+
+
 def comma_separated_list(l):
     '''Takes a Pyhton list as input and returns a string of comma separated elements with AND at the end'''
     if len(l) == 1:
@@ -111,7 +113,7 @@ def interpret_score_plaid(score, feedback, score_range, loan_range, quality_rang
 
 
 def qualitative_feedback_plaid(
-    messages, score, feedback, score_range, loan_range, quality_range, coinmarketcap_key):
+        messages, score, feedback, score_range, loan_range, quality_range, coinmarketcap_key):
     '''
     Description:
         A function to format and return a qualitative description 
@@ -130,8 +132,8 @@ def qualitative_feedback_plaid(
     all_keys = [x for y in [list(feedback[k].keys())
                 for k in feedback.keys()] for x in y]
 
-    # Case #1: NO score exists. 
-    # --> return fetch error when the Oracle did not 
+    # Case #1: NO score exists.
+    # --> return fetch error when the Oracle did not
     # --> fetch any data and computed no score
     if feedback['fetch']:
         msg = messages['failed']
@@ -147,11 +149,15 @@ def qualitative_feedback_plaid(
     # Communicate the score
     rate = coinmarketcap_rate(coinmarketcap_key, 'USD', 'NEAR')
     msg = messages['success'].format(
-            quality.upper(), points, int(round(loan_amount*rate, 0)), loan_amount)
+        quality.upper(), points, int(round(loan_amount*rate, 0)), loan_amount)
+
+    if rate == 0:
+        msg = msg.replace(f'0 NEAR which is equivalent to ', '')
 
     if ('loan_duedate' in list(feedback['stability'].keys())):
         payback = feedback['stability']['loan_duedate']
-        msg = msg + f' over a recommended pay back period of {payback} monthly installments.'
+        msg = msg + \
+            f' over a recommended pay back period of {payback} monthly installments.'
 
     # Interpret the score
     # Credit cards
@@ -165,10 +171,11 @@ def qualitative_feedback_plaid(
     if 'cumulative_current_balance' in all_keys:
         bal = feedback['stability']['cumulative_current_balance']
         bank = feedback['diversity']['bank_name']
-        msg = msg + f' Your total current balance is ${bal:,.0f} USD across all accounts held with {bank}.'
+        msg = msg + \
+            f' Your total current balance is ${bal:,.0f} USD across all accounts held with {bank}.'
 
     # ADVICE
-    # Case #1: there's error(s). 
+    # Case #1: there's error(s).
     # Either some functions broke or data is missing.
     if 'error' in all_keys:
 
@@ -248,7 +255,7 @@ def interpret_score_coinbase(score, feedback, score_range, loan_range, quality_r
                 feedback['liquidity']['loan_duedate'])
 
             if ('wallet_age(days)' in list(feedback['history'].keys())) and \
-                (feedback['history']['wallet_age(days)']):
+                    (feedback['history']['wallet_age(days)']):
                 interpret['score']['wallet_age(days)'] = feedback['history']['wallet_age(days)']
 
             if 'current_balance' in list(feedback['liquidity'].keys()):
@@ -275,7 +282,7 @@ def interpret_score_coinbase(score, feedback, score_range, loan_range, quality_r
 
 
 def qualitative_feedback_coinbase(
-    messages, score, feedback, score_range, loan_range, quality_range, coinmarketcap_key):
+        messages, score, feedback, score_range, loan_range, quality_range, coinmarketcap_key):
     '''
     Description:
         A function to format and return a qualitative description
@@ -294,15 +301,15 @@ def qualitative_feedback_coinbase(
     all_keys = [x for y in [list(feedback[k].keys())
                 for k in feedback.keys()] for x in y]
 
-    # Case #1: NO score exists. 
-    # --> return fetch error when the Oracle did not 
+    # Case #1: NO score exists.
+    # --> return fetch error when the Oracle did not
     # --> fetch any data and computed no score
     if 'kyc' in feedback.keys() and \
-        feedback['kyc']['verified'] == False:
+            feedback['kyc']['verified'] == False:
         msg = messages['failed']
         return msg
 
-    # Case #2: a score exists. 
+    # Case #2: a score exists.
     # --> return descriptive score feedback
     # Declare score variables
     quality = quality_range[np.digitize(score, score_range, right=False)]
@@ -314,9 +321,13 @@ def qualitative_feedback_coinbase(
     msg = messages['success'].format(
         quality.upper(), points, int(round(loan_amount*rate, 0)), loan_amount)
 
+    if rate == 0:
+        msg = msg.replace(f'0 NEAR which is equivalent to ', '')
+
     if ('loan_duedate' in list(feedback['liquidity'].keys())):
         payback = feedback['liquidity']['loan_duedate']
-        msg = msg + f' over a recommended pay back period of {payback} monthly installments.'
+        msg = msg + \
+            f' over a recommended pay back period of {payback} monthly installments.'
 
     # Coinbase account duration
     if ('wallet_age(days)' in all_keys):
@@ -327,7 +338,8 @@ def qualitative_feedback_coinbase(
                 f'and your total balance across all wallets is ${bal:,.0f} USD'
         else:
             lon = feedback['history']['wallet_age(days)']
-            msg = msg + f' Your Coinbase account has been active for {lon} days'
+            msg = msg + \
+                f' Your Coinbase account has been active for {lon} days'
 
     # Tot balance
     else:
@@ -392,13 +404,13 @@ def interpret_score_covalent(score, feedback, score_range, loan_range, quality_r
         interpret = create_interpret_covalent()
 
         # Score
-        if ('credibility' in feedback.keys() and \
+        if ('credibility' in feedback.keys() and
             feedback['credibility']['verified'] == False) or \
-            ('fetch' in feedback.keys() and \
-            feedback['fetch']['JSONDecodeError'] == True):
-                interpret['score']['points'] = 300
-                interpret['score']['quality'] = 'very poor'
-            
+            ('fetch' in feedback.keys() and
+             feedback['fetch']['JSONDecodeError'] == True):
+            interpret['score']['points'] = 300
+            interpret['score']['quality'] = 'very poor'
+
         else:
             interpret['score']['score_exist'] = True
             interpret['score']['points'] = int(score)
@@ -410,7 +422,7 @@ def interpret_score_covalent(score, feedback, score_range, loan_range, quality_r
                 feedback['stamina']['loan_duedate'])
 
             if ('longevity(days)' in list(feedback['credibility'].keys())) and \
-                (feedback['credibility']['longevity(days)']):
+                    (feedback['credibility']['longevity(days)']):
                 interpret['score']['longevity(days)'] = feedback['credibility']['longevity(days)']
 
             if 'cum_balance_now' in list(feedback['wealth'].keys()):
@@ -437,7 +449,7 @@ def interpret_score_covalent(score, feedback, score_range, loan_range, quality_r
 
 
 def qualitative_feedback_covalent(
-    messages, score, feedback, score_range, loan_range, quality_range, coinmarketcap_key):
+        messages, score, feedback, score_range, loan_range, quality_range, coinmarketcap_key):
     '''
     Description:
         A function to format and return a qualitative description 
@@ -453,41 +465,46 @@ def qualitative_feedback_covalent(
     '''
 
     # SCORE
-    all_keys = [x for y in [list(feedback[k].keys()) 
+    all_keys = [x for y in [list(feedback[k].keys())
                 for k in feedback.keys()] for x in y]
 
     # Case #1: Failed to fetch data.
-    # --> return fetch error when the Oracle did not 
+    # --> return fetch error when the Oracle did not
     # --> fetch any data and computed no score
     if 'fetch' in feedback.keys() and \
-        feedback['fetch']['JSONDecodeError'] == True:
+            feedback['fetch']['JSONDecodeError'] == True:
         msg = messages['fetcherror']
         return msg
 
     # Case #2: User not verified.
-    # --> return fetch error when the user has 
+    # --> return fetch error when the user has
     # --> flow balance or no txn history
     elif 'credibility' in feedback.keys() and \
-        feedback['credibility']['verified'] == False:
+            feedback['credibility']['verified'] == False:
         msg = messages['failed']
         return msg
 
-    # Case #3: a score exists. 
+    # Case #3: a score exists.
     # --> return descriptive score feedback
     # Declare score variables
     else:
         quality = quality_range[np.digitize(score, score_range, right=False)]
         points = int(score)
-        loan_amount = int(loan_range[np.digitize(score, score_range, right=False)])
+        loan_amount = int(
+            loan_range[np.digitize(score, score_range, right=False)])
 
         # Communicate the score
         rate = coinmarketcap_rate(coinmarketcap_key, 'USD', 'NEAR')
         msg = messages['success'].format(
             quality.upper(), points, int(round(loan_amount*rate, 0)), loan_amount)
 
+        if rate == 0:
+            msg = msg.replace(f'0 NEAR which is equivalent to ', '')
+
         if ('loan_duedate' in list(feedback['stamina'].keys())):
             payback = feedback['stamina']['loan_duedate']
-            msg = msg + f' over a recommended pay back period of {payback} monthly installments.'
+            msg = msg + \
+                f' over a recommended pay back period of {payback} monthly installments.'
 
         # Covalent account duration
         if ('longevity(days)' in all_keys):
@@ -498,15 +515,17 @@ def qualitative_feedback_covalent(
                     f'and your total balance across all cryptocurrencies is ${bal:,.0f} USD'
             else:
                 bal = feedback['wealth']['cum_balance_now']
-                msg = msg + f' Your ETH wallet address has been active for {bal} days'
+                msg = msg + \
+                    f' Your ETH wallet address has been active for {bal} days'
         # Tot balance
         else:
             if ('cum_balance_now' in all_keys):
                 bal = feedback['wealth']['cum_balance_now']
-                msg = msg + f' Your total balance across all cryptocurrencies is ${bal} USD'
+                msg = msg + \
+                    f' Your total balance across all cryptocurrencies is ${bal} USD'
 
         # ADVICE
-        # Case #1: there's error(s). 
+        # Case #1: there's error(s).
         # Either some functions broke or data is missing.
         if 'error' in all_keys:
             metrics_w_errors = [k for k in feedback.keys(
@@ -514,4 +533,4 @@ def qualitative_feedback_covalent(
             err = comma_separated_list(metrics_w_errors)
             msg = msg + f'. An error occurred while computing the score metric called {err}. ' \
                 f'As a result, your score was rounded down. Try to log into MetaMask again later'
-        return msg + '.'       
+        return msg + '.'

@@ -1,39 +1,21 @@
-from ndicts.ndicts import NestedDict
-from datetime import datetime
-from datetime import timezone
+from pandas.io.json._normalize import nested_to_record
+from datetime import datetime, timezone
 from operator import mul
-from os import path
 import numpy as np
-import json
 
 
-def root_dir():
-    return path.dirname(__file__).replace('./support', '')
+def flatten_dict(d):
+    return nested_to_record(d, sep='_')
 
 
-def append_json(d, filename):
+def my_func(feedback, score, loan_request, validator):
+    d = dict(feedback)
+    d['score'] = score
+    d['validator'] = validator
+    d['loan_request'] = loan_request
     d['timestamp'] = datetime.now(
         timezone.utc).strftime('%m-%d-%Y %H:%M:%S GMT')
-
-    nd = NestedDict(d)
-    for k, value in nd.items():
-        ln = len(k)
-        if isinstance(value, np.integer):
-            if ln == 1:
-                nd[k] = int(value)
-            elif ln == 2:
-                nd[k[0], k[1]] = int(value)
-        elif isinstance(value, np.floating):
-            if ln == 1:
-                nd[k] = float(value)
-            elif ln == 2:
-                nd[k[0], k[1]] = float(value)
-
-    with open(filename, 'r+') as f:
-        data = json.load(f)
-        data['data'].append(nd.to_dict())
-        f.seek(0)
-        json.dump(data, f, ensure_ascii=False, indent=4)
+    return flatten_dict(d)
 
 
 def dot_product(l1, l2):
