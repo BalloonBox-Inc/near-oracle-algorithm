@@ -93,10 +93,9 @@ def flows(acc, txn, how_many_months, feedback):
 
         # Keep only deposit->checking accounts
         for a in acc:
-            id = a['account_id']
             type = '{1}{0}{2}'.format('_', str(a['type']), str(a['subtype'])).lower()
             if type == 'depository_checking':
-                deposit_acc.append(id)
+                deposit_acc.append(a['account_id'])
 
         # Keep only txn in deposit->checking accounts
         transat = [t for t in txn if t['account_id'] in deposit_acc]
@@ -110,10 +109,8 @@ def flows(acc, txn, how_many_months, feedback):
 
             # exclude micro txn and exclude internal transfers
             if abs(t['amount']) > 5 and 'internal account transfer' not in category:
-                date = t['date']
-                dates.append(date)
-                amount = t['amount']
-                amounts.append(amount)
+                dates.append(t['date'])
+                amounts.append(t['amount'])
         df = pd.DataFrame(data={'amounts': amounts}, index=pd.DatetimeIndex(dates))
 
         # Bin by month
@@ -488,10 +485,8 @@ def credit_livelihood(acc, txn, feedback, params):
             amounts = list()
 
             for i in range(len(alltxn)):
-                date = alltxn[i]['date']
-                dates.append(date)
-                amount = alltxn[i]['amount']
-                amounts.append(amount)
+                dates.append(alltxn[i]['date'])
+                amounts.append(alltxn[i]['amount'])
 
             df = pd.DataFrame(data={'amounts': amounts}, index=pd.DatetimeIndex(dates))
             d = df.groupby(pd.Grouper(freq='M')).count()
@@ -709,11 +704,10 @@ def velocity_month_txn_count(acc, txn, feedback, params):
 
         # Keep only deposit->checking accounts
         for a in acc:
-            id = a['account_id']
             type = '{1}{0}{2}'.format('_', str(a['type']), str(a['subtype'])).lower()
 
             if type == 'depository_checking':
-                deposit_acc.append(id)
+                deposit_acc.append(a['account_id'])
 
         # Keep only txn in deposit->checking accounts
         for d in deposit_acc:
@@ -729,11 +723,9 @@ def velocity_month_txn_count(acc, txn, feedback, params):
 
             # Calculate avg count of monthly transactions for one checking account at a time
             if len(df.index) > 0:
-                cnt = df.groupby(pd.Grouper(freq='M')).count().iloc[:, 0].tolist()
+                mycounts.append(df.groupby(pd.Grouper(freq='M')).count().iloc[:, 0].tolist())
             else:
                 score = 0
-
-            mycounts.append(cnt)
 
         mycounts = [x for y in mycounts for x in y]
         how_many = np.mean(mycounts)
