@@ -4,6 +4,7 @@ from support.helper import *
 from support.risk import *
 from support.feedback import *
 from support.score import *
+from support.database import *
 from market.coinmarketcap import *
 from validator.coinbase import *
 from routers.schemas import *
@@ -133,13 +134,8 @@ async def credit_score_coinbase(request: Request, response: Response, item: Coin
         ic(feedback)
 
         # keep feedback data
-        # data = keep_feedback(feedback, score, item.loan_request, 'coinbase')
-
-       # validate loan request
-        if not validate_loan_request(
-            loan_range, feedback, "liquidity", "avg_running_balance"
-        ):
-            raise Exception(messages["not_qualified"].format(loan_range[0]))
+        data = keep_feedback(feedback, score, item.loan_request, 'coinbase')
+        add_row_to_table('coinbase', data)
 
         # compute risk
         risk = calc_risk(

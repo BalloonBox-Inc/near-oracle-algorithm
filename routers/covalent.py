@@ -4,6 +4,7 @@ from support.helper import *
 from support.risk import *
 from support.feedback import *
 from support.score import *
+from support.database import *
 from market.coinmarketcap import *
 from validator.covalent import *
 from routers.schemas import *
@@ -97,7 +98,8 @@ async def credit_score_covalent(request: Request, response: Response, item: Cova
         ic(feedback)
 
         # keep feedback data
-        # data = keep_feedback(feedback, score, item.loan_request, 'covalent')
+        data = keep_feedback(feedback, score, item.loan_request, 'covalent')
+        add_row_to_table('covalent', data)
 
         # compute risk
         risk = calc_risk(

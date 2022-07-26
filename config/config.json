@@ -148,8 +148,7 @@
                     },
                     "messages": {
                         "failed": "NEAR Oracle could not calculate your credit score as there is no active wallet nor transaction history associated with your Coinbase account. Please use a different account.",
-                        "success": "Congrats, you have successfully obtained a credit score! Your NEAR Oracle score is {} - {} points. This score qualifies you for a short term loan of up to {} NEAR which is equivalent to {} USD",
-                        "not_qualified": "Unfortunately it looks like you do not qualify for the requested loan amount. Please try another time for a loan lower than USD {}."
+                        "success": "Congrats, you have successfully obtained a credit score! Your NEAR Oracle score is {} - {} points. This score qualifies you for a short term loan of up to {} NEAR which is equivalent to {} USD"
                     }
                 },
                 "covalent": {
@@ -220,8 +219,7 @@
                     "messages": {
                         "failed": "NEAR Oracle could not calculate your credit score since there is either no transaction history associated with your ETH wallet address or your cumulative balance is too low. Please top up your wallet or use a different wallet address.",
                         "fetcherror": "NEAR Oracle was unable to retrieve data from your ETH wallet and therefore it could not calculate your credit score. Please use a different ETH wallet address.",
-                        "success": "Congrats, you have successfully obtained a credit score! Your NEAR Oracle score is {} - {} points. This score qualifies you for a short term loan of up to {} NEAR which is equivalent to {} USD",
-                        "not_qualified": "Unfortunately it looks like you do not qualify for the requested loan amount. Please try another time for a loan lower than USD {}."
+                        "success": "Congrats, you have successfully obtained a credit score! Your NEAR Oracle score is {} - {} points. This score qualifies you for a short term loan of up to {} NEAR which is equivalent to {} USD"
                     }
                 }
             }
