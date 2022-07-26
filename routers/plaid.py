@@ -121,7 +121,7 @@ async def credit_score_plaid(request: Request, response: Response, item: Plaid_I
             raise Exception(messages["not_qualified"].format(loan_range[0]))
 
         # keep feedback data
-        data = keep_feedback(feedback, score, item.loan_request, 'plaid')
+        # data = keep_feedback(feedback, score, item.loan_request, 'plaid')
 
         # compute risk
         risk = calc_risk(
