@@ -4,9 +4,13 @@
 
 {
     "editor.wordWrap": "on",
+    "editor.formatOnSave": true,
     "files.trimTrailingWhitespace": true,
+    "python.linting.enabled": true,
     "python.formatting.provider": "autopep8",
     "python.formatting.autopep8Args": ["--max-line-length", "120"],
-    "editor.formatOnSave": true,
-    "python.linting.enabled": true,
+    "python.testing.pytestArgs": ["tests"],
+    "python.testing.unittestEnabled": false,
+    "python.testing.pytestEnabled": true,
+    "python.envFile": "${workspaceFolder}/.env",
 }
