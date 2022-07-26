@@ -450,7 +450,7 @@ def credit_length(acc, txn, feedback, params):
                 np.digitize(how_long, params['duration'], right=True)
             ]
 
-            feedback['credit']['credit_duration_(days)'] = how_long
+            feedback['credit']['credit_duration_days'] = how_long
 
         else:
             raise Exception('no credit length')
