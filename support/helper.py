@@ -1,9 +1,11 @@
 from pandas.io.json._normalize import nested_to_record
 from datetime import datetime, timezone
-from support.database import *
 from operator import mul
 import pandas as pd
 import numpy as np
+
+
+NOW = datetime.now().date()
 
 
 def flatten_dict(d):
@@ -17,7 +19,7 @@ def keep_feedback(feedback, score, loan_request, validator):
     d['loan_request'] = loan_request
     d['timestamp'] = datetime.now(timezone.utc).strftime('%m-%d-%Y %H:%M:%S GMT')
     d = flatten_dict(d)
-    add_row_to_table(validator, d)
+    d = {k: v for k, v in d.items() if not isinstance(v, list)}
     return d
 
 
@@ -74,6 +76,12 @@ def lowercase_dict_values(lst, keys):
     return lst
 
 
+def add_time_from_now(lst):
+    for d in lst:
+        d['timespan'] = abs((NOW - d['date']).days)
+    return lst
+
+
 def format_plaid_data(txn, acc):
     acc = unpack_dict(acc, 'balances', ['available', 'current', 'limit'])
     txn = unpack_dict_list(txn, 'category', ['categ', 'sub_category'])
@@ -95,34 +103,81 @@ def format_plaid_data(txn, acc):
             'transaction_code',
             'authorized_date',
             'merchant_name',
-            'name',
             'transaction_id',
             'available',
             'authorized_datetime',
             'datetime',
+            'pending',
         ],
     )
     data = rename_dict_key(data, 'categ', 'category')
     data = lowercase_dict_values(
         data, ['category', 'payment_channel', 'transaction_type', 'sub_category']
     )
+    data = add_time_from_now(data)
     data = sorted(data, key=lambda d: d['date'])
     return data
 
 
 def filter_dict(lst, key, value):
-    return [d for d in lst if d[key] == value]
+    return [d for d in lst if d[key].lower() == value]
 
 
-def frame_reverse_cumsum(d, col, sum_col):
+def dict_reverse_cumsum(d, col, sum_col):
     df = pd.DataFrame(d)
-    row = pd.DataFrame(df[-1:].values, columns=df.columns)
-    row.at[0, col] = row.at[0, sum_col]*-1
-    df = pd.concat([df, row], axis=0, ignore_index=True)
-    df[sum_col] = df.loc[::-1, col].cumsum()[::-1].shift(-1)
-    df = df[:-1]
-    df[col] = df[col]*-1
-    return df
+    cols = df.columns
+    data = pd.DataFrame(columns=cols)
+    accounts = df['account_id'].unique().tolist()
+    for account_id in accounts:
+        temp = df[df['account_id'] == account_id]
+        row = pd.DataFrame(temp[-1:].values, columns=cols)
+        row.at[0, col] = row.at[0, sum_col]*-1
+        temp = pd.concat([temp, row], axis=0, ignore_index=True)
+        temp.reset_index(drop=True, inplace=True)
+        temp[sum_col] = temp.loc[::-1, col].cumsum()[::-1].shift(-1)
+        temp = temp[:-1]
+        temp[col] = temp[col]*-1
+        data = pd.concat([data, temp], axis=0, ignore_index=True)
+    return data.to_dict('records')
+
+
+def account_cash_flow(data, timespan):
+    return sum(d['amount']*-1 for d in data) / timespan
+
+
+def plaid_metadata(metadata, data, key, current_balance=0, current_limit=0):
+    accounts = list(set([d['account_id'] for d in data]))
+    for account_id in accounts:
+        temp = [d for d in data if d['account_id'] == account_id]
+        current = temp[-1]['current']
+        limit = temp[-1]['limit']
+        if current:
+            current_balance += current
+        if limit:
+            current_limit += limit  # aggregated limit
+    metadata[key]['current_balance'] = current_balance
+    metadata[key]['current_limit'] = current_limit
+    metadata[key]['txn_count'] = len(data)
+    metadata[key]['txn_days'] = data[0]['timespan']
+    avg_m_txn = metadata[key]['txn_days'] / 30
+    metadata[key]['txn_monthly'] = metadata[key]['txn_count'] / avg_m_txn
+    metadata[key]['cash_flow_monthly'] = account_cash_flow(data,  avg_m_txn)
+    if key != 'credit_card':
+        metadata[key]['high_balance'] = max([d['current'] for d in data])
+    else:
+        df = pd.DataFrame(data).set_index('date')
+        df.index = pd.to_datetime(df.index)
+        df = df.groupby([df.index.year.values, df.index.month.values, df.account_id]).sum()  # individual high balance
+        metadata[key]['high_balance'] = df.amount.max()
+    return metadata
+
+
+def late_payment(metadata, lst):
+    period = [30, 60, 90, 180, 360, 720, 1800]
+    data = [d for d in lst if d['category'] == 'interest']
+    for p in period:
+        metadata['credit_card'][f'late_payment_{p}'] = len([d for d in data if d['timespan'] <= p])
+    return metadata
 
 
 def dot_product(l1, l2):
