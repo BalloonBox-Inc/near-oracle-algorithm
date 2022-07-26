@@ -4,7 +4,6 @@ from dotenv import load_dotenv
 from validator.covalent import *
 from icecream import ic
 
-from testing.performance import *
 from config.helper import *
 from support.helper import *
 from support.risk import *
@@ -31,12 +30,11 @@ def write_to_json(count, eth_address, blockchain_id, covalent_key, path):
     portfolio = covalent_get_balances_or_portfolio(
         blockchain_id, eth_address, 'portfolio_v2', covalent_key)
 
-    dict = {'balances':balances, 'portfolio':portfolio, 'txn':txn}
+    dict = {'balances': balances, 'portfolio': portfolio, 'txn': txn}
 
     for name, dict_ in dict.items():
         with open(f'{path}{count}_{name}.json', 'w') as f:
             json.dump(dict_, f, indent=3)
-
 
 
 def read_json(userid, path):
@@ -53,7 +51,6 @@ def read_json(userid, path):
         portfolio = json.load(f)
 
     return balances, txn, portfolio
-
 
 
 def compute_covalent_score(balances, txn, portfolio, coinmarketcap_key, loan_request):
@@ -75,7 +72,7 @@ def compute_covalent_score(balances, txn, portfolio, coinmarketcap_key, loan_req
         feedback = create_feedback(models)
         feedback['fetch'] = {}
 
-       # no need to fetch data, since data was already 
+       # no need to fetch data, since data was already
        # passed as arguments to this function
 
         # coinmarketcap
@@ -155,7 +152,6 @@ def compute_covalent_score(balances, txn, portfolio, coinmarketcap_key, loan_req
             output.pop('feedback', None)
 
     return output
-
 
 
 if __name__ == '__main__':

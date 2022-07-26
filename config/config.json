@@ -169,8 +169,8 @@
                             "wealth": {
                                 "weight": 0.33,
                                 "metrics": {
-                                    "capital_now": 0.25, 
-                                    "capital_now_adj": 0.55, 
+                                    "capital_now": 0.25,
+                                    "capital_now_adj": 0.55,
                                     "volume_per_txn": 0.20
                                 }
                             },

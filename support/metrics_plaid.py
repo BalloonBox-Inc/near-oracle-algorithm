@@ -1,5 +1,4 @@
-from testing.performance import *
-
+from support.assessment import *
 from datetime import timedelta
 from datetime import datetime
 import pandas as pd
@@ -190,7 +189,7 @@ def plaid_kyc(acc, txn):
 # -------------------------------------------------------------------------- #
 #                               Metric #1 Credit                             #
 # -------------------------------------------------------------------------- #
-# @measure_time_and_memory
+# @evaluate_function
 def credit_mix(txn, credit, feedback, params):
     '''
     Description:
@@ -240,7 +239,7 @@ def credit_mix(txn, credit, feedback, params):
         return score, feedback
 
 
-# @measure_time_and_memory
+# @evaluate_function
 def credit_limit(txn, credit, feedback, params):
     '''
     Description:
@@ -288,7 +287,7 @@ def credit_limit(txn, credit, feedback, params):
         return score, feedback
 
 
-# @measure_time_and_memory
+# @evaluate_function
 def credit_util_ratio(acc, txn, feedback, params):
     '''
     Description:
@@ -361,7 +360,7 @@ def credit_util_ratio(acc, txn, feedback, params):
         return score, feedback
 
 
-# @measure_time_and_memory
+# @evaluate_function
 def credit_interest(acc, txn, feedback, params):
     '''
     Description:
@@ -419,7 +418,7 @@ def credit_interest(acc, txn, feedback, params):
         return score, feedback
 
 
-# @measure_time_and_memory
+# @evaluate_function
 def credit_length(acc, txn, feedback, params):
     '''
     Description:
@@ -460,7 +459,7 @@ def credit_length(acc, txn, feedback, params):
         return score, feedback
 
 
-# @measure_time_and_memory
+# @evaluate_function
 def credit_livelihood(acc, txn, feedback, params):
     '''
     Description:
@@ -521,7 +520,7 @@ def credit_livelihood(acc, txn, feedback, params):
 # -------------------------------------------------------------------------- #
 
 
-# @measure_time_and_memory
+# @evaluate_function
 def velocity_withdrawals(txn, feedback, params):
     '''
     Description:
@@ -580,7 +579,7 @@ def velocity_withdrawals(txn, feedback, params):
         return score, feedback
 
 
-# @measure_time_and_memory
+# @evaluate_function
 def velocity_deposits(txn, feedback, params):
     '''
     Description:
@@ -633,7 +632,7 @@ def velocity_deposits(txn, feedback, params):
         return score, feedback
 
 
-# @measure_time_and_memory
+# @evaluate_function
 def velocity_month_net_flow(acc, txn, feedback, params):
     '''
     Description:
@@ -680,7 +679,7 @@ def velocity_month_net_flow(acc, txn, feedback, params):
         return score, feedback
 
 
-# @measure_time_and_memory
+# @evaluate_function
 def velocity_month_txn_count(acc, txn, feedback, params):
     '''
     Description:
@@ -743,7 +742,7 @@ def velocity_month_txn_count(acc, txn, feedback, params):
         return score, feedback
 
 
-# @measure_time_and_memory
+# @evaluate_function
 def velocity_slope(acc, txn, feedback, params):
     '''
     Description:
@@ -808,7 +807,7 @@ def velocity_slope(acc, txn, feedback, params):
 # -------------------------------------------------------------------------- #
 
 
-# @measure_time_and_memory
+# @evaluate_function
 def stability_tot_balance_now(depository, non_depository, feedback, params):
     '''
     Description:
@@ -857,7 +856,7 @@ def stability_tot_balance_now(depository, non_depository, feedback, params):
         return score, feedback
 
 
-# @measure_time_and_memory
+# @evaluate_function
 def stability_loan_duedate(txn, feedback, params):
     '''
     Description:
@@ -891,7 +890,7 @@ def stability_loan_duedate(txn, feedback, params):
         return feedback
 
 
-# @measure_time_and_memory
+# @evaluate_function
 def stability_min_running_balance(acc, txn, feedback, params):
     '''
     Description:
@@ -953,7 +952,7 @@ def stability_min_running_balance(acc, txn, feedback, params):
 # -------------------------------------------------------------------------- #
 
 
-# @measure_time_and_memory
+# @evaluate_function
 def diversity_acc_count(acc, txn, feedback, params):
     '''
     Description:
@@ -989,7 +988,7 @@ def diversity_acc_count(acc, txn, feedback, params):
         return score, feedback
 
 
-# @measure_time_and_memory
+# @evaluate_function
 def diversity_profile(acc, feedback, params):
     '''
     Description:

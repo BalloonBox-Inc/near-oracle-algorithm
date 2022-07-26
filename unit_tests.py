@@ -1,6 +1,6 @@
-from testing.tests.test_coinbase import *
-from testing.tests.test_covalent import *
-from testing.tests.test_plaid import *
+from tests.test_coinbase import *
+from tests.test_covalent import *
+from tests.test_plaid import *
 import unittest
 
 

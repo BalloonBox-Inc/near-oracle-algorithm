@@ -24,7 +24,7 @@ def format_memory(m):
     return m
 
 
-def measure_time_and_memory(func):
+def evaluate_function(func):
     def measure(*args, **kwargs):
         # start measure
         tracemalloc.start()

@@ -1,4 +1,4 @@
-from testing.performance import *
+from support.assessment import *
 from config.helper import *
 from support.helper import *
 from market.coinmarketcap import *
@@ -8,7 +8,7 @@ from validator.covalent import *
 from support.metrics_plaid import *
 from support.metrics_coinbase import *
 from support.metrics_covalent import *
-from schemas import *
+from routers.schemas import *
 from fastapi import APIRouter, Request, Response, HTTPException, status
 from icecream import ic
 from dotenv import load_dotenv
@@ -22,7 +22,7 @@ router = APIRouter(
 )
 
 
-# @measure_time_and_memory
+# @evaluate_function
 @router.post('/kyc', status_code=status.HTTP_200_OK, summary='KYC credit score')
 async def credit_score_kyc(request: Request, response: Response, item: KYC_Item):
     '''

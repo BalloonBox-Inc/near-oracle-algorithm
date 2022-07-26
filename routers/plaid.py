@@ -1,4 +1,4 @@
-from testing.performance import *
+from support.assessment import *
 from config.helper import *
 from support.helper import *
 from support.risk import *
@@ -6,7 +6,7 @@ from support.feedback import *
 from support.score import *
 from market.coinmarketcap import *
 from validator.plaid import *
-from schemas import *
+from routers.schemas import *
 from fastapi import APIRouter, Request, Response, HTTPException, status
 from icecream import ic
 from dotenv import load_dotenv
@@ -20,7 +20,7 @@ router = APIRouter(
 )
 
 
-# @measure_time_and_memory
+# @evaluate_function
 @router.post('/plaid', status_code=status.HTTP_200_OK, summary='Plaid credit score')
 async def credit_score_plaid(request: Request, response: Response, item: Plaid_Item):
     '''

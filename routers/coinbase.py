@@ -1,4 +1,4 @@
-from testing.performance import *
+from support.assessment import *
 from config.helper import *
 from support.helper import *
 from support.risk import *
@@ -6,7 +6,7 @@ from support.feedback import *
 from support.score import *
 from market.coinmarketcap import *
 from validator.coinbase import *
-from schemas import *
+from routers.schemas import *
 from fastapi import APIRouter, Request, Response, HTTPException, status
 from icecream import ic
 
@@ -17,7 +17,7 @@ router = APIRouter(
 )
 
 
-# @measure_time_and_memory
+# @evaluate_function
 @router.post('/coinbase', status_code=status.HTTP_200_OK, summary='Coinbase credit score')
 async def credit_score_coinbase(request: Request, response: Response, item: Coinbase_Item):
     '''

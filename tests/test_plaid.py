@@ -9,8 +9,7 @@ import os
 LOAN_AMOUNT = 24000
 dummy_data = 'test_plaid.json'
 
-json_file = os.path.join(os.path.dirname(
-    __file__).replace('/tests', '/data'), dummy_data)
+json_file = os.path.join(os.path.dirname(__file__), dummy_data)
 
 
 # -------------------------------------------------------------------------- #
