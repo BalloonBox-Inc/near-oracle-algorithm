@@ -14,20 +14,22 @@ def plaid_score(data, score_range, feedback, model_weights, model_penalties, met
 
     feedback['stability']['txn_history'] = dataset[0]['timespan']
 
-    credit_card = dict_reverse_cumsum(filter_dict(dataset, 'type', 'credit'), 'amount', 'current')
-    checking = dict_reverse_cumsum(filter_dict(dataset, 'subtype', 'checking'), 'amount', 'current')
-    savings = dict_reverse_cumsum(filter_dict(dataset, 'subtype', 'savings'), 'amount', 'current')
+    credit_card = filter_dict(dataset, 'type', 'credit')
+    checking = filter_dict(dataset, 'subtype', 'checking')
+    savings = filter_dict(dataset, 'subtype', 'savings')
 
     metadata = {'credit_card': {}, 'checking': {}, 'savings': {}}
     if credit_card:
+        credit_card = dict_reverse_cumsum(credit_card, 'amount', 'current')
         metadata = balances(metadata, credit_card, 'credit_card')
         metadata = transactions(metadata, credit_card, 'credit_card')
         metadata = late_payment(metadata, credit_card)
-        metadata = util_ratio(metadata, credit_card)
     if checking:
+        checking = dict_reverse_cumsum(checking, 'amount', 'current')
         metadata = balances(metadata, checking, 'checking')
         metadata = transactions(metadata, checking, 'checking')
     if savings:
+        savings = dict_reverse_cumsum(savings, 'amount', 'current')
         metadata = balances(metadata, savings, 'savings')
         metadata = transactions(metadata, savings, 'savings')
 
