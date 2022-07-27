@@ -141,42 +141,62 @@ def dict_reverse_cumsum(d, col, sum_col):
     return data.to_dict('records')
 
 
-def account_cash_flow(data, timespan):
-    return sum(d['amount']*-1 for d in data) / timespan
+def aggregate_dict_by_month(data):
+    df = pd.DataFrame(data).set_index('date')
+    df.index = pd.to_datetime(df.index)
+    df = df.groupby([df.index.year.values, df.index.month.values]).agg({'amount': 'sum', 'limit': 'max'})
+    return df
 
 
-def plaid_metadata(metadata, data, key, current_balance=0, current_limit=0):
-    accounts = list(set([d['account_id'] for d in data]))
+def util_ratio(metadata, data):
+    metadata['credit_card']['util_ratio'] = {}
+    period = [30, 60, 90, 180, 360, 720, 1800]
+    months = [-1, -2, -3, -6, -12, -24, -60]
+    data['util_ratio'] = data['amount'] / data['limit']
+    for p, m in zip(period, months):
+        metadata['credit_card']['util_ratio'][p] = data.iloc[m:].util_ratio.max()
+    return metadata
+
+
+def balances(metadata, lst, key, df=None):
+    metadata[key]['balances'] = {}
+    current, limit, high_balance = [], [], []
+    accounts = list(set([d['account_id'] for d in lst]))
+    metadata[key]['accounts'] = len(accounts)
     for account_id in accounts:
-        temp = [d for d in data if d['account_id'] == account_id]
-        current = temp[-1]['current']
-        limit = temp[-1]['limit']
-        if current:
-            current_balance += current
-        if limit:
-            current_limit += limit  # aggregated limit
-    metadata[key]['current_balance'] = current_balance
-    metadata[key]['current_limit'] = current_limit
-    metadata[key]['txn_count'] = len(data)
-    metadata[key]['txn_days'] = data[0]['timespan']
-    avg_m_txn = metadata[key]['txn_days'] / 30
-    metadata[key]['txn_monthly'] = metadata[key]['txn_count'] / avg_m_txn
-    metadata[key]['cash_flow_monthly'] = account_cash_flow(data,  avg_m_txn)
-    if key != 'credit_card':
-        metadata[key]['high_balance'] = max([d['current'] for d in data])
-    else:
-        df = pd.DataFrame(data).set_index('date')
-        df.index = pd.to_datetime(df.index)
-        df = df.groupby([df.index.year.values, df.index.month.values, df.account_id]).sum()  # individual high balance
-        metadata[key]['high_balance'] = df.amount.max()
+        temp = [d for d in lst if d['account_id'] == account_id]
+        current.append(temp[-1]['current'])
+        limit.append(temp[-1]['limit'])
+        if key == 'credit_card':
+            df = aggregate_dict_by_month(temp)
+            high_balance.append(df.amount.max())
+        else:
+            high_balance.append(max([d['current'] for d in temp]))
+    metadata[key]['balances']['current'] = current
+    metadata[key]['balances']['limit'] = limit
+    metadata[key]['balances']['high_balance'] = high_balance
+    if df is not None:
+        metadata = util_ratio(metadata, df)
+    return metadata
+
+
+def transactions(metadata, lst, key):
+    ''' regardless how many different account within same account type '''
+    metadata[key]['transactions'] = {}
+    metadata[key]['transactions']['total_count'] = len(lst)
+    metadata[key]['transactions']['timespan'] = lst[0]['timespan']
+    timespan_in_months = metadata[key]['transactions']['timespan'] / 30
+    metadata[key]['transactions']['avg_monthly_count'] = metadata[key]['transactions']['total_count'] / timespan_in_months
+    metadata[key]['transactions']['avg_monthly_cash_flow'] = sum(d['amount']*-1 for d in lst) / timespan_in_months
     return metadata
 
 
 def late_payment(metadata, lst):
+    metadata['credit_card']['late_payment'] = {}
     period = [30, 60, 90, 180, 360, 720, 1800]
     data = [d for d in lst if d['category'] == 'interest']
     for p in period:
-        metadata['credit_card'][f'late_payment_{p}'] = len([d for d in data if d['timespan'] <= p])
+        metadata['credit_card']['late_payment'][p] = len([d for d in data if d['timespan'] <= p])
     return metadata
 
 
