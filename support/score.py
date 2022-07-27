@@ -20,12 +20,16 @@ def plaid_score(data, score_range, feedback, model_weights, model_penalties, met
 
     metadata = {'credit_card': {}, 'checking': {}, 'savings': {}}
     if credit_card:
-        metadata = plaid_metadata(metadata, credit_card, 'credit_card')
+        metadata = balances(metadata, credit_card, 'credit_card')
+        metadata = transactions(metadata, credit_card, 'credit_card')
         metadata = late_payment(metadata, credit_card)
+        metadata = util_ratio(metadata, credit_card)
     if checking:
-        metadata = plaid_metadata(metadata, checking, 'checking')
+        metadata = balances(metadata, checking, 'checking')
+        metadata = transactions(metadata, checking, 'checking')
     if savings:
-        metadata = plaid_metadata(metadata, savings, 'savings')
+        metadata = balances(metadata, savings, 'savings')
+        metadata = transactions(metadata, savings, 'savings')
 
     ic(metadata)
 
