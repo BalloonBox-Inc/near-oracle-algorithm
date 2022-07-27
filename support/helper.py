@@ -160,9 +160,10 @@ def util_ratio(metadata, data):
 
 def balances(metadata, lst, key, df=None):
     metadata[key]['balances'] = {}
+    metadata[key]['accounts'] = {}
     current, limit, high_balance = [], [], []
     accounts = list(set([d['account_id'] for d in lst]))
-    metadata[key]['accounts'] = len(accounts)
+    metadata[key]['accounts']['total_count'] = len(accounts)
     for account_id in accounts:
         temp = [d for d in lst if d['account_id'] == account_id]
         current.append(temp[-1]['current'])
