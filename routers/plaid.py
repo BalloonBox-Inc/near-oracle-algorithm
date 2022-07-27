@@ -1,14 +1,14 @@
-from testing.performance import *
+from support.assessment import *
 from config.helper import *
 from support.helper import *
 from support.risk import *
 from support.feedback import *
 from support.score import *
+from support.database import *
 from market.coinmarketcap import *
 from validator.plaid import *
-from schemas import *
+from routers.schemas import *
 from fastapi import APIRouter, Request, Response, HTTPException, status
-from icecream import ic
 from dotenv import load_dotenv
 from os import getenv
 load_dotenv()
@@ -20,7 +20,7 @@ router = APIRouter(
 )
 
 
-# @measure_time_and_memory
+# @evaluate_function
 @router.post('/plaid', status_code=status.HTTP_200_OK, summary='Plaid credit score')
 async def credit_score_plaid(request: Request, response: Response, item: Plaid_Item):
     '''
@@ -38,7 +38,10 @@ async def credit_score_plaid(request: Request, response: Response, item: Plaid_I
     '''
 
     try:
+        print(f'\033[35;1m Receiving request from: {request.client.host}\033[0m')
+
         # configs
+        print(f'\033[36m Accessing settings ...\033[0m')
         configs = read_config_file(item.loan_request)
         if isinstance(configs, str):
             raise HTTPException(
@@ -62,101 +65,61 @@ async def credit_score_plaid(request: Request, response: Response, item: Plaid_I
         feedback = create_feedback(models)
         feedback['fetch'] = {}
 
-        ic(loan_range)
-        ic(score_range)
-        ic(qualitative_range)
-        ic(thresholds)
-        ic(parm)
-        ic(models)
-        ic(metrics)
-        ic(penalties)
-        ic(messages)
-        ic(feedback)
-
         # plaid client connection
+        print(f'\033[36m Connecting with validator ...\033[0m')
         client = plaid_client(
-            getenv('ENV'),
-            item.plaid_client_id,
-            item.plaid_client_secret
-        )
-        ic(client)
+            getenv('ENV'), item.plaid_client_id, item.plaid_client_secret)
 
         # data fetching
+        print(f'\033[36m Reading data ...\033[0m')
         transactions = plaid_transactions(
-            item.plaid_access_token,
-            client,
-            thresholds['transactions_period']
-        )
+            item.plaid_access_token, client, thresholds['transactions_period'])
         if isinstance(transactions, str):
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail=f'Unable to fetch transactions data: {transactions}')
 
         bank_name = plaid_bank_name(
-            client,
-            transactions['item']['institution_id'],
-        )
+            client, transactions['item']['institution_id'])
         feedback['diversity']['bank_name'] = bank_name
-        ic(bank_name)
 
         # compute score and feedback
+        print(f'\033[36m Calculating score ...\033[0m')
         score, feedback = plaid_score(
-            transactions,
-            score_range,
-            feedback,
-            models,
-            penalties,
-            metrics,
-            parm
-        )
-        ic(score)
-        ic(feedback)
+            transactions, score_range, feedback, models, penalties, metrics, parm)
 
         # validate loan request and transaction history
+        print(f'\033[36m Validating template ...\033[0m')
         if not validate_loan_request(
             loan_range, feedback, "stability", "cumulative_current_balance"
         ) or not validate_txn_history(
-            thresholds["transactions_period"], feedback, "stability", "txn_history"
-        ):
+                thresholds["transactions_period"], feedback, "stability", "txn_history"):
             raise Exception(messages["not_qualified"].format(loan_range[0]))
 
         # keep feedback data
+        print(f'\033[36m Saving parameters ...\033[0m')
         data = keep_feedback(feedback, score, item.loan_request, 'plaid')
-        ic(data)
+        add_row_to_table('plaid', data)
 
         # compute risk
-        risk = calc_risk(
-            score,
-            score_range,
-            loan_range
-        )
-        ic(risk)
+        print(f'\033[36m Calculating risk ...\033[0m')
+        risk = calc_risk(score, score_range, loan_range)
 
         # update feedback
+        print(f'\033[36m Preparing feedback 1/2...\033[0m')
         message = qualitative_feedback_plaid(
-            messages,
-            score,
-            feedback,
-            score_range,
-            loan_range,
-            qualitative_range,
-            item.coinmarketcap_key
-        )
+            messages, score, feedback, score_range, loan_range, qualitative_range, item.coinmarketcap_key)
 
+        print(f'\033[36m Preparing feedback 2/2 ...\033[0m')
         feedback = interpret_score_plaid(
-            score,
-            feedback,
-            score_range,
-            loan_range,
-            qualitative_range
-        )
-        ic(message)
-        ic(feedback)
+            score, feedback, score_range, loan_range, qualitative_range)
 
         # return success
+        print(f'\033[35;1m Credit score has successfully been calculated.\033[0m')
         status_msg = 'success'
 
     except Exception as e:
+        print(f'\033[35;1m Unable to complete credit scoring calculation.\033[0m')
         status_msg = 'error'
         score = 0
         risk = 'undefined'

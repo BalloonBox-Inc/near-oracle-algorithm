@@ -1,8 +1,11 @@
 from pandas.io.json._normalize import nested_to_record
 from datetime import datetime, timezone
-from support.database import *
 from operator import mul
+import pandas as pd
 import numpy as np
+
+
+NOW = datetime.now().date()
 
 
 def flatten_dict(d):
@@ -14,11 +17,188 @@ def keep_feedback(feedback, score, loan_request, validator):
     d['score'] = score
     d['validator'] = validator
     d['loan_request'] = loan_request
-    d['timestamp'] = datetime.now(
-        timezone.utc).strftime('%m-%d-%Y %H:%M:%S GMT')
+    d['timestamp'] = datetime.now(timezone.utc).strftime('%m-%d-%Y %H:%M:%S GMT')
     d = flatten_dict(d)
-    add_row_to_table(validator, d)
+    d = {k: v for k, v in d.items() if not isinstance(v, list)}
     return d
+
+
+def unpack_dict(lst, parent, keys):
+    for d in lst:
+        for k in keys:
+            d[k] = d[parent][k]
+    return lst
+
+
+def unpack_dict_list(lst, key, keys):
+    x = len(keys)
+    for d in lst:
+        values = d[key]
+        if isinstance(values, list):
+            y = len(values)
+            if x != y:
+                values = values[:x]
+            for k, v in zip(keys, values):
+                d[k] = v
+        else:
+            for k in keys:
+                d[k] = None
+    return lst
+
+
+def merge_dict(lst1, lst2, key, keys):
+    for d1 in lst1:
+        for d2 in lst2:
+            if d1[key] == d2[key]:
+                for k in keys:
+                    if isinstance(d2[k], str):
+                        d1[k] = d2[k].lower()
+                    else:
+                        d1[k] = d2[k]
+    return lst1
+
+
+def remove_dict_keys(lst, keys):
+    return [{k: d[k] for k in d if k not in keys} for d in lst]
+
+
+def rename_dict_key(lst, k_old, k_new):
+    for d in lst:
+        d[k_new] = d.pop(k_old)
+    return lst
+
+
+def lowercase_dict_values(lst, keys):
+    for d in lst:
+        for k, v in d.items():
+            if k in keys and isinstance(d[k], str):
+                d[k] = d[k].lower()
+    return lst
+
+
+def add_time_from_now(lst):
+    for d in lst:
+        d['timespan'] = abs((NOW - d['date']).days)
+    return lst
+
+
+def format_plaid_data(txn, acc):
+    acc = unpack_dict(acc, 'balances', ['available', 'current', 'limit'])
+    txn = unpack_dict_list(txn, 'category', ['categ', 'sub_category'])
+
+    data = merge_dict(
+        txn, acc, 'account_id', ['type', 'subtype', 'available', 'current', 'limit']
+    )
+    data = remove_dict_keys(
+        data,
+        [
+            'account_owner',
+            'category_id',
+            'check_number',
+            'location',
+            'payment_meta',
+            'unofficial_currency_code',
+            'pending_transaction_id',
+            'personal_finance_category',
+            'transaction_code',
+            'authorized_date',
+            'merchant_name',
+            'transaction_id',
+            'available',
+            'authorized_datetime',
+            'datetime',
+            'pending',
+        ],
+    )
+    data = rename_dict_key(data, 'categ', 'category')
+    data = lowercase_dict_values(
+        data, ['category', 'payment_channel', 'transaction_type', 'sub_category']
+    )
+    data = add_time_from_now(data)
+    data = sorted(data, key=lambda d: d['date'])
+    return data
+
+
+def filter_dict(lst, key, value):
+    return [d for d in lst if d[key].lower() == value]
+
+
+def dict_reverse_cumsum(d, col, sum_col):
+    df = pd.DataFrame(d)
+    cols = df.columns
+    data = pd.DataFrame(columns=cols)
+    accounts = df['account_id'].unique().tolist()
+    for account_id in accounts:
+        temp = df[df['account_id'] == account_id]
+        row = pd.DataFrame(temp[-1:].values, columns=cols)
+        row.at[0, col] = row.at[0, sum_col]*-1
+        temp = pd.concat([temp, row], axis=0, ignore_index=True)
+        temp.reset_index(drop=True, inplace=True)
+        temp[sum_col] = temp.loc[::-1, col].cumsum()[::-1].shift(-1)
+        temp = temp[:-1]
+        temp[col] = temp[col]*-1
+        data = pd.concat([data, temp], axis=0, ignore_index=True)
+    return data.to_dict('records')
+
+
+def aggregate_dict_by_month(data):
+    df = pd.DataFrame(data).set_index('date')
+    df.index = pd.to_datetime(df.index)
+    df = df.groupby([df.index.year.values, df.index.month.values]).agg({'amount': 'sum', 'limit': 'max'})
+    return df
+
+
+def util_ratio(metadata, data):
+    metadata['credit_card']['util_ratio'] = {}
+    period = [30, 60, 90, 180, 360, 720, 1800]
+    months = [-1, -2, -3, -6, -12, -24, -60]
+    data['util_ratio'] = data['amount'] / data['limit']
+    for p, m in zip(period, months):
+        metadata['credit_card']['util_ratio'][p] = data.iloc[m:].util_ratio.max()
+    return metadata
+
+
+def balances(metadata, lst, key, df=None):
+    metadata[key]['balances'] = {}
+    metadata[key]['accounts'] = {}
+    current, limit, high_balance = [], [], []
+    accounts = list(set([d['account_id'] for d in lst]))
+    metadata[key]['accounts']['total_count'] = len(accounts)
+    for account_id in accounts:
+        temp = [d for d in lst if d['account_id'] == account_id]
+        current.append(temp[-1]['current'])
+        limit.append(temp[-1]['limit'])
+        if key == 'credit_card':
+            df = aggregate_dict_by_month(temp)
+            high_balance.append(df.amount.max())
+        else:
+            high_balance.append(max([d['current'] for d in temp]))
+    metadata[key]['balances']['current'] = current
+    metadata[key]['balances']['limit'] = limit
+    metadata[key]['balances']['high_balance'] = high_balance
+    if df is not None:
+        metadata = util_ratio(metadata, df)
+    return metadata
+
+
+def transactions(metadata, lst, key):
+    ''' regardless how many different account within same account type '''
+    metadata[key]['transactions'] = {}
+    metadata[key]['transactions']['total_count'] = len(lst)
+    metadata[key]['transactions']['timespan'] = lst[0]['timespan']
+    timespan_in_months = metadata[key]['transactions']['timespan'] / 30
+    metadata[key]['transactions']['avg_monthly_count'] = metadata[key]['transactions']['total_count'] / timespan_in_months
+    metadata[key]['transactions']['avg_monthly_cash_flow'] = sum(d['amount']*-1 for d in lst) / timespan_in_months
+    return metadata
+
+
+def late_payment(metadata, lst):
+    metadata['credit_card']['late_payment'] = {}
+    period = [30, 60, 90, 180, 360, 720, 1800]
+    data = [d for d in lst if d['category'] == 'interest']
+    for p in period:
+        metadata['credit_card']['late_payment'][p] = len([d for d in data if d['timespan'] <= p])
+    return metadata
 
 
 def dot_product(l1, l2):
@@ -36,19 +216,6 @@ def aggregate_currencies(ccy1, ccy2, fiats):
     ccy1.update(ccy2)
     ccy1 = list(ccy1.keys())
     return ccy1
-
-
-def merge_dict(lst1, lst2, key, keys):
-    for l1 in lst1:
-        for l2 in lst2:
-            if l1[key] == l2[key]:
-                for k in keys:
-                    l1[k] = l2[k].lower()
-    return lst1
-
-
-def filter_dict(lst, key, value):
-    return [d for d in lst if d[key] == value]
 
 
 def immutable_array(arr):
@@ -72,10 +239,10 @@ def validate_txn_history(req_period, feedback, k1, k2):
 
 
 def build_2d_matrix(size, scalars):
-    """
+    '''
     build a simple 2D scoring matrix.
     Matrix axes growth rate is defined by a log in base 10 function
-    """
+    '''
     matrix = np.zeros(size)
     scalars = [1 / n for n in scalars]
 
@@ -88,62 +255,58 @@ def build_2d_matrix(size, scalars):
 
 
 def build_normalized_matrix(size, scalar):
-    """
+    '''
     build a normalized 2D scoring matrix.
     Matrix axes growth rate is defined by a natural logarithm function
-    """
+    '''
     m = np.zeros(size)
     # evaluate the bottom right element in the matrix and use it to normalize the matrix
-    extrema = round(scalar[0] * np.log(m.shape[0]) +
-                    scalar[1] * np.log(m.shape[1]), 2)
+    extrema = round(scalar[0] * np.log(m.shape[0]) + scalar[1] * np.log(m.shape[1]), 2)
 
     for a in range(m.shape[0]):
         for b in range(m.shape[1]):
             m[a][b] = round(
-                (scalar[0] * np.log(a + 1) + scalar[1]
-                 * np.log(b + 1)) / extrema, 2
+                (scalar[0] * np.log(a + 1) + scalar[1] * np.log(b + 1)) / extrema, 2
             )
     return m
 
 
 def plaid_params(params, score_range):
 
-    due_date = immutable_array(np.array(params["metrics"]["due_date"]))
-    duration = immutable_array(np.array(params["metrics"]["duration"]))
-    count_zero = immutable_array(np.array(params["metrics"]["count_zero"]))
-    count_invest = immutable_array(np.array(params["metrics"]["count_invest"]))
-    volume_credit = immutable_array(
-        np.array(params["metrics"]["volume_credit"]) * 1000)
-    volume_invest = immutable_array(
-        np.array(params["metrics"]["volume_invest"]) * 1000)
+    due_date = immutable_array(np.array(params['metrics']['due_date']))
+    duration = immutable_array(np.array(params['metrics']['duration']))
+    count_zero = immutable_array(np.array(params['metrics']['count_zero']))
+    count_invest = immutable_array(np.array(params['metrics']['count_invest']))
+    volume_credit = immutable_array(np.array(params['metrics']['volume_credit']) * 1000)
+    volume_invest = immutable_array(np.array(params['metrics']['volume_invest']) * 1000)
     volume_balance = immutable_array(
-        np.array(params["metrics"]["volume_balance"]) * 1000
+        np.array(params['metrics']['volume_balance']) * 1000
     )
-    flow_ratio = immutable_array(np.array(params["metrics"]["flow_ratio"]))
-    slope = immutable_array(np.array(params["metrics"]["slope"]))
-    slope_lr = immutable_array(np.array(params["metrics"]["slope_lr"]))
+    flow_ratio = immutable_array(np.array(params['metrics']['flow_ratio']))
+    slope = immutable_array(np.array(params['metrics']['slope']))
+    slope_lr = immutable_array(np.array(params['metrics']['slope_lr']))
     activity_vol_mtx = immutable_array(
         build_2d_matrix(
-            tuple(params["matrices"]["activity_volume"]["shape"]),
-            tuple(params["matrices"]["activity_volume"]["scalars"]),
+            tuple(params['matrices']['activity_volume']['shape']),
+            tuple(params['matrices']['activity_volume']['scalars']),
         )
     )
     activity_cns_mtx = immutable_array(
         build_2d_matrix(
-            tuple(params["matrices"]["activity_consistency"]["shape"]),
-            tuple(params["matrices"]["activity_consistency"]["scalars"]),
+            tuple(params['matrices']['activity_consistency']['shape']),
+            tuple(params['matrices']['activity_consistency']['scalars']),
         )
     )
     credit_mix_mtx = immutable_array(
         build_2d_matrix(
-            tuple(params["matrices"]["credit_mix"]["shape"]),
-            tuple(params["matrices"]["credit_mix"]["scalars"]),
+            tuple(params['matrices']['credit_mix']['shape']),
+            tuple(params['matrices']['credit_mix']['scalars']),
         )
     )
     diversity_velo_mtx = immutable_array(
         build_2d_matrix(
-            tuple(params["matrices"]["diversity_velocity"]["shape"]),
-            tuple(params["matrices"]["diversity_velocity"]["scalars"]),
+            tuple(params['matrices']['diversity_velocity']['shape']),
+            tuple(params['matrices']['diversity_velocity']['scalars']),
         )
     )
 
@@ -155,17 +318,12 @@ def plaid_params(params, score_range):
     fico_medians.append(1)
     fico_medians = immutable_array(np.array(fico_medians))
 
-    count_lively = immutable_array(
-        np.array([round(x, 0) for x in fico * 25])[1:])
+    count_lively = immutable_array(np.array([round(x, 0) for x in fico * 25])[1:])
     count_txn = immutable_array(np.array([round(x, 0) for x in fico * 40])[1:])
-    volume_flow = immutable_array(
-        np.array([round(x, 0) for x in fico * 1500])[1:])
-    volume_withdraw = immutable_array(
-        np.array([round(x, 0) for x in fico * 1500])[1:])
-    volume_deposit = immutable_array(
-        np.array([round(x, 0) for x in fico * 7000])[1:])
-    volume_min = immutable_array(
-        np.array([round(x, 0) for x in fico * 10000])[1:])
+    volume_flow = immutable_array(np.array([round(x, 0) for x in fico * 1500])[1:])
+    volume_withdraw = immutable_array(np.array([round(x, 0) for x in fico * 1500])[1:])
+    volume_deposit = immutable_array(np.array([round(x, 0) for x in fico * 7000])[1:])
+    volume_min = immutable_array(np.array([round(x, 0) for x in fico * 10000])[1:])
     credit_util_pct = immutable_array(
         np.array([round(x, 2) for x in reversed(fico * 0.9)][:-1])
     )
@@ -174,29 +332,29 @@ def plaid_params(params, score_range):
     )
 
     k = [
-        "due_date",
-        "duration",
-        "count_zero",
-        "count_invest",
-        "volume_credit",
-        "volume_invest",
-        "volume_balance",
-        "flow_ratio",
-        "slope",
-        "slope_lr",
-        "activity_vol_mtx",
-        "activity_cns_mtx",
-        "credit_mix_mtx",
-        "diversity_velo_mtx",
-        "fico_medians",
-        "count_lively",
-        "count_txn",
-        "volume_flow",
-        "volume_withdraw",
-        "volume_deposit",
-        "volume_min",
-        "credit_util_pct",
-        "frequency_interest",
+        'due_date',
+        'duration',
+        'count_zero',
+        'count_invest',
+        'volume_credit',
+        'volume_invest',
+        'volume_balance',
+        'flow_ratio',
+        'slope',
+        'slope_lr',
+        'activity_vol_mtx',
+        'activity_cns_mtx',
+        'credit_mix_mtx',
+        'diversity_velo_mtx',
+        'fico_medians',
+        'count_lively',
+        'count_txn',
+        'volume_flow',
+        'volume_withdraw',
+        'volume_deposit',
+        'volume_min',
+        'credit_util_pct',
+        'frequency_interest',
     ]
 
     v = [
@@ -230,24 +388,23 @@ def plaid_params(params, score_range):
 
 def coinbase_params(params, score_range):
 
-    due_date = immutable_array(np.array(params["metrics"]["due_date"]))
-    duration = immutable_array(np.array(params["metrics"]["duration"]))
+    due_date = immutable_array(np.array(params['metrics']['due_date']))
+    duration = immutable_array(np.array(params['metrics']['duration']))
     volume_balance = immutable_array(
-        np.array(params["metrics"]["volume_balance"]) * 1000
+        np.array(params['metrics']['volume_balance']) * 1000
     )
-    volume_profit = immutable_array(
-        np.array(params["metrics"]["volume_profit"]) * 1000)
-    count_txn = immutable_array(np.array(params["metrics"]["count_txn"]))
+    volume_profit = immutable_array(np.array(params['metrics']['volume_profit']) * 1000)
+    count_txn = immutable_array(np.array(params['metrics']['count_txn']))
     activity_vol_mtx = immutable_array(
         build_2d_matrix(
-            tuple(params["matrices"]["activity_volume"]["shape"]),
-            tuple(params["matrices"]["activity_volume"]["scalars"]),
+            tuple(params['matrices']['activity_volume']['shape']),
+            tuple(params['matrices']['activity_volume']['scalars']),
         )
     )
     activity_cns_mtx = immutable_array(
         build_2d_matrix(
-            tuple(params["matrices"]["activity_consistency"]["shape"]),
-            tuple(params["matrices"]["activity_consistency"]["scalars"]),
+            tuple(params['matrices']['activity_consistency']['shape']),
+            tuple(params['matrices']['activity_consistency']['scalars']),
         )
     )
 
@@ -260,14 +417,14 @@ def coinbase_params(params, score_range):
     fico_medians = immutable_array(np.array(fico_medians))
 
     k = [
-        "due_date",
-        "duration",
-        "volume_balance",
-        "volume_profit",
-        "count_txn",
-        "activity_vol_mtx",
-        "activity_cns_mtx",
-        "fico_medians",
+        'due_date',
+        'duration',
+        'volume_balance',
+        'volume_profit',
+        'count_txn',
+        'activity_vol_mtx',
+        'activity_cns_mtx',
+        'fico_medians',
     ]
 
     v = [
@@ -286,37 +443,34 @@ def coinbase_params(params, score_range):
 
 def covalent_params(params, score_range):
 
-    count_to_four = immutable_array(
-        np.array(params["metrics"]["count_to_four"]))
+    count_to_four = immutable_array(np.array(params['metrics']['count_to_four']))
     volume_now = immutable_array(
-        np.array(params["metrics"]["volume_now"]) * 1000
+        np.array(params['metrics']['volume_now']) * 1000
     )  # should be *1000
     volume_per_txn = immutable_array(
-        np.array(params["metrics"]["volume_per_txn"]) * 100
+        np.array(params['metrics']['volume_per_txn']) * 100
     )  # should be *100
-    duration = immutable_array(np.array(params["metrics"]["duration"]))
-    count_operations = immutable_array(
-        np.array(params["metrics"]["count_operations"]))
+    duration = immutable_array(np.array(params['metrics']['duration']))
+    count_operations = immutable_array(np.array(params['metrics']['count_operations']))
     cred_deb = immutable_array(
-        np.array(params["metrics"]["cred_deb"]) * 1000
+        np.array(params['metrics']['cred_deb']) * 1000
     )  # should be *1000
-    frequency_txn = immutable_array(
-        np.array(params["metrics"]["frequency_txn"]))
+    frequency_txn = immutable_array(np.array(params['metrics']['frequency_txn']))
     avg_run_bal = immutable_array(
-        np.array(params["metrics"]["avg_run_bal"]) * 100
+        np.array(params['metrics']['avg_run_bal']) * 100
     )  # should be *100
-    due_date = immutable_array(np.array(params["metrics"]["due_date"]))
+    due_date = immutable_array(np.array(params['metrics']['due_date']))
 
     mtx_traffic = immutable_array(
         build_normalized_matrix(
-            tuple(params["matrices"]["mtx_traffic"]["shape"]),
-            tuple(params["matrices"]["mtx_traffic"]["scalars"]),
+            tuple(params['matrices']['mtx_traffic']['shape']),
+            tuple(params['matrices']['mtx_traffic']['scalars']),
         )
     )
     mtx_stamina = immutable_array(
         build_normalized_matrix(
-            tuple(params["matrices"]["mtx_stamina"]["shape"]),
-            tuple(params["matrices"]["mtx_stamina"]["scalars"]),
+            tuple(params['matrices']['mtx_stamina']['shape']),
+            tuple(params['matrices']['mtx_stamina']['scalars']),
         )
     )
 
@@ -329,18 +483,18 @@ def covalent_params(params, score_range):
     fico_medians = immutable_array(np.array(fico_medians))
 
     k = [
-        "count_to_four",
-        "volume_now",
-        "volume_per_txn",
-        "duration",
-        "count_operations",
-        "cred_deb",
-        "frequency_txn",
-        "avg_run_bal",
-        "due_date",
-        "fico_medians",
-        "mtx_traffic",
-        "mtx_stamina",
+        'count_to_four',
+        'volume_now',
+        'volume_per_txn',
+        'duration',
+        'count_operations',
+        'cred_deb',
+        'frequency_txn',
+        'avg_run_bal',
+        'due_date',
+        'fico_medians',
+        'mtx_traffic',
+        'mtx_stamina',
     ]
 
     v = [

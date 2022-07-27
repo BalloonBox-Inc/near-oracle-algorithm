@@ -1,14 +1,14 @@
-from testing.performance import *
+from support.assessment import *
 from config.helper import *
 from support.helper import *
 from support.risk import *
 from support.feedback import *
 from support.score import *
+from support.database import *
 from market.coinmarketcap import *
 from validator.covalent import *
-from schemas import *
+from routers.schemas import *
 from fastapi import APIRouter, Request, Response, HTTPException, status
-from icecream import ic
 
 
 router = APIRouter(
@@ -17,7 +17,7 @@ router = APIRouter(
 )
 
 
-# @measure_time_and_memory
+# @evaluate_function
 @router.post('/covalent', status_code=status.HTTP_200_OK, summary='Covalent credit score')
 async def credit_score_covalent(request: Request, response: Response, item: Covalent_Item):
     '''
@@ -34,7 +34,10 @@ async def credit_score_covalent(request: Request, response: Response, item: Cova
     '''
 
     try:
+        print(f'\033[35;1m Receiving request from: {request.client.host}\033[0m')
+
         # configs
+        print(f'\033[36m Accessing settings ...\033[0m')
         configs = read_config_file(item.loan_request)
         if isinstance(configs, str):
             raise HTTPException(
@@ -55,17 +58,8 @@ async def credit_score_covalent(request: Request, response: Response, item: Cova
         feedback = create_feedback(models)
         feedback['fetch'] = {}
 
-        ic(loan_range)
-        ic(score_range)
-        ic(qualitative_range)
-        ic(thresholds)
-        ic(parm)
-        ic(models)
-        ic(metrics)
-        ic(messages)
-        ic(feedback)
-
        # data fetching
+        print(f'\033[36m Reading data ...\033[0m')
         txn = covalent_get_transactions(
             '1', item.eth_address, item.covalent_key, False, 500, 0)
         balances = covalent_get_balances_or_portfolio(
@@ -74,65 +68,40 @@ async def credit_score_covalent(request: Request, response: Response, item: Cova
             '1', item.eth_address, 'portfolio_v2', item.covalent_key)
 
         # coinmarketcap
+        print(f'\033[36m Connecting with Coinmarketcap ...\033[0m')
         erc_rank = coinmarektcap_top_erc(
-            item.coinmarketcap_key,
-            thresholds['coinmarketcap_currencies'],
-            thresholds['erc_tokens']
-        )
-        ic(erc_rank)
+            item.coinmarketcap_key, thresholds['coinmarketcap_currencies'], thresholds['erc_tokens'])
 
         # compute score and feedback
+        print(f'\033[36m Calculating score ...\033[0m')
         score, feedback = covalent_score(
-            score_range,
-            feedback,
-            models,
-            metrics,
-            parm,
-            erc_rank,
-            txn,
-            balances,
-            portfolio
-        )
-        ic(score)
-        ic(feedback)
+            score_range, feedback, models, metrics, parm, erc_rank, txn, balances, portfolio)
 
         # keep feedback data
+        print(f'\033[36m Saving parameters ...\033[0m')
         data = keep_feedback(feedback, score, item.loan_request, 'covalent')
-        ic(data)
+        add_row_to_table('covalent', data)
 
         # compute risk
+        print(f'\033[36m Calculating risk ...\033[0m')
         risk = calc_risk(
-            score,
-            score_range,
-            loan_range
-        )
-        ic(risk)
+            score, score_range, loan_range)
 
         # update feedback
+        print(f'\033[36m Preparing feedback 1/2 ...\033[0m')
         message = qualitative_feedback_covalent(
-            messages,
-            score,
-            feedback,
-            score_range,
-            loan_range,
-            qualitative_range,
-            item.coinmarketcap_key
-        )
+            messages, score, feedback, score_range, loan_range, qualitative_range, item.coinmarketcap_key)
 
+        print(f'\033[36m Preparing feedback 2/2 ...\033[0m')
         feedback = interpret_score_covalent(
-            score,
-            feedback,
-            score_range,
-            loan_range,
-            qualitative_range
-        )
-        ic(message)
-        ic(feedback)
+            score, feedback, score_range, loan_range, qualitative_range)
 
         # return success
+        print(f'\033[35;1m Credit score has successfully been calculated.\033[0m')
         status_msg = 'success'
 
     except Exception as e:
+        print(f'\033[35;1m Unable to complete credit scoring calculation.\033[0m')
         status_msg = 'error'
         score = 0
         risk = 'undefined'

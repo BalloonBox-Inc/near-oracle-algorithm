@@ -1,24 +1,24 @@
-from support.metrics_covalent import * 
+from support.metrics_covalent import *
 from config.helper import *
 from support.helper import *
-from datetime import datetime
 import unittest
 import json
 import os
 
 
+ERC_RANK = {'ETH': 2, 'USDT': 3, 'USDC': 4, 'MATIC': 11, 'CRO': 22, 'LINK': 23, 'TUSD': 45,
+            'MKR': 49, 'HT': 60, 'BAT': 68, 'ENJ': 77, 'HOT': 92, 'NEXO': 94, 'WETH': 2.5}
 LOAN_AMOUNT = 24000
-ERC_RANK = {'ETH': 2, 'USDT': 3, 'USDC': 4, 'MATIC': 11, 'CRO': 22, 'LINK': 23, 'TUSD': 45,\
-    'MKR': 49, 'HT': 60, 'BAT': 68, 'ENJ': 77, 'HOT': 92, 'NEXO': 94, 'WETH': 2.5}
-
 dummy_data = 'test_covalent.json'
-json_file = os.path.join(os.path.dirname(
-    __file__).replace('/tests', '/data'), dummy_data)
+
+json_file = os.path.join(os.path.dirname(__file__), dummy_data)
 
 # -------------------------------------------------------------------------- #
 #                                TEST CASES                                  #
 #                - test core functions of Covalent algorithm -               #
 # -------------------------------------------------------------------------- #
+
+
 class TestMetricCredibility(unittest.TestCase):
 
     def setUp(self):
@@ -31,7 +31,7 @@ class TestMetricCredibility(unittest.TestCase):
         models, metrics = read_models_and_metrics(
             configs['minimum_requirements']['covalent']['scores']['models'])
         self.fb = create_feedback(models)
-        
+
         # import data
         with open(json_file) as f:
             self.txn = json.load(f)['txn']
@@ -51,25 +51,23 @@ class TestMetricCredibility(unittest.TestCase):
         fail_kyc = credibility_kyc(None, self.bal, self.fb)
         self.assertEqual(pass_kyc[0], 1)
         self.assertEqual(fail_kyc[0], 0)
-        
 
     def test_credibility_oldest_txn(self):
         # full marks for wallets older than 9 months
         length = credibility_oldest_txn(
-            self.txn, 
-            self.fb, 
+            self.txn,
+            self.fb,
             self.parm
-            )
+        )
 
-        if length[1]['credibility']['longevity(days)'] >= 270: #days
+        if length[1]['credibility']['longevity(days)'] >= 270:  # days
             self.assertEqual(length[0], 1)
 
         self.assertRaises(
             Exception,
-            credibility_oldest_txn, 
+            credibility_oldest_txn,
             ({}, self.fb, self.parm)
-            )
-
+        )
 
 
 class TestMetricWealth(unittest.TestCase):
@@ -84,7 +82,7 @@ class TestMetricWealth(unittest.TestCase):
         models, metrics = read_models_and_metrics(
             configs['minimum_requirements']['covalent']['scores']['models'])
         self.fb = create_feedback(models)
-        
+
         # import data
         with open(json_file) as f:
             self.txn = json.load(f)['txn']
@@ -103,19 +101,19 @@ class TestMetricWealth(unittest.TestCase):
         tot = sum([b['quote'] for b in self.bal['items']])
         tot_bal = wealth_capital_now(
             self.bal, self.fb, self.parm
-            )
+        )
 
         self.assertEqual(int(tot_bal[1]['wealth']['cum_balance_now']), int(tot))
-        self.assertIn('error', wealth_capital_now({}, 
-            self.fb, 
-            self.parm)[1]['wealth']
-            )
+        self.assertIn('error', wealth_capital_now({},
+                                                  self.fb,
+                                                  self.parm)[1]['wealth']
+                      )
         self.bal['quote_currency'] = 'EUR'
         self.assertRaises(
-            Exception, 
-            wealth_capital_now, 
-            (self.bal, self.fb, self.parm) 
-            )
+            Exception,
+            wealth_capital_now,
+            (self.bal, self.fb, self.parm)
+        )
 
     def test_wealth_capital_now_adjusted(self):
         # keep only top-ranked ERC tokens
@@ -129,7 +127,6 @@ class TestMetricWealth(unittest.TestCase):
         for erc in keep_erc:
             self.assertIn(erc, list(ERC_RANK.keys()))
         self.assertGreater(a[1]['wealth']['cum_balance_now(adjusted)'], 1000)
-        
 
     def test_wealth_volume_per_txn(self):
         # ensure avg volume oer txn is calculated correctly
@@ -139,12 +136,11 @@ class TestMetricWealth(unittest.TestCase):
             self.txn,
             self.fb,
             self.parm
-            )
+        )
         self.assertEqual(int(avg1[1]['wealth']['avg_volume_per_txn']), int(avg0))
         self.assertEqual(
             wealth_volume_per_txn({}, self.fb, self.parm)[0], 0)
         self.assertRaises(Exception, wealth_volume_per_txn, ({}, self.fb, {}, None))
-
 
 
 class TestMetricTraffic(unittest.TestCase):
@@ -159,7 +155,7 @@ class TestMetricTraffic(unittest.TestCase):
         models, metrics = read_models_and_metrics(
             configs['minimum_requirements']['covalent']['scores']['models'])
         self.fb = create_feedback(models)
-        
+
         # import data
         with open(json_file) as f:
             self.txn = json.load(f)['txn']
@@ -192,14 +188,13 @@ class TestMetricTraffic(unittest.TestCase):
             self.parm
         ), "you passed an invalid param: accepts only 'credit', 'debit', or 'transfer'")
 
-
     def test_traffic_dustiness(self):
         # when all txn are voluminous, the user should earn the max score of 1
         if len(swiffer_duster(self.txn, self.fb)['items']) == len(self.txn['items']):
             self.assertEqual(traffic_dustiness(self.txn, self.fb, self.parm)[0], 1)
         self.assertIn('error',
-            list(traffic_dustiness(self.bal, self.fb, self.parm)[1]['traffic'].keys())
-            )
+                      list(traffic_dustiness(self.bal, self.fb, self.parm)[1]['traffic'].keys())
+                      )
 
     def test_traffic_running_balance(self):
         # avg running balances calculated manuallya and algorithmically should be the same
@@ -208,12 +203,11 @@ class TestMetricTraffic(unittest.TestCase):
             self.fb,
             self.parm,
             ERC_RANK
-            )
-        quotes = [y['close']['quote'] for x in self.por['items'] for y in x['holdings']\
-            if x['contract_ticker_symbol'] == traffic_running_balance.best_token]
+        )
+        quotes = [y['close']['quote'] for x in self.por['items'] for y in x['holdings']
+                  if x['contract_ticker_symbol'] == traffic_running_balance.best_token]
         avg = sum(quotes) / len(quotes)
         self.assertEqual(int(a[1]['traffic']['avg_running_balance(best_token)']), int(avg))
-
 
     def test_traffic_frequency(self):
         # score > 0.5 when monthly_txn_frequency > 0.5
@@ -223,7 +217,6 @@ class TestMetricTraffic(unittest.TestCase):
             self.assertGreater(a[0], 0.5)
         if self.txn['items']:
             self.assertGreater(frequency, 0)
-
 
 
 class TestMetricStamina(unittest.TestCase):
@@ -238,7 +231,7 @@ class TestMetricStamina(unittest.TestCase):
         models, metrics = read_models_and_metrics(
             configs['minimum_requirements']['covalent']['scores']['models'])
         self.fb = create_feedback(models)
-        
+
         # import data
         with open(json_file) as f:
             self.txn = json.load(f)['txn']
@@ -262,8 +255,8 @@ class TestMetricStamina(unittest.TestCase):
             self.fb,
             self.parm
         )
-        methods = list(set([t['log_events'][0]['decoded']['name']\
-            for t in self.txn['items'] if t['log_events']]))
+        methods = list(set([t['log_events'][0]['decoded']['name']
+                            for t in self.txn['items'] if t['log_events']]))
         for m in methods:
             self.assertIn(m, list(stamina_methods_count.methods.keys()))
 
@@ -274,13 +267,13 @@ class TestMetricStamina(unittest.TestCase):
             self.fb,
             self.parm,
             ERC_RANK
-            )
-        coins = [c['contract_ticker_symbol'] for c in self.bal['items']\
-            if c['contract_ticker_symbol'] in list(ERC_RANK.keys()) and c['quote'] > 0]
+        )
+        coins = [c['contract_ticker_symbol'] for c in self.bal['items']
+                 if c['contract_ticker_symbol'] in list(ERC_RANK.keys()) and c['quote'] > 0]
         self.assertEqual(stamina_coins_count.unique_coins, len(coins))
         self.assertRaises
         (
-            Exception, 
+            Exception,
             stamina_coins_count,
             (
                 self.txn,
@@ -293,31 +286,29 @@ class TestMetricStamina(unittest.TestCase):
     def test_stamina_dexterity(self):
         # count of smart trades should be an int
         smart_trades = stamina_dexterity(
-            self.por, 
-            self.fb, 
+            self.por,
+            self.fb,
             self.parm,
-            )
+        )
         self.assertIsInstance(smart_trades[1]['stamina']['count_smart_trades'], int)
         self.assertRaises(Exception, stamina_dexterity, ({}, self.fb, None, None, None))
-        
 
     def test_stamina_loan_duedate(self):
         # payback period equates to length of txn history (give or take)
         longevity = credibility_oldest_txn(
-            self.txn, 
-            self.fb, 
+            self.txn,
+            self.fb,
             self.parm,
-            )[1]['credibility']['longevity(days)']
+        )[1]['credibility']['longevity(days)']
         duedate = stamina_loan_duedate(
             self.txn,
             self.fb,
             self.parm
-            )['stamina']['loan_duedate']
+        )['stamina']['loan_duedate']
 
         self.assertGreater(longevity/30, duedate)
-        
-        
-    
+
+
 class TestCovHelperFunctions(unittest.TestCase):
 
     def setUp(self):
@@ -331,7 +322,7 @@ class TestCovHelperFunctions(unittest.TestCase):
             configs['minimum_requirements']['covalent']['scores']['models'])
         self.fb = create_feedback(models)
         self.fb['fetch'] = {}
-        
+
         # import data
         with open(json_file) as f:
             self.txn = json.load(f)['txn']
@@ -394,7 +385,6 @@ class TestCovHelperFunctions(unittest.TestCase):
                 self.assertFalse(a['fetch']['JSONDecodeError'])
 
 
-
 class TestParametrizeCovalent(unittest.TestCase):
 
     def setUp(self):
@@ -407,7 +397,7 @@ class TestParametrizeCovalent(unittest.TestCase):
         models, metrics = read_models_and_metrics(
             configs['minimum_requirements']['covalent']['scores']['models'])
         self.fb = create_feedback(models)
-        
+
         # import data
         with open(json_file) as f:
             self.txn = json.load(f)['txn']

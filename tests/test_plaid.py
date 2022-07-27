@@ -9,8 +9,7 @@ import os
 LOAN_AMOUNT = 24000
 dummy_data = 'test_plaid.json'
 
-json_file = os.path.join(os.path.dirname(
-    __file__).replace('/tests', '/data'), dummy_data)
+json_file = os.path.join(os.path.dirname(__file__), dummy_data)
 
 
 # -------------------------------------------------------------------------- #
@@ -22,10 +21,10 @@ def str_to_datetime(plaid_txn, feedback):
     '''
     Description:
         serialize a Python data structure converting string instances into datetime objects
-    
+
     Parameters:
         plaid_txn (list): locally stored Plaid data used for testing purposes
-    
+
     Returns:
         tx (dict): serialized dict containing user accounts and transactions. String dates are converted to datetime objects
      '''
@@ -81,11 +80,11 @@ class TestMetricCredit(unittest.TestCase):
         self.acc = None
         self.txn = None
         self.cred = None
-        self.par =  None
+        self.par = None
 
     def test_credit_mix(self):
         '''
-        - ensure we remove the word 'credit' from the credit card names 
+        - ensure we remove the word 'credit' from the credit card names
         - ensure we store the names of ALL owned credit cards
         - if a user owns no credit card, then raise exception 'no credit card'
         '''
@@ -140,8 +139,8 @@ class TestMetricCredit(unittest.TestCase):
 
         if dynamic_select(self.acc, self.txn, 'credit', self.fb)['id']:
             self.assertIsInstance(
-                a[1]['credit']['credit_duration_(days)'], (float, int))
-            self.assertGreater(a[1]['credit']['credit_duration_(days)'], 0)
+                a[1]['credit']['credit_duration_days'], (float, int))
+            self.assertGreater(a[1]['credit']['credit_duration_days'], 0)
         self.assertIn('error', credit_length([], [], self.fb, self.par)[1]['credit'].keys())
 
     def test_credit_livelihood(self):
@@ -185,7 +184,7 @@ class TestMetricVelocity(unittest.TestCase):
         self.fb = None
         self.acc = None
         self.txn = None
-        self.par =  None
+        self.par = None
 
     def test_velocity_withdrawals(self):
         '''
@@ -280,7 +279,7 @@ class TestMetricStability(unittest.TestCase):
         self.txn = None
         self.dep = None
         self.n_dep = None
-        self.par =  None
+        self.par = None
 
     def test_stability_tot_balance_now(self):
         '''
@@ -350,7 +349,7 @@ class TestMetricDiversity(unittest.TestCase):
         self.fb = None
         self.acc = None
         self.txn = None
-        self.par =  None
+        self.par = None
 
     def test_diversity_acc_count(self):
         '''
@@ -370,7 +369,7 @@ class TestMetricDiversity(unittest.TestCase):
     def test_diversity_profile(self):
         '''
         - if user owns an investmenr of saving account, score will be > 0.17
-        - Plaid Sandbox data should score 1/1 
+        - Plaid Sandbox data should score 1/1
         '''
         bonus_acc = ['401k', 'cd', 'money market', 'mortgage', 'student', 'isa', 'ebt', 'non-taxable brokerage account', 'rdsp', 'rrif', 'pension', 'retirement', 'roth',
                      'roth 401k', 'stock plan', 'tfsa', 'trust', 'paypal', 'savings', 'prepaid', 'business', 'commercial', 'construction', 'loan', 'cash management', 'mutual fund', 'rewards']
@@ -470,7 +469,7 @@ class TestHelperFunctions(unittest.TestCase):
 
 class TestParametrizePlaid(unittest.TestCase):
     '''
-    The TestParametrizeOutput object checks that ALL functions 
+    The TestParametrizeOutput object checks that ALL functions
     of our Coinbase algorithm ALWAYS return a tuple comprising of:
     - an int (i.e., the score)
     - a dict (i.e., the feedback)
@@ -503,7 +502,7 @@ class TestParametrizePlaid(unittest.TestCase):
         self.par = plaid_params(params, score_range)
 
         self.args = {
-            'good': 
+            'good':
             [
                 [self.txn, self.cred, self.fb, self.par],
                 [self.txn, self.cred, self.fb, self.par],
@@ -524,7 +523,7 @@ class TestParametrizePlaid(unittest.TestCase):
                 [self.acc, self.txn, self.fb, self.par],
                 [self.acc, self.fb, self.par]
             ],
-            'empty': 
+            'empty':
             [
                 [[], [], self.fb, self.par],
                 [[], [], self.fb, self.par],
@@ -543,7 +542,7 @@ class TestParametrizePlaid(unittest.TestCase):
                 [[], None, self.fb, self.par],
 
                 [None, None, self.fb, self.par],
-                [[], self.fb, self.par]        
+                [[], self.fb, self.par]
             ]
         }
 
