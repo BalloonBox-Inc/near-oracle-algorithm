@@ -38,6 +38,8 @@ async def credit_score_plaid(request: Request, response: Response, item: Plaid_I
     '''
 
     try:
+        print(f'\033[35;1m Receiving request from: {request.client.host}\033[0m')
+
         # configs
         print(f'\033[36m Accessing settings ...\033[0m')
         configs = read_config_file(item.loan_request)
@@ -70,37 +72,16 @@ async def credit_score_plaid(request: Request, response: Response, item: Plaid_I
 
         # data fetching
         print(f'\033[36m Reading data ...\033[0m')
-        # transactions = plaid_transactions(
-        #     item.plaid_access_token, client, thresholds['transactions_period'])
-        # if isinstance(transactions, str):
-        #     raise HTTPException(
-        #         status_code=status.HTTP_400_BAD_REQUEST,
-        #         detail=f'Unable to fetch transactions data: {transactions}')
+        transactions = plaid_transactions(
+            item.plaid_access_token, client, thresholds['transactions_period'])
+        if isinstance(transactions, str):
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f'Unable to fetch transactions data: {transactions}')
 
-        # bank_name = plaid_bank_name(
-        #     client, transactions['item']['institution_id'])
-        # feedback['diversity']['bank_name'] = bank_name
-
-        #########################################################
-        ##################   DELETE IT LATER   ##################
-        #########################################################
-
-        from os import path
-
-        file = path.join(path.dirname(__file__).replace('./routers', ''), f'test_plaid/compressed/user_test_4.json')
-
-        with open(file) as f:
-            transactions = json.load(f)
-
-        for d in transactions['transactions']:
-            d.update((k, datetime.strptime(v, '%Y-%m-%d').date())
-                     for k, v in d.items() if k == 'date')
-
-        feedback['diversity']['bank_name'] = 'TEST_BANK'
-
-        #########################################################
-        ##################   DELETE IT LATER   ##################
-        #########################################################
+        bank_name = plaid_bank_name(
+            client, transactions['item']['institution_id'])
+        feedback['diversity']['bank_name'] = bank_name
 
         # compute score and feedback
         print(f'\033[36m Calculating score ...\033[0m')

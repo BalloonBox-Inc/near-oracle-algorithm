@@ -43,6 +43,8 @@ async def credit_score_kyc(request: Request, response: Response, item: KYC_Item)
     '''
 
     try:
+        print(f'\033[35;1m Receiving request from: {request.client.host}\033[0m')
+
         # configs
         print(f'\033[36m Accessing settings ...\033[0m')
         configs = read_config_file(0)
