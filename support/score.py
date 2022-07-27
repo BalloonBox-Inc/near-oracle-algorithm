@@ -5,7 +5,7 @@ from support.helper import *
 from icecream import ic
 
 
-@evaluate_function
+# @evaluate_function
 def plaid_score(data, score_range, feedback, model_weights, model_penalties, metric_weigths, params):
 
     txn = data['transactions']
@@ -32,8 +32,6 @@ def plaid_score(data, score_range, feedback, model_weights, model_penalties, met
         savings = dict_reverse_cumsum(savings, 'amount', 'current')
         metadata = balances(metadata, savings, 'savings')
         metadata = transactions(metadata, savings, 'savings')
-
-    ic(metadata)
 
     # accounts
     cred = [d for d in acc if d['type'].lower() == 'credit']
