@@ -84,7 +84,7 @@ def add_time_from_now(lst):
 
 def format_plaid_data(txn, acc):
     acc = unpack_dict(acc, 'balances', ['available', 'current', 'limit'])
-    txn = unpack_dict_list(txn, 'category', ['categ', 'sub_category'])
+    txn = unpack_dict_list(txn, 'category', ['categ', 'sub_category', 'sub2_category'])
 
     data = merge_dict(
         txn, acc, 'account_id', ['type', 'subtype', 'available', 'current', 'limit']
@@ -112,7 +112,7 @@ def format_plaid_data(txn, acc):
     )
     data = rename_dict_key(data, 'categ', 'category')
     data = lowercase_dict_values(
-        data, ['category', 'payment_channel', 'transaction_type', 'sub_category']
+        data, ['category', 'sub_category', 'sub2_category', 'payment_channel', 'transaction_type']
     )
     data = add_time_from_now(data)
     data = sorted(data, key=lambda d: d['date'])
@@ -141,10 +141,10 @@ def dict_reverse_cumsum(d, col, sum_col):
     return data.to_dict('records')
 
 
-def aggregate_dict_by_month(data):
+def aggregate_dict_by_month(data, agg_dict):
     df = pd.DataFrame(data).set_index('date')
     df.index = pd.to_datetime(df.index)
-    df = df.groupby([df.index.year.values, df.index.month.values]).agg({'amount': 'sum', 'limit': 'max'})
+    df = df.groupby([df.index.year.values, df.index.month.values]).agg(agg_dict)
     return df
 
 
@@ -169,7 +169,7 @@ def balances(metadata, lst, key, df=None):
         current.append(temp[-1]['current'])
         limit.append(temp[-1]['limit'])
         if key == 'credit_card':
-            df = aggregate_dict_by_month(temp)
+            df = aggregate_dict_by_month(temp, {'amount': 'sum', 'limit': 'max'})
             high_balance.append(df.amount.max())
         else:
             high_balance.append(max([d['current'] for d in temp]))
@@ -196,8 +196,38 @@ def late_payment(metadata, lst):
     metadata['credit_card']['late_payment'] = {}
     period = [30, 60, 90, 180, 360, 720, 1800]
     data = [d for d in lst if d['category'] == 'interest']
-    for p in period:
-        metadata['credit_card']['late_payment'][p] = len([d for d in data if d['timespan'] <= p])
+    if data:
+        for p in period:
+            metadata['credit_card']['late_payment'][p] = len([d for d in data if d['timespan'] <= p])
+    return metadata
+
+
+def payroll(metadata, lst):
+    metadata['checking']['payroll'] = {}
+    data = [d for d in lst if d['sub_category'] == 'payroll']
+    if data:
+        df = aggregate_dict_by_month(data, {'amount': ['count', 'sum']})
+        metadata['checking']['payroll']['avg_monthly_count'] = df[('amount', 'count')].mean()
+        metadata['checking']['payroll']['avg_monthly_income'] = df[('amount', 'sum')].mean()
+    return metadata
+
+
+def filter_frame_outliers(data, col):
+    low = data[col].quantile(0.01)
+    high = data[col].quantile(0.99)
+    return data[(data[col] < high) & (data[col] > low)]
+
+
+def loans(metadata, lst):
+    metadata['checking']['loans'] = {}
+    data = [d for d in lst if d['sub2_category'] == 'loans and mortgages']
+    if data:
+        df = aggregate_dict_by_month(data, {'amount': ['count', 'sum']})
+        df1 = filter_frame_outliers(df, ('amount', 'sum'))
+        metadata['checking']['loans']['avg_monthly_count'] = df[('amount', 'count')].mean()
+        metadata['checking']['loans']['avg_monthly_debt'] = df1[('amount', 'sum')].mean()
+        metadata['checking']['loans']['last_debt_timespan'] = abs((NOW - data[-1]['date']).days)
+        metadata['checking']['loans']['last_montly_debt_volume'] = df[('amount', 'sum')].values[-1]
     return metadata
 
 
