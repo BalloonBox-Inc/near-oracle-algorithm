@@ -206,17 +206,15 @@ def general(metadata, lst, k1, k2='general', df=None):
 def late_payment(metadata, lst):
     metadata['credit_card']['late_payment'] = {}
     period = [30, 60, 90, 180, 360, 720, 1800]
-    data = [d for d in lst if d['category'] == 'interest']
+    data = [d for d in lst if d['sub_category'] == 'interest charged']
     if data:
         for p in period:
             metadata['credit_card']['late_payment'][p] = len([d for d in data if d['timespan'] <= p])
     return metadata
 
 
-def income(metadata, lst, key, value):
+def income(metadata, lst, key, value, k1='checking', k2='income'):
     data = [d for d in lst if d[key] == value]
-    k1 = 'checking'
-    k2 = 'income'
     k3 = value
     metadata[k1][k2][k3] = {}
     if data:
@@ -234,10 +232,8 @@ def filter_frame_outliers(data, col):
     return data[data[col] < high]
 
 
-def expenses(metadata, lst, key, value):
+def expenses(metadata, lst, key, value, k1='checking', k2='expenses'):
     data = [d for d in lst if d[key] == value]
-    k1 = 'checking'
-    k2 = 'expenses'
     k3 = value.split()[0]
     metadata[k1][k2][k3] = {}
     if data:
@@ -253,6 +249,79 @@ def expenses(metadata, lst, key, value):
         if (k1, 'income', 'payroll', 'avg_monthly_value') in keys:
             metadata[k1][k2][k3]['avg_income_pct'] = abs(
                 metadata[k1][k2][k3]['avg_monthly_value'] / metadata[k1]['income']['payroll']['avg_monthly_value'])
+    return metadata
+
+
+def investments(metadata, lst, key, value, k1='checking', k2='investments', k3='earnings'):
+    data = [d for d in lst if d[key] == value]
+    if data:
+        cash_in = [d for d in data if d['amount'] < 0]
+        cash_out = [d for d in data if d['amount'] > 0]
+        k3i, d = 'deposits', 0  # FROM checking INTO external investment account
+        k3o, w = 'withdrawals', 0  # FROM external investment account INTO checking
+        if cash_in:
+            df = aggregate_dict_by_month(cash_in, {'amount': ['count', 'sum']})
+            metadata[k1][k2][k3i]['avg_monthly_count'] = df[('amount', 'count')].mean()
+            metadata[k1][k2][k3i]['avg_monthly_value'] = df[('amount', 'sum')].mean()
+            metadata[k1][k2][k3i]['last_event_timespan'] = abs((NOW - cash_in[-1]['date']).days)
+            metadata[k1][k2][k3i]['last_montly_event_value'] = df[('amount', 'sum')].values[-1]
+            d = metadata[k1][k2][k3i]['avg_monthly_value']
+        if cash_out:
+            df = aggregate_dict_by_month(cash_out, {'amount': ['count', 'sum']})
+            metadata[k1][k2][k3o]['avg_monthly_count'] = df[('amount', 'count')].mean()
+            metadata[k1][k2][k3o]['avg_monthly_value'] = df[('amount', 'sum')].mean()
+            metadata[k1][k2][k3o]['last_event_timespan'] = abs((NOW - cash_out[-1]['date']).days)
+            metadata[k1][k2][k3o]['last_montly_event_value'] = df[('amount', 'sum')].values[-1]
+            w = metadata[k1][k2][k3o]['avg_monthly_value']
+
+        metadata[k1][k2][k3]['avg_monthly_value'] = d + w
+    return metadata
+
+
+def cash_flow(metadata, lst, key, value, k1='savings', k2='cash_flow'):
+    data = [d for d in lst if d[key] != value]
+    if data:
+        cash_in = [d for d in data if d['amount'] > 0]
+        cash_out = [d for d in data if d['amount'] < 0]
+        k3i = 'deposits'
+        k3o = 'withdrawals'
+        if cash_in:
+            df = aggregate_dict_by_month(cash_in, {'amount': ['count', 'sum']})
+            metadata[k1][k2][k3i]['avg_monthly_count'] = df[('amount', 'count')].mean()
+            metadata[k1][k2][k3i]['avg_monthly_value'] = df[('amount', 'sum')].mean()
+            metadata[k1][k2][k3i]['last_event_timespan'] = abs((NOW - cash_in[-1]['date']).days)
+            metadata[k1][k2][k3i]['last_montly_event_value'] = df[('amount', 'sum')].values[-1]
+        if cash_out:
+            df = aggregate_dict_by_month(cash_out, {'amount': ['count', 'sum']})
+            metadata[k1][k2][k3o]['avg_monthly_count'] = df[('amount', 'count')].mean()
+            metadata[k1][k2][k3o]['avg_monthly_value'] = df[('amount', 'sum')].mean()
+            metadata[k1][k2][k3o]['last_event_timespan'] = abs((NOW - cash_out[-1]['date']).days)
+            metadata[k1][k2][k3o]['last_montly_event_value'] = df[('amount', 'sum')].values[-1]
+    return metadata
+
+
+def earnings(metadata, lst, key, value, k1='savings', k2='earnings'):
+    data = [d for d in lst if d[key] == value]
+    if data:
+        df = aggregate_dict_by_month(data, {'amount': ['count', 'sum']})
+        metadata[k1][k2]['avg_monthly_count'] = df[('amount', 'count')].mean()
+        metadata[k1][k2]['avg_monthly_value'] = df[('amount', 'sum')].mean()
+        metadata[k1][k2]['last_event_timespan'] = abs((NOW - data[-1]['date']).days)
+        metadata[k1][k2]['last_montly_event_value'] = df[('amount', 'sum')].values[-1]
+
+        nd = NestedDict(metadata)
+        keys = [k for k in nd.keys()]
+        if (k1, 'cash_flow', 'deposits', 'avg_monthly_value') in keys:
+            if (k1, 'cash_flow', 'withdrawals', 'avg_monthly_value') in keys:
+                cash_flow = metadata[k1]['cash_flow']['deposits']['avg_monthly_value'] + \
+                    metadata[k1]['cash_flow']['withdrawals']['avg_monthly_value']
+            else:
+                cash_flow = metadata[k1]['cash_flow']['deposits']['avg_monthly_value']
+        else:
+            cash_flow = metadata[k1]['cash_flow']['withdrawals']['avg_monthly_value']
+
+        metadata[k1][k2]['avg_monthly_cash_flow'] = cash_flow
+        metadata[k1][k2]['avg_monthly_return_pct'] = metadata[k1][k2]['avg_monthly_value'] / cash_flow
     return metadata
 
 
