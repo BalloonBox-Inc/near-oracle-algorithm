@@ -1,5 +1,6 @@
 from pandas.io.json._normalize import nested_to_record
 from datetime import datetime, timezone
+from ndicts.ndicts import NestedDict
 from operator import mul
 import pandas as pd
 import numpy as np
@@ -158,37 +159,47 @@ def util_ratio(metadata, data):
     return metadata
 
 
-def balances(metadata, lst, key, df=None):
-    metadata[key]['balances'] = {}
-    metadata[key]['accounts'] = {}
-    current, limit, high_balance = [], [], []
+def general(metadata, lst, k1, k2='general', df=None):
+    ''' regardless how many different account within same account type '''
+    # accounts
+    k3 = 'accounts'
+    metadata[k1][k2][k3] = {}
     accounts = list(set([d['account_id'] for d in lst]))
-    metadata[key]['accounts']['total_count'] = len(accounts)
+    metadata[k1][k2][k3]['total_count'] = len(accounts)
+
+    # balances
+    k3 = 'balances'
+    metadata[k1][k2][k3] = {}
+    current, limit, high_balance = [], [], []
+
     for account_id in accounts:
-        temp = [d for d in lst if d['account_id'] == account_id]
-        current.append(temp[-1]['current'])
-        limit.append(temp[-1]['limit'])
-        if key == 'credit_card':
-            df = aggregate_dict_by_month(temp, {'amount': 'sum', 'limit': 'max'})
+        data = [d for d in lst if d['account_id'] == account_id]
+        current.append(data[-1]['current'])
+        limit.append(data[-1]['limit'])
+
+        if k1 == 'credit_card':
+            df = aggregate_dict_by_month(data, {'amount': 'sum', 'limit': 'max'})
             high_balance.append(df.amount.max())
         else:
-            high_balance.append(max([d['current'] for d in temp]))
-    metadata[key]['balances']['current'] = current
-    metadata[key]['balances']['limit'] = limit
-    metadata[key]['balances']['high_balance'] = high_balance
+            high_balance.append(max([d['current'] for d in data]))
+
+    metadata[k1][k2][k3]['current'] = current
+    metadata[k1][k2][k3]['limit'] = limit
+    metadata[k1][k2][k3]['high_balance'] = high_balance
+
+    # credit card util ratio
     if df is not None:
         metadata = util_ratio(metadata, df)
-    return metadata
 
+    # transactions
+    k3 = 'transactions'
+    metadata[k1][k2][k3] = {}
+    metadata[k1][k2][k3]['total_count'] = len(lst)
+    metadata[k1][k2][k3]['timespan'] = lst[0]['timespan']
 
-def transactions(metadata, lst, key):
-    ''' regardless how many different account within same account type '''
-    metadata[key]['transactions'] = {}
-    metadata[key]['transactions']['total_count'] = len(lst)
-    metadata[key]['transactions']['timespan'] = lst[0]['timespan']
-    timespan_in_months = metadata[key]['transactions']['timespan'] / 30
-    metadata[key]['transactions']['avg_monthly_count'] = metadata[key]['transactions']['total_count'] / timespan_in_months
-    metadata[key]['transactions']['avg_monthly_cash_flow'] = sum(d['amount']*-1 for d in lst) / timespan_in_months
+    m = metadata[k1][k2][k3]['timespan'] / 30
+    metadata[k1][k2][k3]['avg_monthly_count'] = metadata[k1][k2][k3]['total_count'] / m
+    metadata[k1][k2][k3]['avg_monthly_value'] = sum(d['amount']*-1 for d in lst) / m
     return metadata
 
 
@@ -202,32 +213,46 @@ def late_payment(metadata, lst):
     return metadata
 
 
-def payroll(metadata, lst):
-    metadata['checking']['payroll'] = {}
-    data = [d for d in lst if d['sub_category'] == 'payroll']
+def income(metadata, lst, key, value):
+    data = [d for d in lst if d[key] == value]
+    k1 = 'checking'
+    k2 = 'income'
+    k3 = value
+    metadata[k1][k2][k3] = {}
     if data:
         df = aggregate_dict_by_month(data, {'amount': ['count', 'sum']})
-        metadata['checking']['payroll']['avg_monthly_count'] = df[('amount', 'count')].mean()
-        metadata['checking']['payroll']['avg_monthly_income'] = df[('amount', 'sum')].mean()
+        metadata[k1][k2][k3]['avg_monthly_count'] = df[('amount', 'count')].mean()
+        metadata[k1][k2][k3]['avg_monthly_value'] = df[('amount', 'sum')].mean()
+        metadata[k1][k2][k3]['last_event_timespan'] = abs((NOW - data[-1]['date']).days)
+        metadata[k1][k2][k3]['last_montly_event_value'] = df[('amount', 'sum')].values[-1]
     return metadata
 
 
 def filter_frame_outliers(data, col):
-    low = data[col].quantile(0.01)
+    data = data[data[col] < 0]
     high = data[col].quantile(0.99)
-    return data[(data[col] < high) & (data[col] > low)]
+    return data[data[col] < high]
 
 
-def loans(metadata, lst):
-    metadata['checking']['loans'] = {}
-    data = [d for d in lst if d['sub2_category'] == 'loans and mortgages']
+def expenses(metadata, lst, key, value):
+    data = [d for d in lst if d[key] == value]
+    k1 = 'checking'
+    k2 = 'expenses'
+    k3 = value.split()[0]
+    metadata[k1][k2][k3] = {}
     if data:
         df = aggregate_dict_by_month(data, {'amount': ['count', 'sum']})
         df1 = filter_frame_outliers(df, ('amount', 'sum'))
-        metadata['checking']['loans']['avg_monthly_count'] = df[('amount', 'count')].mean()
-        metadata['checking']['loans']['avg_monthly_debt'] = df1[('amount', 'sum')].mean()
-        metadata['checking']['loans']['last_debt_timespan'] = abs((NOW - data[-1]['date']).days)
-        metadata['checking']['loans']['last_montly_debt_volume'] = df[('amount', 'sum')].values[-1]
+        metadata[k1][k2][k3]['avg_monthly_count'] = df[('amount', 'count')].mean()
+        metadata[k1][k2][k3]['avg_monthly_value'] = df1[('amount', 'sum')].mean()
+        metadata[k1][k2][k3]['last_event_timespan'] = abs((NOW - data[-1]['date']).days)
+        metadata[k1][k2][k3]['last_montly_event_value'] = df[('amount', 'sum')].values[-1]
+
+        nd = NestedDict(metadata)
+        keys = [k for k in nd.keys()]
+        if (k1, 'income', 'payroll', 'avg_monthly_value') in keys:
+            metadata[k1][k2][k3]['avg_income_pct'] = abs(
+                metadata[k1][k2][k3]['avg_monthly_value'] / metadata[k1]['income']['payroll']['avg_monthly_value'])
     return metadata
 
 
