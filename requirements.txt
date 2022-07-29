@@ -113,6 +113,7 @@ update==0.0.1
 urllib3==1.26.11
 uvicorn==0.18.2
 uvloop==0.16.0
+watchfiles==0.16.1
 watchgod==0.8.2
 wcwidth==0.2.5
 websockets==10.3
