@@ -132,7 +132,7 @@ def dict_reverse_cumsum(d, col, sum_col):
     for account_id in accounts:
         temp = df[df['account_id'] == account_id]
         row = pd.DataFrame(temp[-1:].values, columns=cols)
-        row.at[0, col] = row.at[0, sum_col]*-1
+        row.at[0, col] = row.at[0, sum_col]
         temp = pd.concat([temp, row], axis=0, ignore_index=True)
         temp.reset_index(drop=True, inplace=True)
         temp[sum_col] = temp.loc[::-1, col].cumsum()[::-1].shift(-1)
@@ -199,7 +199,7 @@ def general(metadata, lst, k1, k2='general', df=None):
 
     m = metadata[k1][k2][k3]['timespan'] / 30
     metadata[k1][k2][k3]['avg_monthly_count'] = metadata[k1][k2][k3]['total_count'] / m
-    metadata[k1][k2][k3]['avg_monthly_value'] = sum(d['amount']*-1 for d in lst) / m
+    metadata[k1][k2][k3]['avg_monthly_value'] = sum(d['amount'] for d in lst) / m
     return metadata
 
 
