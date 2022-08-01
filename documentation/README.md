@@ -1,6 +1,6 @@
 <p align="center">
   <a href="https://near.org/">
-    <img alt="NearWhiteLogo" src="https://github.com/BalloonBox-Inc/NEARoracle-Oracle/blob/dev/images/inverted-primary-logo-bg.png" width="450" />
+    <img alt="NearBlackLogo" src="https://github.com/BalloonBox-Inc/NEARoracle-Oracle/blob/dev/images/logo_near_oracle_black.png" width="450" />
   </a>
 </p>
 
