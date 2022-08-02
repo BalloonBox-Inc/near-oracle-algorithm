@@ -72,34 +72,36 @@ async def credit_score_plaid(request: Request, response: Response, item: Plaid_I
 
         # data fetching
         print(f'\033[36m Reading data ...\033[0m')
-        transactions = plaid_transactions(
+        dataset = plaid_transactions(
             item.plaid_access_token, client, thresholds['transactions_period'])
-        if isinstance(transactions, str):
+        if isinstance(dataset, str):
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f'Unable to fetch transactions data: {transactions}')
+                detail=f'Unable to fetch transactions data: {dataset}')
 
-        bank_name = plaid_bank_name(
-            client, transactions['item']['institution_id'])
+        bank_name = plaid_bank_name(client, dataset['item']['institution_id'])
         feedback['diversity']['bank_name'] = bank_name
 
-        # compute score and feedback
-        print(f'\033[36m Calculating score ...\033[0m')
-        score, feedback = plaid_score(
-            transactions, score_range, feedback, models, penalties, metrics, parm)
+        # data formatting
+        print(f'\033[36m Formatting data ...\033[0m')
+        transactions = dataset['transactions']
+        accounts = remove_key_dupes(dataset['accounts'], 'account_id')
+        data = format_plaid_data(transactions, accounts)
 
         # validate loan request and transaction history
         print(f'\033[36m Validating template ...\033[0m')
-        if not validate_loan_request(
-            loan_range, feedback, "stability", "cumulative_current_balance"
-        ) or not validate_txn_history(
-                thresholds["transactions_period"], feedback, "stability", "txn_history"):
+        if not validate_loan_request(loan_range, accounts) or not validate_txn_history(thresholds["transactions_period"], data):
             raise Exception(messages["not_qualified"].format(loan_range[0]))
 
-        # keep feedback data
+        # compute score and feedback
+        print(f'\033[36m Calculating score ...\033[0m')
+        score, feedback, metadata = plaid_score(
+            data, score_range, feedback, models, penalties, metrics, parm, item.loan_request)
+
+        # keep metadata
         print(f'\033[36m Saving parameters ...\033[0m')
-        data = keep_feedback(feedback, score, item.loan_request, 'plaid')
-        add_row_to_table('plaid', data)
+        keep = keep_feedback(metadata, score, item.loan_request, 'plaid')
+        add_row_to_table('plaid', keep)
 
         # compute risk
         print(f'\033[36m Calculating risk ...\033[0m')

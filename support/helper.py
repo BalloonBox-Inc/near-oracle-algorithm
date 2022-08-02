@@ -24,6 +24,14 @@ def keep_feedback(feedback, score, loan_request, validator):
     return d
 
 
+def remove_key_dupes(lst, k, memo=set(), res=[]):
+    for d in lst:
+        if d[k] not in memo:
+            res.append(d)
+            memo.add(d[k])
+    return res
+
+
 def unpack_dict(lst, parent, keys):
     for d in lst:
         for k in keys:
@@ -347,19 +355,22 @@ def immutable_array(arr):
     return arr
 
 
-def validate_loan_request(loan_range, feedback, k1, k2):
-    if loan_range[0] > 0:
-        if k2 not in feedback[k1]:
-            return False
-        if feedback[k1][k2] < loan_range[0]:
-            return False
-    return True
-
-
-def validate_txn_history(req_period, feedback, k1, k2):
-    if feedback[k1][k2] < req_period / 2:
+def validate_loan_request(loan_range, accounts):
+    try:
+        available = sum([d['balances']['available'] for d in accounts])
+        if available > loan_range[0]:
+            return True
+    except Exception:
         return False
-    return True
+
+
+def validate_txn_history(req_period, data):
+    try:
+        txn_history = data[0]['timespan']
+        if txn_history > req_period / 2:
+            return True
+    except Exception:
+        return False
 
 
 def build_2d_matrix(size, scalars):
