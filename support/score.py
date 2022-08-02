@@ -7,7 +7,7 @@ from statistics import mean
 
 
 # @evaluate_function
-def plaid_score(data, score_range, feedback, model_weights, model_penalties, metric_weigths, params, loan_request):
+def plaid_score(data, score_range, feedback, model_weights, model_penalties, metric_weigths, params):
 
     txn = data['transactions']
     acc = data['accounts']
