@@ -95,8 +95,7 @@ async def credit_score_plaid(request: Request, response: Response, item: Plaid_I
 
         # compute score and feedback
         print(f'\033[36m Calculating score ...\033[0m')
-        score, feedback, metadata = plaid_score(
-            data, score_range, feedback, models, penalties, metrics, parm, item.loan_request)
+        score, feedback, metadata = plaid_score(data, score_range, feedback, models, penalties, metrics, parm)
 
         # keep metadata
         print(f'\033[36m Saving parameters ...\033[0m')
