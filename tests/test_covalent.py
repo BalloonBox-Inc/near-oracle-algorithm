@@ -60,7 +60,7 @@ class TestMetricCredibility(unittest.TestCase):
             self.parm
         )
 
-        if length[1]['credibility']['longevity(days)'] >= 270:  # days
+        if length[1]['credibility']['longevity_days'] >= 270:  # days
             self.assertEqual(length[0], 1)
 
         self.assertRaises(
@@ -126,7 +126,7 @@ class TestMetricWealth(unittest.TestCase):
         keep_erc = [b['contract_ticker_symbol'] for b in wealth_capital_now_adjusted.top['items']]
         for erc in keep_erc:
             self.assertIn(erc, list(ERC_RANK.keys()))
-        self.assertGreater(a[1]['wealth']['cum_balance_now(adjusted)'], 1000)
+        self.assertGreater(a[1]['wealth']['cum_balance_now_adjusted'], 1000)
 
     def test_wealth_volume_per_txn(self):
         # ensure avg volume oer txn is calculated correctly
@@ -207,7 +207,7 @@ class TestMetricTraffic(unittest.TestCase):
         quotes = [y['close']['quote'] for x in self.por['items'] for y in x['holdings']
                   if x['contract_ticker_symbol'] == traffic_running_balance.best_token]
         avg = sum(quotes) / len(quotes)
-        self.assertEqual(int(a[1]['traffic']['avg_running_balance(best_token)']), int(avg))
+        self.assertEqual(int(a[1]['traffic']['avg_running_balance_best_token']), int(avg))
 
     def test_traffic_frequency(self):
         # score > 0.5 when monthly_txn_frequency > 0.5
@@ -299,7 +299,7 @@ class TestMetricStamina(unittest.TestCase):
             self.txn,
             self.fb,
             self.parm,
-        )[1]['credibility']['longevity(days)']
+        )[1]['credibility']['longevity_days']
         duedate = stamina_loan_duedate(
             self.txn,
             self.fb,
