@@ -9,13 +9,13 @@ from support.helper import *
 # -------------------------------------------------------------------------- #
 
 
-def plaid_credit(acc, txn, cred, feedback, weights, params):
+def plaid_credit(acc, txn, metadata, feedback, weights, params):
 
-    limit, feedback = credit_limit(txn, cred, feedback, params)
+    limit, feedback = credit_limit(metadata, feedback, params)
     util_ratio, feedback = credit_util_ratio(acc, txn, feedback, params)
     interest, feedback = credit_interest(acc, txn, feedback, params)
-    length, feedback = credit_length(acc, txn, feedback, params)
-    livelihood, feedback = credit_livelihood(acc, txn, feedback, params)
+    length, feedback = credit_length(metadata, feedback, params)
+    livelihood, feedback = credit_livelihood(metadata, feedback, params)
 
     a = list(weights.values())[:5]
     b = [limit, util_ratio, interest, length, livelihood]
@@ -25,12 +25,12 @@ def plaid_credit(acc, txn, cred, feedback, weights, params):
     return score, feedback
 
 
-def plaid_velocity(acc, txn, feedback, weights, params):
+def plaid_velocity(acc, txn, metadata, feedback, weights, params):
 
     withdrawals, feedback = velocity_withdrawals(txn, feedback, params)
-    deposits, feedback = velocity_deposits(txn, feedback, params)
+    deposits, feedback = velocity_deposits(metadata, feedback, params)
     net_flow, feedback = velocity_month_net_flow(acc, txn, feedback, params)
-    txn_count, feedback = velocity_month_txn_count(acc, txn, feedback, params)
+    txn_count, feedback = velocity_month_txn_count(metadata, feedback, params)
     slope, feedback = velocity_slope(acc, txn, feedback, params)
 
     a = list(weights.values())[5:10]
@@ -41,10 +41,10 @@ def plaid_velocity(acc, txn, feedback, weights, params):
     return score, feedback
 
 
-def plaid_stability(acc, txn, dep, n_dep, feedback, weights, params):
+def plaid_stability(acc, txn, dep, n_dep, timespan, feedback, weights, params):
 
     balance, feedback = stability_tot_balance_now(dep, n_dep, feedback, params)
-    feedback = stability_loan_duedate(txn, feedback, params)
+    feedback = stability_loan_duedate(timespan, feedback, params)
     run_balance, feedback = stability_min_running_balance(acc, txn, feedback, params)
 
     a = list(weights.values())[10:12]
@@ -55,9 +55,9 @@ def plaid_stability(acc, txn, dep, n_dep, feedback, weights, params):
     return score, feedback
 
 
-def plaid_diversity(acc, txn, feedback, weights, params):
+def plaid_diversity(acc, count, timespan, feedback, weights, params):
 
-    acc_count, feedback = diversity_acc_count(acc, txn, feedback, params)
+    acc_count, feedback = diversity_acc_count(count, timespan, feedback, params)
     profile, feedback = diversity_profile(acc, feedback, params)
 
     a = list(weights.values())[12:]

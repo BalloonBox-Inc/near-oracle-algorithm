@@ -32,17 +32,16 @@ def dynamic_select(acc, txn, acc_name, feedback):
         info = list()
         matrix = []
         for a in acc:
-            if (
-                acc_name
-                in '{1}{0}{2}'.format('_', str(a['type']), str(a['subtype'])).lower()
-            ):
+            if (acc_name in '{1}{0}{2}'.format('_', str(a['type']), str(a['subtype'])).lower()):
+
                 id = a['account_id']
-                type = '{1}{0}{2}{0}{3}'.format(
-                    '_', str(a['type']), str(a['subtype']), str(a['official_name'])
-                ).lower()
+
+                type = '{1}{0}{2}{0}{3}'.format('_', str(a['type']), str(a['subtype']), str(a['official_name'])).lower()
+
                 limit = int(a['balances']['limit'] or 0)
                 transat = [t for t in txn if t['account_id'] == id]
                 txn_count = len(transat)
+
                 if len(transat) != 0:
                     length = (NOW - transat[-1]['date']).days
                 else:
@@ -116,9 +115,7 @@ def flows(acc, txn, how_many_months, feedback):
         flow = df.groupby(pd.Grouper(freq='M')).sum()
 
         # Exclude current month
-        if flow.iloc[-1, ].name.strftime(
-            '%Y-%m'
-        ) == datetime.today().date().strftime('%Y-%m'):
+        if flow.iloc[-1, ].name.strftime('%Y-%m') == datetime.today().date().strftime('%Y-%m'):
             flow = flow[:-1]
 
         # Keep only past X months. If longer, then crop
@@ -174,10 +171,7 @@ def plaid_kyc(acc, txn):
         # user is verified iff acc and txn data exist,
         # iff the account has been active for > 90 days
         # iff their cumulative balance across all account is > $500
-        if txn and acc\
-            and (NOW - txn[-1]['date']).days\
-                and sum([a['balances']['current']
-                         for a in acc if a['balances']['current']]):
+        if txn and acc and (NOW - txn[-1]['date']).days and sum([a['balances']['current'] for a in acc if a['balances']['current']]):
             return True
         else:
             return False
@@ -190,14 +184,13 @@ def plaid_kyc(acc, txn):
 #                               Metric #1 Credit                             #
 # -------------------------------------------------------------------------- #
 # @evaluate_function
-def credit_mix(txn, credit, feedback, params):
+def credit_mix(metadata, feedback, params):
     '''
     Description:
         A score based on user's credit accounts composition and status
 
     Parameters:
-        txn (list): Plaid 'Transactions' product
-        credit (list): Plaid 'Accounts' product - credit accounts only
+        metadata (dict): Plaid accounts and transactions overview
         feedback (dict): score feedback
         params (dict): model parameters, i.e. coefficients
 
@@ -207,27 +200,15 @@ def credit_mix(txn, credit, feedback, params):
     '''
 
     try:
-        if credit:
-            credit_mix.card_names = [
-                d['name'].lower().replace('credit', '').title().strip()
-                for d in credit
-                if (isinstance(d['name'], str)) and (d['name'].lower() != 'credit card')
-            ]
+        if metadata['credit_card']:
+            count = metadata['credit_card']['general']['accounts']['total_count']
+            timespan = metadata['credit_card']['general']['transactions']['timespan']
 
-            credit_mix.credit = credit  # for unittests
-            credit_ids = [d['account_id'] for d in credit]
-            credit_txn = [d for d in txn if d['account_id'] in credit_ids]
-
-            first_txn = credit_txn[-1]['date']
-            date_diff = (NOW - first_txn).days
-            size = len(credit)
-
-            m = np.digitize(size, params['count_zero'], right=True)
-            n = np.digitize(date_diff, params['duration'], right=True)
+            m = np.digitize(count, params['count_zero'], right=True)
+            n = np.digitize(timespan, params['duration'], right=True)
             score = params['credit_mix_mtx'][m][n]
 
-            feedback['credit']['credit_cards'] = size
-            feedback['credit']['card_names'] = credit_mix.card_names
+            feedback['credit']['credit_cards'] = count
         else:
             raise Exception('no credit card')
 
@@ -240,14 +221,13 @@ def credit_mix(txn, credit, feedback, params):
 
 
 # @evaluate_function
-def credit_limit(txn, credit, feedback, params):
+def credit_limit(metadata, feedback, params):
     '''
     Description:
         A score for the cumulative credit limit of a user across ALL of his credit accounts
 
     Parameters:
-        txn (list): Plaid 'Transactions' product
-        credit (list): Plaid 'Accounts' product - credit accounts only
+        metadata (dict): Plaid accounts and transactions overview
         feedback (dict): score feedback
         params (dict): model parameters, i.e. coefficients
 
@@ -257,25 +237,16 @@ def credit_limit(txn, credit, feedback, params):
     '''
 
     try:
-        if credit:
-            credit_lim = sum(
-                [
-                    int(d['balances']['limit']) if d['balances']['limit'] else 0
-                    for d in credit
-                ]
-            )
+        if metadata['credit_card']:
+            timespan = metadata['credit_card']['general']['transactions']['timespan']
+            credit_lim = sum(metadata['credit_card']['general']['balances']['limit'])
 
-            credit_ids = [d['account_id'] for d in credit]
-            credit_txn = [d for d in txn if d['account_id'] in credit_ids]
-
-            first_txn = credit_txn[-1]['date']
-            date_diff = (NOW - first_txn).days
-
-            m = np.digitize(date_diff, params['duration'], right=True)
+            m = np.digitize(timespan, params['duration'], right=True)
             n = np.digitize(credit_lim, params['volume_credit'], right=True)
             score = params['activity_vol_mtx'][m][n]
 
             feedback['credit']['credit_limit'] = credit_lim
+
         else:
             raise Exception('no credit limit')
 
@@ -323,23 +294,15 @@ def credit_util_ratio(acc, txn, feedback, params):
                 for t in transat:
                     dates.append(t['date'])
                     amounts.append(t['amount'])
-                df = pd.DataFrame(
-                    data={'amounts': amounts}, index=pd.DatetimeIndex(dates)
-                )
+                df = pd.DataFrame(data={'amounts': amounts}, index=pd.DatetimeIndex(dates))
 
                 # Bin by month credit card 'purchases' and 'paybacks'
                 util = df.groupby(pd.Grouper(freq='M'))['amounts'].agg(
-                    [
-                        ('payback', lambda x: x[x < 0].sum()),
-                        ('purchases', lambda x: x[x > 0].sum()),
-                    ]
-                )
+                    [('payback', lambda x: x[x < 0].sum()), ('purchases', lambda x: x[x > 0].sum()), ])
                 util['cred_util'] = [x / limit for x in util['purchases']]
 
                 # Exclude current month
-                if util.iloc[-1, ].name.strftime(
-                    '%Y-%m'
-                ) == datetime.today().date().strftime('%Y-%m'):
+                if util.iloc[-1, ].name.strftime('%Y-%m') == datetime.today().date().strftime('%Y-%m'):
                     util = util[:-1]
 
                 avg_util = np.mean(util['cred_util'])
@@ -401,9 +364,7 @@ def credit_interest(acc, txn, feedback, params):
                             interests.append(t)
 
                 frequency = len(interests) / length
-                score = params['fico_medians'][
-                    np.digitize(frequency, params['frequency_interest'], right=True)
-                ]
+                score = params['fico_medians'][np.digitize(frequency, params['frequency_interest'], right=True)]
 
                 feedback['credit']['count_charged_interest'] = round(frequency, 0)
 
@@ -419,14 +380,13 @@ def credit_interest(acc, txn, feedback, params):
 
 
 # @evaluate_function
-def credit_length(acc, txn, feedback, params):
+def credit_length(metadata, feedback, params):
     '''
     Description:
         returns score based on length of user's best credit account
 
     Parameters:
-        acc (list): Plaid 'Accounts' product
-        txn (list): Plaid 'Transactions' product
+        metadata (dict): Plaid accounts and transactions overview
         feedback (dict): score feedback
         params (dict): model parameters, i.e. coefficients
 
@@ -435,18 +395,12 @@ def credit_length(acc, txn, feedback, params):
         feedback (dict): feedback describing the score
     '''
     try:
-        id = dynamic_select(acc, txn, 'credit', feedback)['id']
-        alltxn = [t for t in txn if t['account_id'] == id]
+        if metadata['credit_card']:
+            timespan = metadata['credit_card']['general']['transactions']['timespan']
 
-        if alltxn:
-            oldest_txn = alltxn[-1]['date']
-            # date today - date of oldest credit transaction
-            how_long = (NOW - oldest_txn).days
-            score = params['fico_medians'][
-                np.digitize(how_long, params['duration'], right=True)
-            ]
+            score = params['fico_medians'][np.digitize(timespan, params['duration'], right=True)]
 
-            feedback['credit']['credit_duration_days'] = how_long
+            feedback['credit']['credit_duration_days'] = timespan
 
         else:
             raise Exception('no credit length')
@@ -460,14 +414,13 @@ def credit_length(acc, txn, feedback, params):
 
 
 # @evaluate_function
-def credit_livelihood(acc, txn, feedback, params):
+def credit_livelihood(metadata, feedback, params):
     '''
     Description:
         returns score quantifying the avg monthly txn count for your best credit account
 
     Parameters:
-        acc (list): Plaid 'Accounts' product
-        txn (list): Plaid 'Transactions' product
+        metadata (dict): Plaid accounts and transactions overview
         feedback (dict): score feedback
         params (dict): model parameters, i.e. coefficients
 
@@ -476,31 +429,10 @@ def credit_livelihood(acc, txn, feedback, params):
         feedback (dict): feedback describing the score
     '''
     try:
-        id = dynamic_select(acc, txn, 'credit', feedback)['id']
-        alltxn = [t for t in txn if t['account_id'] == id]
+        if metadata['credit_card']:
+            mean = metadata['credit_card']['general']['transactions']['avg_monthly_count']
 
-        if alltxn:
-            dates = list()
-            amounts = list()
-
-            for i in range(len(alltxn)):
-                dates.append(alltxn[i]['date'])
-                amounts.append(alltxn[i]['amount'])
-
-            df = pd.DataFrame(data={'amounts': amounts}, index=pd.DatetimeIndex(dates))
-            d = df.groupby(pd.Grouper(freq='M')).count()
-            credit_livelihood.d = d
-
-            if len(d['amounts']) >= 2:
-                if d['amounts'][0] < 5:  # exclude initial and final month with < 5 txn
-                    d = d[1:]
-                if d['amounts'][-1] < 5:
-                    d = d[:-1]
-
-            mean = d['amounts'].mean()
-            score = params['fico_medians'][
-                np.digitize(mean, params['count_lively'], right=True)
-            ]
+            score = params['fico_medians'][np.digitize(mean, params['count_lively'], right=True)]
 
             feedback['credit']['avg_count_monthly_txn'] = round(mean, 0)
 
@@ -580,13 +512,13 @@ def velocity_withdrawals(txn, feedback, params):
 
 
 # @evaluate_function
-def velocity_deposits(txn, feedback, params):
+def velocity_deposits(metadata, feedback, params):
     '''
     Description:
         returns score based on count and volumne of monthly automated deposits
 
     Parameters:
-        txn (list): Plaid 'Transactions' product
+        metadata (dict): Plaid accounts and transactions overview
         feedback (dict): score feedback
         params (dict): model parameters, i.e. coefficients
 
@@ -595,31 +527,16 @@ def velocity_deposits(txn, feedback, params):
         feedback (dict): feedback describing the score
     '''
     try:
-        dates = list()
-        amounts = list()
+        if metadata['checking']:
+            count = metadata['checking']['income']['payroll']['avg_monthly_count']
+            volume = metadata['checking']['income']['payroll']['avg_monthly_value']
 
-        for t in txn:
-            if t['amount'] < -200 and 'payroll' in [c.lower() for c in t['category']]:
-                dates.append(t['date'])
-                amounts.append(abs(t['amount']))
+            m = np.digitize(count, params['count_zero'], right=True)
+            n = np.digitize(volume, params['volume_deposit'], right=True)
+            score = params['diversity_velo_mtx'][m][n]
 
-        df = pd.DataFrame(data={'amounts': amounts}, index=pd.DatetimeIndex(dates))
-
-        if len(df.index) > 0:
-            how_many = np.mean(
-                df.groupby(pd.Grouper(freq='M')).count().iloc[:, 0].tolist()
-            )
-            if how_many > 0:
-                volume = np.mean(
-                    df.groupby(pd.Grouper(freq='M')).sum().iloc[:, 0].tolist()
-                )
-
-                m = np.digitize(how_many, params['count_zero'], right=True)
-                n = np.digitize(volume, params['volume_deposit'], right=True)
-                score = params['diversity_velo_mtx'][m][n]
-
-                feedback['velocity']['deposits'] = round(how_many, 0)
-                feedback['velocity']['deposits_volume'] = round(volume, 0)
+            feedback['velocity']['deposits'] = round(count, 0)
+            feedback['velocity']['deposits_volume'] = round(volume, 0)
 
         else:
             raise Exception('no deposits')
@@ -680,14 +597,13 @@ def velocity_month_net_flow(acc, txn, feedback, params):
 
 
 # @evaluate_function
-def velocity_month_txn_count(acc, txn, feedback, params):
+def velocity_month_txn_count(metadata, feedback, params):
     '''
     Description:
         returns score based on count of mounthly transactions
 
     Parameters:
-        acc (list): Plaid 'Accounts' product
-        txn (list): Plaid 'Transactions' product
+        metadata (dict): Plaid accounts and transactions overview
         feedback (dict): score feedback
         params (dict): model parameters, i.e. coefficients
 
@@ -696,43 +612,12 @@ def velocity_month_txn_count(acc, txn, feedback, params):
         feedback (dict): feedback describing the score
     '''
     try:
-        dates = list()
-        amounts = list()
-        mycounts = list()
-        deposit_acc = list()
+        if metadata['checking']:
+            count = metadata['checking']['general']['transactions']['avg_monthly_count']
 
-        # Keep only deposit->checking accounts
-        for a in acc:
-            type = '{1}{0}{2}'.format('_', str(a['type']), str(a['subtype'])).lower()
+        score = params['fico_medians'][np.digitize(count, params['count_txn'], right=True)]
 
-            if type == 'depository_checking':
-                deposit_acc.append(a['account_id'])
-
-        # Keep only txn in deposit->checking accounts
-        for d in deposit_acc:
-            transat = [x for x in txn if x['account_id'] == d]
-
-            # Bin transactions by month
-            for t in transat:
-                if abs(t['amount']) > 5:
-                    dates.append(t['date'])
-                    amounts.append(t['amount'])
-
-            df = pd.DataFrame(data={'amounts': amounts}, index=pd.DatetimeIndex(dates))
-
-            # Calculate avg count of monthly transactions for one checking account at a time
-            if len(df.index) > 0:
-                mycounts.append(df.groupby(pd.Grouper(freq='M')).count().iloc[:, 0].tolist())
-            else:
-                score = 0
-
-        mycounts = [x for y in mycounts for x in y]
-        how_many = np.mean(mycounts)
-        score = params['fico_medians'][
-            np.digitize(how_many, params['count_txn'], right=True)
-        ]
-
-        feedback['velocity']['count_monthly_txn'] = round(how_many, 0)
+        feedback['velocity']['count_monthly_txn'] = round(count, 0)
 
     except Exception as e:
         score = 0
@@ -824,18 +709,8 @@ def stability_tot_balance_now(depository, non_depository, feedback, params):
         feedback (dict): score feedback
     '''
     try:
-        x = sum(
-            [
-                int(d['balances']['current']) if d['balances']['current'] else 0
-                for d in depository
-            ]
-        )
-        y = sum(
-            [
-                int(d['balances']['available']) if d['balances']['available'] else 0
-                for d in non_depository
-            ]
-        )
+        x = sum([int(d['balances']['current']) if d['balances']['current'] else 0 for d in depository])
+        y = sum([int(d['balances']['available']) if d['balances']['available'] else 0 for d in non_depository])
         balance = x + y
 
         if balance > 0:
@@ -857,13 +732,13 @@ def stability_tot_balance_now(depository, non_depository, feedback, params):
 
 
 # @evaluate_function
-def stability_loan_duedate(txn, feedback, params):
+def stability_loan_duedate(timespan, feedback, params):
     '''
     Description:
         returns how many months it'll take the user to pay back their loan
 
     Parameters:
-        txn (list): Plaid 'Transactions' product
+        timespan (int): timespan since first transaction
         feedback (dict): score feedback
         params (dict): model parameters, i.e. coefficients
 
@@ -873,12 +748,8 @@ def stability_loan_duedate(txn, feedback, params):
     '''
 
     try:
-        # Read in the date of the oldest txn
-        first_txn = txn[-1]['date']
-        txn_length = int((NOW - first_txn).days / 30)  # months
-
         # Loan duedate is equal to the month of txn history there are
-        due = np.digitize(txn_length, params['due_date'], right=True)
+        due = np.digitize(int(timespan / 30), params['due_date'], right=True)
         how_many_months = np.append(params['due_date'], 6)
 
         feedback['stability']['loan_duedate'] = how_many_months[due]
@@ -953,14 +824,14 @@ def stability_min_running_balance(acc, txn, feedback, params):
 
 
 # @evaluate_function
-def diversity_acc_count(acc, txn, feedback, params):
+def diversity_acc_count(count, timespan, feedback, params):
     '''
     Description:
         A score based on count of accounts owned by the user and account duration
 
     Parameters:
-        acc (list): Plaid 'Accounts' product
-        txn (list): Plaid 'Transactions' product
+        count (int): active accounts count
+        timespan (int): timespan since first transaction
         feedback (dict): score feedback
         params (dict): model parameters, i.e. coefficients
 
@@ -970,15 +841,11 @@ def diversity_acc_count(acc, txn, feedback, params):
     '''
 
     try:
-        size = len(acc)
-        first_txn = txn[-1]['date']
-        date_diff = (NOW - first_txn).days
-
-        m = np.digitize(size, [i + 2 for i in params['count_zero']], right=False)
-        n = np.digitize(date_diff, params['duration'], right=True)
+        m = np.digitize(count, [i + 2 for i in params['count_zero']], right=False)
+        n = np.digitize(timespan, params['duration'], right=True)
         score = params['diversity_velo_mtx'][m][n]
 
-        feedback['diversity']['bank_accounts'] = size
+        feedback['diversity']['bank_accounts'] = count
 
     except Exception as e:
         score = 0
@@ -1005,35 +872,23 @@ def diversity_profile(acc, feedback, params):
     '''
 
     try:
-        myacc = list()
-
-        acc = [
-            x
-            for x in acc
-            if x['type'] == 'loan' or int(x['balances']['current'] or 0) != 0
-        ]  # exclude $0 balance accounts
+        acc = [x for x in acc if x['type'] == 'loan' or int(
+            x['balances']['current'] or 0) != 0]  # exclude $0 balance accounts
 
         balance = 0
         for a in acc:
-            id = a['account_id']
             type = '{}_{}'.format(a['type'], str(a['subtype']))
 
             # Consider savings, hda, cd, money mart, paypal, prepaid, cash management, edt accounts
-            if (type.split('_')[0] == 'depository') & (
-                type.split('_')[1] != 'checking'
-            ):
+            if (type.split('_')[0] == 'depository') & (type.split('_')[1] != 'checking'):
                 balance += int(a['balances']['current'] or 0)
-                myacc.append(id)
 
             # Consider ANY type of investment account
             if type.split('_')[0] == 'investment':
                 balance += int(a['balances']['current'] or 0)
-                myacc.append(id)
 
         if balance != 0:
-            score = params['fico_medians'][
-                np.digitize(balance, params['volume_invest'], right=True)
-            ]
+            score = params['fico_medians'][np.digitize(balance, params['volume_invest'], right=True)]
 
         else:
             raise Exception('no investing nor savings accounts')
