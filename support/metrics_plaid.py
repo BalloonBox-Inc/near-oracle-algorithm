@@ -201,8 +201,8 @@ def plaid_credit_metrics(feedback, params, metadata, score=[]):
             bal_limit = sum(d['balances']['limit'])  # shouldnt be average?
 
             du = metadata['credit_card']['util_ratio']
-            util_count = du['total_count']
-            util_avg = du['avg_monthly_value']
+            util_count = du['general']['total_count']
+            util_avg = du['general']['avg_monthly_value']
 
             dl = metadata['credit_card']['late_payment']
 
