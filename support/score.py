@@ -1,26 +1,20 @@
 from support.assessment import *
 from support.models import *
-from support.metrics_plaid import *
 from support.helper import *
-from icecream import ic
-from statistics import mean
 
 
 # @evaluate_function
-def plaid_score(data, score_range, feedback, model_weights, model_penalties, metric_weigths, params):
+def plaid_score(data, score_range, feedback, model_weights, metric_weigths, params):
 
-    txn = data['transactions']
-    acc = data['accounts']
+    # format params
+    params = plaid_params(params, score_range)
 
-    dataset = format_plaid_data(txn, acc)
+    # split data: mutually exclusive
+    credit_card = filter_dict(data, 'type', 'credit')
+    checking = filter_dict(data, 'subtype', 'checking')
+    savings = filter_dict(data, 'subtype', 'savings')
 
-    feedback['stability']['txn_history'] = dataset[0]['timespan']
-
-    # mutually exclusive
-    credit_card = filter_dict(dataset, 'type', 'credit')
-    checking = filter_dict(dataset, 'subtype', 'checking')
-    savings = filter_dict(dataset, 'subtype', 'savings')
-
+    # create metadata
     metadata = {
         'credit_card': {
             'general': {},
@@ -68,42 +62,22 @@ def plaid_score(data, score_range, feedback, model_weights, model_penalties, met
         metadata = cash_flow(metadata, savings, 'category', 'interest')
         metadata = earnings(metadata, savings, 'sub_category', 'interest earned')
 
-    # overall count and timespan across all accounts
-    accounts = list(metadata.keys())
-    count = sum([metadata[k]['general']['accounts']['total_count'] for k in accounts if metadata[k]['general']])
-    timespan = max([metadata[k]['general']['transactions']['timespan'] for k in accounts if metadata[k]['general']])
+    # create model
+    credit, feedback = plaid_credit_model(feedback, params, metric_weigths, metadata)
+    velocity, feedback = plaid_velocity_model(feedback, params, metric_weigths, metadata)
+    stability, feedback = plaid_stability_model(feedback, params, metric_weigths, metadata)
+    diversity, feedback = plaid_diversity_model(feedback, params, metric_weigths,  metadata)
 
-    # accounts
-    dep = [d for d in acc if d['type'].lower() == 'depository']
-    n_dep = [d for d in acc if d['type'].lower() != 'depository']
-
-    params = plaid_params(params, score_range)
-
-    credit, feedback = credit_mix(metadata, feedback, params)
-
-    if credit == 0:
-        velocity, feedback = plaid_velocity(acc, txn, metadata, feedback, metric_weigths, params)
-        stability, feedback = plaid_stability(acc, txn, dep, n_dep, timespan, feedback, metric_weigths, params)
-        diversity, feedback = plaid_diversity(acc, count, timespan, feedback, metric_weigths, params)
-
-        a = list(model_penalties.values())
-
-    else:
-        credit, feedback = plaid_credit(acc, txn, metadata, feedback, metric_weigths, params)
-        velocity, feedback = plaid_velocity(acc, txn, metadata, feedback, metric_weigths, params)
-        stability, feedback = plaid_stability(acc, txn, dep, n_dep, timespan, feedback, metric_weigths, params)
-        diversity, feedback = plaid_diversity(acc, count, timespan, feedback, metric_weigths, params)
-
-        a = list(model_weights.values())
-
+    a = list(model_weights.values())
     b = [credit, velocity, stability, diversity]
 
     head, tail = head_tail_list(score_range)
     score = head + (tail - head) * (dot_product(a, b))
 
-    return score, feedback
+    return score, feedback, metadata
 
 
+# @evaluate_function
 def coinbase_score(score_range, feedback, model_weights, metric_weigths, params, acc, txn):
 
     params = coinbase_params(params, score_range)
@@ -122,6 +96,7 @@ def coinbase_score(score_range, feedback, model_weights, metric_weigths, params,
     return score, feedback
 
 
+# @evaluate_function
 def covalent_score(score_range, feedback, model_weights, metric_weigths, params, erc_rank, txn, balances, portfolio):
 
     params = covalent_params(params, score_range)
