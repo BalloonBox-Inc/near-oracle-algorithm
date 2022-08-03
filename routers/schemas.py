@@ -8,6 +8,7 @@ class Plaid_Item(BaseModel):
     plaid_client_secret: str
     coinmarketcap_key: str
     loan_request: int
+    user: int
 
 
 class Coinbase_Item(BaseModel):
