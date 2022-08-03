@@ -567,7 +567,7 @@ def plaid_velocity_metrics(feedback, params, metadata, score=[]):
             feedback['velocity']['count_monthly_txn'] = round(txn_avg_count, 0)
 
         else:
-            raise Exception('no checking')
+            raise Exception('no checking account')
 
     except Exception as e:
         score = [0]*5
@@ -960,8 +960,35 @@ def plaid_diversity_metrics(feedback, params, metadata):
     score[list] order must be the same as showed under metrics in the cofig.json file, e.g.
     "data": [{"minimum_requirements": {"plaid": {"scores": {"models": {"diversity": {"metrics": {...}}}}}}}]
     '''
-    # b = [acc_count, profile]
-    return [0, 0], feedback
+    try:
+        if metadata['savings'] or metadata['checking']['investments']:
+            # read metadata
+            keys = list(metadata.keys())
+            acc_count = sum([metadata[k]['general']['accounts']['total_count'] for k in keys if metadata[k]['general']])
+            txn_timespan = max([metadata[k]['general']['transactions']['timespan']
+                               for k in keys if metadata[k]['general']])
+
+            # read params
+            w = np.digitize(acc_count, [i + 2 for i in params['count_zero']], right=False)
+            x = np.digitize(txn_timespan, params['duration'], right=True)
+
+            # account
+            score.append(params['diversity_velo_mtx'][w][x])
+
+            # profile
+
+            # update feedback
+            feedback['diversity']['bank_accounts'] = acc_count
+
+        else:
+            raise Exception('no savings or investment accounts')
+
+    except Exception as e:
+        score = [0]*2
+        feedback['diversity']['error'] = str(e)
+
+    finally:
+        return score, feedback
 
 
 # @evaluate_function
