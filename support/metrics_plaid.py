@@ -201,10 +201,13 @@ def plaid_credit_metrics(feedback, params, metadata, score=[]):
             bal_limit = sum(d['balances']['limit'])  # shouldnt be average?
 
             du = metadata['credit_card']['util_ratio']
-            util_count = du['general']['total_count']
+            util_count = du['general']['month_count']
             util_avg = du['general']['avg_monthly_value']
 
             dl = metadata['credit_card']['late_payment']
+            late_pymt_count = dl['general']['total_count']
+            late_pymt_mcount = dl['general']['month_count']
+            late_pymt_freq = late_pymt_count / late_pymt_mcount
 
             # read params
             w = np.digitize(acc_count, params['count_zero'], right=True)
@@ -212,8 +215,9 @@ def plaid_credit_metrics(feedback, params, metadata, score=[]):
             y = np.digitize(txn_timespan, params['duration'], right=True)
             z = np.digitize(bal_limit, params['volume_credit'], right=True)
 
-            m = np.digitize(util_count*30, params['duration'], right=True)
-            n = np.digitize(util_avg, params['credit_util_pct'], right=True)
+            p = np.digitize(util_count*30, params['duration'], right=True)
+            q = np.digitize(util_avg, params['credit_util_pct'], right=True)
+            r = np.digitize(late_pymt_freq, params['frequency_interest'], right=True)
 
             # credit limit
             score.append(params['activity_vol_mtx'][y][z])
@@ -225,10 +229,10 @@ def plaid_credit_metrics(feedback, params, metadata, score=[]):
             score.append(params['fico_medians'][x])
 
             # util ratio
-            score.append(params['activity_cns_mtx'][m][n])
+            score.append(params['activity_cns_mtx'][p][q])
 
             # interest
-            score.append(0)
+            score.append(params['fico_medians'][r])
 
             # credit mix
             scorex = params['credit_mix_mtx'][w][x]
@@ -239,276 +243,13 @@ def plaid_credit_metrics(feedback, params, metadata, score=[]):
             feedback['credit']['credit_duration_days'] = txn_timespan
             feedback['credit']['credit_limit'] = bal_limit
             feedback['credit']['utilization_ratio'] = round(util_avg, 2)
+            feedback['credit']['count_charged_interest'] = round(late_pymt_count, 0)
 
         else:
             raise Exception('no credit card')
 
     except Exception as e:
         score = [0]*5
-        feedback['credit']['error'] = str(e)
-
-    finally:
-        return score, feedback
-
-
-# @evaluate_function
-def credit_mix(metadata, feedback, params):
-    '''
-    Description:
-        A score based on user's credit accounts composition and status
-
-    Parameters:
-        metadata (dict): Plaid accounts and transactions overview
-        feedback (dict): score feedback
-        params (dict): model parameters, i.e. coefficients
-
-    Returns:
-        score (float): gained based on number of credit accounts owned and duration
-        feedback (dict): score feedback
-    '''
-
-    try:
-        if metadata['credit_card']:
-            count = metadata['credit_card']['general']['accounts']['total_count']
-            timespan = metadata['credit_card']['general']['transactions']['timespan']
-
-            m = np.digitize(count, params['count_zero'], right=True)
-            n = np.digitize(timespan, params['duration'], right=True)
-            score = params['credit_mix_mtx'][m][n]
-
-            feedback['credit']['credit_cards'] = count
-        else:
-            raise Exception('no credit card')
-
-    except Exception as e:
-        score = 0
-        feedback['credit']['error'] = str(e)
-
-    finally:
-        return score, feedback
-
-
-# @evaluate_function
-def credit_limit(metadata, feedback, params):
-    '''
-    Description:
-        A score for the cumulative credit limit of a user across ALL of his credit accounts
-
-    Parameters:
-        metadata (dict): Plaid accounts and transactions overview
-        feedback (dict): score feedback
-        params (dict): model parameters, i.e. coefficients
-
-    Returns:
-        score (float): gained based on the cumulative credit limit across all credit accounts
-        feedback (dict): score feedback
-    '''
-
-    try:
-        if metadata['credit_card']:
-            timespan = metadata['credit_card']['general']['transactions']['timespan']
-            credit_lim = sum(metadata['credit_card']['general']['balances']['limit'])
-
-            m = np.digitize(timespan, params['duration'], right=True)
-            n = np.digitize(credit_lim, params['volume_credit'], right=True)
-            score = params['activity_vol_mtx'][m][n]
-
-            feedback['credit']['credit_limit'] = credit_lim
-
-        else:
-            raise Exception('no credit limit')
-
-    except Exception as e:
-        score = 0
-        feedback['credit']['error'] = str(e)
-
-    finally:
-        return score, feedback
-
-
-# @evaluate_function
-def credit_util_ratio(acc, txn, feedback, params):
-    '''
-    Description:
-        A score reflective of the user's credit utilization ratio, that is credit_used/credit_limit
-
-    Parameters:
-        acc (list): Plaid 'Accounts' product
-        txn (list): Plaid 'Transactions' product
-        feedback (dict): score feedback
-        params (dict): model parameters, i.e. coefficients
-
-    Returns:
-        score (float): score for avg percent of credit limit used
-        feedback (dict): score feedback
-    '''
-    try:
-        # Dynamically select best credit account
-        dynamic = dynamic_select(acc, txn, 'credit', feedback)
-
-        if dynamic['id'] == 'inexistent' or dynamic['limit'] == 0:
-            score = 0
-
-        else:
-            id = dynamic['id']
-            limit = dynamic['limit']
-
-            # Keep ony transactions in best credit account
-            transat = [x for x in txn if x['account_id'] == id]
-
-            if transat:
-                dates = list()
-                amounts = list()
-                for t in transat:
-                    dates.append(t['date'])
-                    amounts.append(t['amount'])
-                df = pd.DataFrame(data={'amounts': amounts}, index=pd.DatetimeIndex(dates))
-
-                # Bin by month credit card 'purchases' and 'paybacks'
-                util = df.groupby(pd.Grouper(freq='M'))['amounts'].agg(
-                    [('payback', lambda x: x[x < 0].sum()), ('purchases', lambda x: x[x > 0].sum()), ])
-                util['cred_util'] = [x / limit for x in util['purchases']]
-
-                # Exclude current month
-                if util.iloc[-1, ].name.strftime('%Y-%m') == datetime.today().date().strftime('%Y-%m'):
-                    util = util[:-1]
-
-                avg_util = np.mean(util['cred_util'])
-                m = np.digitize(len(util) * 30, params['duration'], right=True)
-                n = np.digitize(avg_util, params['credit_util_pct'], right=True)
-                score = params['activity_cns_mtx'][m][n]
-
-                feedback['credit']['utilization_ratio'] = round(avg_util, 2)
-
-            else:
-                raise Exception('no credit history')
-
-    except Exception as e:
-        score = 0
-        feedback['credit']['error'] = str(e)
-
-    finally:
-        return score, feedback
-
-
-# @evaluate_function
-def credit_interest(acc, txn, feedback, params):
-    '''
-    Description:
-        returns score based on number of times user was charged
-        credit card interest fees in past 24 months
-
-    Parameters:
-        acc (list): Plaid 'Accounts' product
-        txn (list): Plaid 'Transactions' product
-        feedback (dict): score feedback
-        params (dict): model parameters, i.e. coefficients
-
-    Returns:
-        score (float): gained based on interest charged
-        feedback (dict): feedback describing the score
-    '''
-    try:
-        id = dynamic_select(acc, txn, 'credit', feedback)['id']
-
-        if id == 'inexistent':
-            score = 0
-
-        else:
-            alltxn = [t for t in txn if t['account_id'] == id]
-
-            interests = list()
-
-            if alltxn:
-                length = min(24, round((NOW - alltxn[-1]['date']).days / 30, 0))
-                for t in alltxn:
-
-                    # keep only txn of type 'interest on credit card'
-                    if 'Interest Charged' in t['category']:
-                        date = t['date']
-
-                        # keep only txn of last 24 months
-                        if date > NOW - timedelta(days=2 * 365):
-                            interests.append(t)
-
-                frequency = len(interests) / length
-                score = params['fico_medians'][np.digitize(frequency, params['frequency_interest'], right=True)]
-
-                feedback['credit']['count_charged_interest'] = round(frequency, 0)
-
-            else:
-                raise Exception('no credit interest')
-
-    except Exception as e:
-        score = 0
-        feedback['credit']['error'] = str(e)
-
-    finally:
-        return score, feedback
-
-
-# @evaluate_function
-def credit_length(metadata, feedback, params):
-    '''
-    Description:
-        returns score based on length of user's best credit account
-
-    Parameters:
-        metadata (dict): Plaid accounts and transactions overview
-        feedback (dict): score feedback
-        params (dict): model parameters, i.e. coefficients
-
-    Returns:
-        score (float): gained because of credit account duration
-        feedback (dict): feedback describing the score
-    '''
-    try:
-        if metadata['credit_card']:
-            timespan = metadata['credit_card']['general']['transactions']['timespan']
-
-            score = params['fico_medians'][np.digitize(timespan, params['duration'], right=True)]
-
-            feedback['credit']['credit_duration_days'] = timespan
-
-        else:
-            raise Exception('no credit length')
-
-    except Exception as e:
-        score = 0
-        feedback['credit']['error'] = str(e)
-
-    finally:
-        return score, feedback
-
-
-# @evaluate_function
-def credit_livelihood(metadata, feedback, params):
-    '''
-    Description:
-        returns score quantifying the avg monthly txn count for your best credit account
-
-    Parameters:
-        metadata (dict): Plaid accounts and transactions overview
-        feedback (dict): score feedback
-        params (dict): model parameters, i.e. coefficients
-
-    Returns:
-        score (float): based on avg monthly txn count
-        feedback (dict): feedback describing the score
-    '''
-    try:
-        if metadata['credit_card']:
-            mean = metadata['credit_card']['general']['transactions']['avg_monthly_count']
-
-            score = params['fico_medians'][np.digitize(mean, params['count_lively'], right=True)]
-
-            feedback['credit']['avg_count_monthly_txn'] = round(mean, 0)
-
-        else:
-            raise Exception('no credit transactions')
-
-    except Exception as e:
-        score = 0
         feedback['credit']['error'] = str(e)
 
     finally:
