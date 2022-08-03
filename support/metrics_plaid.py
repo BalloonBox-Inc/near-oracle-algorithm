@@ -1,6 +1,7 @@
 from support.assessment import *
 from datetime import timedelta
 from datetime import datetime
+import statistics as st
 import pandas as pd
 import numpy as np
 
@@ -519,11 +520,8 @@ def plaid_velocity_metrics(feedback, params, metadata, score=[]):
             # read metadata
             d = metadata['checking']['general']
             txn_avg_count = d['transactions']['avg_monthly_count']
-            txn_avg_value = d['transactions']['avg_monthly_value']
 
             di = metadata['checking']['income']
-            income_avg_count = di['payroll']['avg_monthly_count']
-            income_avg_value = di['payroll']['avg_monthly_value']
             income_avg_count = di['payroll']['avg_monthly_count']
             income_avg_value = di['payroll']['avg_monthly_value']
 
@@ -538,8 +536,11 @@ def plaid_velocity_metrics(feedback, params, metadata, score=[]):
             y = np.digitize(expenses_avg_count, params['count_zero'], right=True)
             z = np.digitize(expenses_avg_value, params['volume_withdraw'], right=True)
 
-            m = np.digitize(direction, params['flow_ratio'], right=True)
-            n = np.digitize(txn_avg_value, params['volume_flow'], right=True)
+            mag = st.mean([abs(n) for n in [income_avg_value, expenses_avg_value]])
+            dir = 10  # count pos months / count neg months
+            m = np.digitize(dir, params['flow_ratio'], right=True)
+            n = np.digitize(mag, params['volume_flow'], right=True)
+
             t = np.digitize(txn_avg_count, params['count_txn'], right=True)
 
             # deposits
@@ -562,7 +563,7 @@ def plaid_velocity_metrics(feedback, params, metadata, score=[]):
             feedback['velocity']['deposits_volume'] = round(income_avg_value, 0)
             feedback['velocity']['withdrawals'] = round(expenses_avg_count, 0)
             feedback['velocity']['withdrawals_volume'] = round(expenses_avg_value, 0)
-            feedback['velocity']['avg_net_flow'] = round(txn_avg_value, 2)
+            feedback['velocity']['avg_net_flow'] = round(mag, 2)
             feedback['velocity']['count_monthly_txn'] = round(txn_avg_count, 0)
 
         else:
@@ -780,9 +781,7 @@ def velocity_slope(acc, txn, feedback, params):
             y = flow['amounts']
             a, b = np.polyfit(x, y, 1)
 
-            score = params['fico_medians'][
-                np.digitize(a, params['slope_lr'], right=True)
-            ]
+            score = params['fico_medians'][np.digitize(a, params['slope_lr'], right=True)]
 
             feedback['velocity']['slope'] = round(a, 2)
 
