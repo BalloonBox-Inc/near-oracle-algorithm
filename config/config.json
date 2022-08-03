@@ -28,11 +28,11 @@
                                 "weight": 0.2,
                                 "penalty_weight": 0.33,
                                 "metrics": {
-                                    "withdrawals": 0.16,
                                     "deposits": 0.25,
+                                    "withdrawals": 0.16,
                                     "net_flow": 0.25,
-                                    "txn_count": 0.16,
-                                    "slope": 0.18
+                                    "slope": 0.18,
+                                    "txn_count": 0.16
                                 }
                             },
                             "stability": {
@@ -252,11 +252,11 @@
                                 "weight": 0.15,
                                 "penalty_weight": 0.3,
                                 "metrics": {
-                                    "withdrawals": 0.16,
                                     "deposits": 0.25,
+                                    "withdrawals": 0.16,
                                     "net_flow": 0.31,
-                                    "txn_count": 0.1,
-                                    "slope": 0.18
+                                    "slope": 0.18,
+                                    "txn_count": 0.1
                                 }
                             },
                             "stability": {
