@@ -18,10 +18,10 @@
                                 "penalty_weight": 0.0,
                                 "metrics": {
                                     "limit": 0.45,
-                                    "util_ratio": 0.12,
-                                    "interest": 0.05,
                                     "length": 0.26,
-                                    "livelihood": 0.12
+                                    "livelihood": 0.12,
+                                    "util_ratio": 0.12,
+                                    "interest": 0.05
                                 }
                             },
                             "velocity": {
@@ -242,10 +242,10 @@
                                 "penalty_weight": 0.0,
                                 "metrics": {
                                     "limit": 0.45,
-                                    "util_ratio": 0.12,
-                                    "interest": 0.05,
                                     "length": 0.26,
-                                    "livelihood": 0.12
+                                    "livelihood": 0.12,
+                                    "util_ratio": 0.12,
+                                    "interest": 0.05
                                 }
                             },
                             "velocity": {
