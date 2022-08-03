@@ -159,11 +159,15 @@ def aggregate_dict_by_month(data, agg_dict):
 
 def util_ratio(metadata, data):
     metadata['credit_card']['util_ratio'] = {}
+    metadata['credit_card']['util_ratio']['period'] = {}
     period = [30, 60, 90, 180, 360, 720, 1800]
     months = [-1, -2, -3, -6, -12, -24, -60]
     data['util_ratio'] = data['amount'] / data['limit']
     for p, m in zip(period, months):
-        metadata['credit_card']['util_ratio'][p] = data.iloc[m:].util_ratio.max()
+        metadata['credit_card']['util_ratio']['period'][p] = data.iloc[m:].util_ratio.max()
+    temp = data[data['util_ratio'] > 0]
+    metadata['credit_card']['util_ratio']['avg_monthly_value'] = temp['util_ratio'].mean()
+    metadata['credit_card']['util_ratio']['total_count'] = len(temp['util_ratio'])
     return metadata
 
 
