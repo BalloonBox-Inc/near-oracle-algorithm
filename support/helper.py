@@ -159,6 +159,7 @@ def aggregate_dict_by_month(data, agg_dict):
 
 def util_ratio(metadata, data):
     metadata['credit_card']['util_ratio'] = {}
+    metadata['credit_card']['util_ratio']['general'] = {}
     metadata['credit_card']['util_ratio']['period'] = {}
     period = [30, 60, 90, 180, 360, 720, 1800]
     months = [-1, -2, -3, -6, -12, -24, -60]
@@ -166,8 +167,8 @@ def util_ratio(metadata, data):
     for p, m in zip(period, months):
         metadata['credit_card']['util_ratio']['period'][p] = data.iloc[m:].util_ratio.max()
     temp = data[data['util_ratio'] > 0]
-    metadata['credit_card']['util_ratio']['avg_monthly_value'] = temp['util_ratio'].mean()
-    metadata['credit_card']['util_ratio']['total_count'] = len(temp['util_ratio'])
+    metadata['credit_card']['util_ratio']['general']['avg_monthly_value'] = temp['util_ratio'].mean()
+    metadata['credit_card']['util_ratio']['general']['total_count'] = len(temp['util_ratio'])
     return metadata
 
 
@@ -217,11 +218,13 @@ def general(metadata, lst, k1, k2='general', df=None):
 
 def late_payment(metadata, lst):
     metadata['credit_card']['late_payment'] = {}
+    metadata['credit_card']['late_payment']['general'] = {}
+    metadata['credit_card']['late_payment']['period'] = {}
     period = [30, 60, 90, 180, 360, 720, 1800]
     data = [d for d in lst if d['sub_category'] == 'interest charged']
     if data:
         for p in period:
-            metadata['credit_card']['late_payment'][p] = len([d for d in data if d['timespan'] <= p])
+            metadata['credit_card']['late_payment']['period'][p] = len([d for d in data if d['timespan'] <= p])
     return metadata
 
 
