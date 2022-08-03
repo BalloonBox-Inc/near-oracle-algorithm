@@ -58,8 +58,8 @@ async def credit_score_plaid(request: Request, response: Response, item: Plaid_I
         models, metrics = read_models_and_metrics(
             configs['minimum_requirements']['plaid']['scores']['models'])
 
-        penalties = read_model_penalties(
-            configs['minimum_requirements']['plaid']['scores']['models'])
+        # penalties = read_model_penalties(
+        #     configs['minimum_requirements']['plaid']['scores']['models'])
 
         messages = configs['minimum_requirements']['plaid']['messages']
         feedback = create_feedback(models)
@@ -93,14 +93,14 @@ async def credit_score_plaid(request: Request, response: Response, item: Plaid_I
         if not validate_loan_request(loan_range, accounts) or not validate_txn_history(thresholds["transactions_period"], data):
             raise Exception(messages["not_qualified"].format(loan_range[0]))
 
-        # compute score and feedback
+        # compute score, feedback, and metadata
         print(f'\033[36m Calculating score ...\033[0m')
-        score, feedback, metadata = plaid_score(data, score_range, feedback, models, penalties, metrics, parm)
+        score, feedback, metadata = plaid_score(data, score_range, feedback, models, metrics, parm)
 
         # keep metadata
         print(f'\033[36m Saving parameters ...\033[0m')
-        keep = keep_feedback(metadata, score, item.loan_request, 'plaid')
-        add_row_to_table('plaid', keep)
+        # keep = keep_feedback(metadata, score, item.loan_request, 'plaid')
+        # add_row_to_table('plaid', keep)
 
         # compute risk
         print(f'\033[36m Calculating risk ...\033[0m')
