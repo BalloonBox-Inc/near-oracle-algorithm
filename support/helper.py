@@ -168,7 +168,7 @@ def util_ratio(metadata, data):
         metadata['credit_card']['util_ratio']['period'][p] = data.iloc[m:].util_ratio.max()
     temp = data[data['util_ratio'] > 0]
     metadata['credit_card']['util_ratio']['general']['avg_monthly_value'] = temp['util_ratio'].mean()
-    metadata['credit_card']['util_ratio']['general']['total_count'] = len(temp['util_ratio'])
+    metadata['credit_card']['util_ratio']['general']['month_count'] = len(temp['util_ratio'])
     return metadata
 
 
@@ -225,6 +225,9 @@ def late_payment(metadata, lst):
     if data:
         for p in period:
             metadata['credit_card']['late_payment']['period'][p] = len([d for d in data if d['timespan'] <= p])
+        metadata['credit_card']['late_payment']['general']['total_count'] = len(data)
+        metadata['credit_card']['late_payment']['general']['month_count'] = len(
+            aggregate_dict_by_month(data, {'amount': ['count']}))
     return metadata
 
 
