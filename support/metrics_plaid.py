@@ -183,6 +183,63 @@ def plaid_kyc(acc, txn):
 # -------------------------------------------------------------------------- #
 #                               Metric #1 Credit                             #
 # -------------------------------------------------------------------------- #
+
+
+def plaid_credit_metrics(feedback, params, metadata, score=[]):
+    '''
+    score[list] order must be the same as showed under metrics in the cofig.json file, e.g.
+    "data": [{"minimum_requirements": {"plaid": {"scores": {"models": {"credit": {"metrics": {...}}}}}}}]
+    '''
+    try:
+        if metadata['credit_card']:
+            # read metadata
+            d = metadata['credit_card']['general']
+            acc_count = d['accounts']['total_count']
+            txn_avg_count = d['transactions']['avg_monthly_count']
+            txn_timespan = d['transactions']['timespan']
+            bal_limit = sum(d['balances']['limit'])  # shouldnt be average?
+
+            # read params
+            w = np.digitize(acc_count, params['count_zero'], right=True)
+            x = np.digitize(txn_avg_count, params['count_lively'], right=True)
+            y = np.digitize(txn_timespan, params['duration'], right=True)
+            z = np.digitize(bal_limit, params['volume_credit'], right=True)
+
+            # credit limit
+            score.append(params['activity_vol_mtx'][y][z])
+
+            # credit length
+            score.append(params['fico_medians'][y])
+
+            # credit livelihood
+            score.append(params['fico_medians'][x])
+
+            # util ratio
+            score.append(0)
+
+            # interest
+            score.append(0)
+
+            # credit mix
+            scorex = params['credit_mix_mtx'][w][x]
+
+            # update feedback
+            feedback['credit']['credit_cards'] = acc_count
+            feedback['credit']['avg_count_monthly_txn'] = round(txn_avg_count, 0)
+            feedback['credit']['credit_duration_days'] = txn_timespan
+            feedback['credit']['credit_limit'] = bal_limit
+
+        else:
+            raise Exception('no credit card')
+
+    except Exception as e:
+        score = [0]*5
+        feedback['credit']['error'] = str(e)
+
+    finally:
+        return score, feedback
+
+
 # @evaluate_function
 def credit_mix(metadata, feedback, params):
     '''
@@ -452,6 +509,73 @@ def credit_livelihood(metadata, feedback, params):
 # -------------------------------------------------------------------------- #
 
 
+def plaid_velocity_metrics(feedback, params, metadata, score=[]):
+    '''
+    score[list] order must be the same as showed under metrics in the cofig.json file, e.g.
+    "data": [{"minimum_requirements": {"plaid": {"scores": {"models": {"velocity": {"metrics": {...}}}}}}}]
+    '''
+    try:
+        if metadata['checking']:
+            # read metadata
+            d = metadata['checking']['general']
+            txn_avg_count = d['transactions']['avg_monthly_count']
+            txn_avg_value = d['transactions']['avg_monthly_value']
+
+            di = metadata['checking']['income']
+            income_avg_count = di['payroll']['avg_monthly_count']
+            income_avg_value = di['payroll']['avg_monthly_value']
+            income_avg_count = di['payroll']['avg_monthly_count']
+            income_avg_value = di['payroll']['avg_monthly_value']
+
+            de = metadata['checking']['expenses']
+            keys = list(de.keys())
+            expenses_avg_count = sum([de[k]['avg_monthly_count'] for k in keys])
+            expenses_avg_value = sum([de[k]['avg_monthly_value'] for k in keys])
+
+            # read params
+            w = np.digitize(income_avg_count, params['count_zero'], right=True)
+            x = np.digitize(income_avg_value, params['volume_deposit'], right=True)
+            y = np.digitize(expenses_avg_count, params['count_zero'], right=True)
+            z = np.digitize(expenses_avg_value, params['volume_withdraw'], right=True)
+
+            m = np.digitize(direction, params['flow_ratio'], right=True)
+            n = np.digitize(txn_avg_value, params['volume_flow'], right=True)
+            t = np.digitize(txn_avg_count, params['count_txn'], right=True)
+
+            # deposits
+            score.append(params['diversity_velo_mtx'][w][x])
+
+            # withdrawals
+            score.append(params['diversity_velo_mtx'][y][z])
+
+            # net_flow
+            score.append(params['activity_vol_mtx'][m][n])
+
+            # slope
+            score.append(0)
+
+            # txn_count
+            score.append(params['fico_medians'][t])
+
+            # update feedback
+            feedback['velocity']['deposits'] = round(income_avg_count, 0)
+            feedback['velocity']['deposits_volume'] = round(income_avg_value, 0)
+            feedback['velocity']['withdrawals'] = round(expenses_avg_count, 0)
+            feedback['velocity']['withdrawals_volume'] = round(expenses_avg_value, 0)
+            feedback['velocity']['avg_net_flow'] = round(txn_avg_value, 2)
+            feedback['velocity']['count_monthly_txn'] = round(txn_avg_count, 0)
+
+        else:
+            raise Exception('no checking')
+
+    except Exception as e:
+        score = [0]*5
+        feedback['velocity']['error'] = str(e)
+
+    finally:
+        return score, feedback
+
+
 # @evaluate_function
 def velocity_withdrawals(txn, feedback, params):
     '''
@@ -692,6 +816,15 @@ def velocity_slope(acc, txn, feedback, params):
 # -------------------------------------------------------------------------- #
 
 
+def plaid_stability_metrics(feedback, params, metadata):
+    '''
+    score[list] order must be the same as showed under metrics in the cofig.json file, e.g.
+    "data": [{"minimum_requirements": {"plaid": {"scores": {"models": {"stability": {"metrics": {...}}}}}}}]
+    '''
+    # b = [balance, run_balance]
+    return [0, 0], feedback
+
+
 # @evaluate_function
 def stability_tot_balance_now(depository, non_depository, feedback, params):
     '''
@@ -821,6 +954,15 @@ def stability_min_running_balance(acc, txn, feedback, params):
 # -------------------------------------------------------------------------- #
 #                            Metric #4 Diversity                             #
 # -------------------------------------------------------------------------- #
+
+
+def plaid_diversity_metrics(feedback, params, metadata):
+    '''
+    score[list] order must be the same as showed under metrics in the cofig.json file, e.g.
+    "data": [{"minimum_requirements": {"plaid": {"scores": {"models": {"diversity": {"metrics": {...}}}}}}}]
+    '''
+    # b = [acc_count, profile]
+    return [0, 0], feedback
 
 
 # @evaluate_function
