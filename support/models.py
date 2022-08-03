@@ -8,65 +8,44 @@ from support.helper import *
 #                                Plaid Model                                 #
 # -------------------------------------------------------------------------- #
 
+def plaid_credit_model(feedback, params, metric_weigths, metadata):
 
-def plaid_credit(acc, txn, metadata, feedback, weights, params):
-
-    limit, feedback = credit_limit(metadata, feedback, params)
-    util_ratio, feedback = credit_util_ratio(acc, txn, feedback, params)
-    interest, feedback = credit_interest(acc, txn, feedback, params)
-    length, feedback = credit_length(metadata, feedback, params)
-    livelihood, feedback = credit_livelihood(metadata, feedback, params)
-
-    a = list(weights.values())[:5]
-    b = [limit, util_ratio, interest, length, livelihood]
+    a = list(metric_weigths.values())[:5]
+    b, feedback = plaid_credit_metrics(feedback, params, metadata)
 
     score = dot_product(a, b)
 
     return score, feedback
 
 
-def plaid_velocity(acc, txn, metadata, feedback, weights, params):
+def plaid_velocity_model(feedback, params, metric_weigths, metadata):
 
-    withdrawals, feedback = velocity_withdrawals(txn, feedback, params)
-    deposits, feedback = velocity_deposits(metadata, feedback, params)
-    net_flow, feedback = velocity_month_net_flow(acc, txn, feedback, params)
-    txn_count, feedback = velocity_month_txn_count(metadata, feedback, params)
-    slope, feedback = velocity_slope(acc, txn, feedback, params)
-
-    a = list(weights.values())[5:10]
-    b = [withdrawals, deposits, net_flow, txn_count, slope]
+    a = list(metric_weigths.values())[5:10]
+    b, feedback = plaid_velocity_metrics(feedback, params, metadata)
 
     score = dot_product(a, b)
 
     return score, feedback
 
 
-def plaid_stability(acc, txn, dep, n_dep, timespan, feedback, weights, params):
+def plaid_stability_model(feedback, params, metric_weigths, metadata):
 
-    balance, feedback = stability_tot_balance_now(dep, n_dep, feedback, params)
-    feedback = stability_loan_duedate(timespan, feedback, params)
-    run_balance, feedback = stability_min_running_balance(acc, txn, feedback, params)
-
-    a = list(weights.values())[10:12]
-    b = [balance, run_balance]
+    a = list(metric_weigths.values())[10:12]
+    b, feedback = plaid_stability_metrics(feedback, params, metadata)
 
     score = dot_product(a, b)
 
     return score, feedback
 
 
-def plaid_diversity(acc, count, timespan, feedback, weights, params):
+def plaid_diversity_model(feedback, params, metric_weigths, metadata):
 
-    acc_count, feedback = diversity_acc_count(count, timespan, feedback, params)
-    profile, feedback = diversity_profile(acc, feedback, params)
-
-    a = list(weights.values())[12:]
-    b = [acc_count, profile]
+    a = list(metric_weigths.values())[12:]
+    b, feedback = plaid_diversity_metrics(feedback, params, metadata)
 
     score = dot_product(a, b)
 
     return score, feedback
-
 
 # -------------------------------------------------------------------------- #
 #                               Coinbase Model                               #
@@ -103,14 +82,10 @@ def coinbase_liquidity(acc, txn, feedback, weights, params):
 
 def coinbase_activity(acc, txn, feedback, weights, params):
 
-    credit_volume, feedback = activity_tot_volume_tot_count(
-        txn, "credit", feedback, params
-    )
-    debit_volume, feedback = activity_tot_volume_tot_count(
-        txn, "debit", feedback, params
-    )
-    credit_consistency, feedback = activity_consistency(txn, "credit", feedback, params)
-    debit_consistency, feedback = activity_consistency(txn, "debit", feedback, params)
+    credit_volume, feedback = activity_tot_volume_tot_count(txn, 'credit', feedback, params)
+    debit_volume, feedback = activity_tot_volume_tot_count(txn, 'debit', feedback, params)
+    credit_consistency, feedback = activity_consistency(txn, 'credit', feedback, params)
+    debit_consistency, feedback = activity_consistency(txn, 'debit', feedback, params)
     inception, feedback = activity_profit_since_inception(acc, txn, feedback, params)
 
     a = list(weights.values())[2:]
@@ -129,12 +104,8 @@ def coinbase_activity(acc, txn, feedback, weights, params):
 def covalent_credibility(txn, balances, portfolio, feedback, weights, params):
 
     feedback = fetch_covalent(txn, balances, portfolio, feedback)
-
     kyc, feedback = credibility_kyc(txn, balances, feedback)
-
-    inception, feedback = credibility_oldest_txn(
-        txn, feedback, params
-    )
+    inception, feedback = credibility_oldest_txn(txn, feedback, params)
 
     a = list(weights.values())[:2]
     b = [kyc, inception]
@@ -146,17 +117,9 @@ def covalent_credibility(txn, balances, portfolio, feedback, weights, params):
 
 def covalent_wealth(txn, balances, feedback, weights, params, erc_rank):
 
-    capital_now, feedback = wealth_capital_now(
-        balances, feedback, params
-    )
-
-    capital_now_adj, feedback = wealth_capital_now_adjusted(
-        balances, feedback, erc_rank, params
-    )
-
-    volume_per_txn, feedback = wealth_volume_per_txn(
-        txn, feedback, params
-    )
+    capital_now, feedback = wealth_capital_now(balances, feedback, params)
+    capital_now_adj, feedback = wealth_capital_now_adjusted(balances, feedback, erc_rank, params)
+    volume_per_txn, feedback = wealth_volume_per_txn(txn, feedback, params)
 
     a = list(weights.values())[2:5]
     b = [capital_now, capital_now_adj, volume_per_txn]
@@ -168,29 +131,11 @@ def covalent_wealth(txn, balances, feedback, weights, params, erc_rank):
 
 def covalent_traffic(txn, portfolio, feedback, weights, params, erc_rank):
 
-    credit, feedback = traffic_cred_deb(
-        txn,
-        feedback,
-        "credit",
-        params
-    )
-
-    debit, feedback = traffic_cred_deb(
-        txn,
-        feedback,
-        "debit",
-        params
-    )
-
+    credit, feedback = traffic_cred_deb(txn, feedback, 'credit', params)
+    debit, feedback = traffic_cred_deb(txn, feedback, 'debit', params)
     dust, feedback = traffic_dustiness(txn, feedback, params)
-
-    run_balance, feedback = traffic_running_balance(
-        portfolio, feedback, params, erc_rank
-    )
-
-    frequency, feedback = traffic_frequency(
-        txn, feedback, params
-    )
+    run_balance, feedback = traffic_running_balance(portfolio, feedback, params, erc_rank)
+    frequency, feedback = traffic_frequency(txn, feedback, params)
 
     a = list(weights.values())[5:10]
     b = [credit, debit, frequency, dust, run_balance]
@@ -202,24 +147,9 @@ def covalent_traffic(txn, portfolio, feedback, weights, params, erc_rank):
 
 def covalent_stamina(txn, balances, portfolio, feedback, weights, params, erc_rank):
 
-    methods, feedback = stamina_methods_count(
-        txn,
-        feedback,
-        params
-    )
-
-    coins, feedback = stamina_coins_count(
-        balances,
-        feedback,
-        params,
-        erc_rank
-    )
-
-    dexterity, feedback = stamina_dexterity(
-        portfolio,
-        feedback,
-        params
-    )
+    methods, feedback = stamina_methods_count(txn, feedback, params)
+    coins, feedback = stamina_coins_count(balances, feedback, params, erc_rank)
+    dexterity, feedback = stamina_dexterity(portfolio, feedback, params)
 
     feedback = stamina_loan_duedate(txn, feedback, params)
 
