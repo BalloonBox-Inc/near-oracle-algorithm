@@ -200,11 +200,20 @@ def plaid_credit_metrics(feedback, params, metadata, score=[]):
             txn_timespan = d['transactions']['timespan']
             bal_limit = sum(d['balances']['limit'])  # shouldnt be average?
 
+            du = metadata['credit_card']['util_ratio']
+            util_count = du['total_count']
+            util_avg = du['avg_monthly_value']
+
+            dl = metadata['credit_card']['late_payment']
+
             # read params
             w = np.digitize(acc_count, params['count_zero'], right=True)
             x = np.digitize(txn_avg_count, params['count_lively'], right=True)
             y = np.digitize(txn_timespan, params['duration'], right=True)
             z = np.digitize(bal_limit, params['volume_credit'], right=True)
+
+            m = np.digitize(util_count*30, params['duration'], right=True)
+            n = np.digitize(util_avg, params['credit_util_pct'], right=True)
 
             # credit limit
             score.append(params['activity_vol_mtx'][y][z])
@@ -216,7 +225,7 @@ def plaid_credit_metrics(feedback, params, metadata, score=[]):
             score.append(params['fico_medians'][x])
 
             # util ratio
-            score.append(0)
+            score.append(params['activity_cns_mtx'][m][n])
 
             # interest
             score.append(0)
@@ -229,6 +238,7 @@ def plaid_credit_metrics(feedback, params, metadata, score=[]):
             feedback['credit']['avg_count_monthly_txn'] = round(txn_avg_count, 0)
             feedback['credit']['credit_duration_days'] = txn_timespan
             feedback['credit']['credit_limit'] = bal_limit
+            feedback['credit']['utilization_ratio'] = round(util_avg, 2)
 
         else:
             raise Exception('no credit card')
