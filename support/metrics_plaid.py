@@ -1,8 +1,9 @@
 from support.assessment import *
+from support.helper import *
 import statistics as stt
 import numpy as np
 
-
+from icecream import ic
 import pandas as pd
 from datetime import datetime
 NOW = datetime.now().date()
@@ -161,19 +162,19 @@ def plaid_credit_metrics(feedback, params, metadata, score=[]):
             q = np.digitize(util_avg, params['credit_util_pct'], right=True)
             r = np.digitize(late_pymt_freq, params['frequency_interest'], right=True)
 
-            # credit limit
+            # 1. limit
             score.append(params['activity_vol_mtx'][y][z])
 
-            # credit length
+            # 2. length
             score.append(params['fico_medians'][y])
 
-            # credit livelihood
+            # 3. livelihood
             score.append(params['fico_medians'][x])
 
-            # util ratio
+            # 4. util ratio
             score.append(params['activity_cns_mtx'][p][q])
 
-            # interest
+            # 5. interest
             score.append(params['fico_medians'][r])
 
             # credit mix
@@ -191,10 +192,13 @@ def plaid_credit_metrics(feedback, params, metadata, score=[]):
             raise Exception('no credit card')
 
     except Exception as e:
-        score = [0]*5
         feedback['credit']['error'] = str(e)
 
     finally:
+        num, size = 5, len(score)
+        if size < num:
+            score = fill_list(score, num, size)
+        print(f'\033[36m  -> Credit:\t{score}\033[0m')
         return score, feedback
 
 
@@ -209,6 +213,7 @@ def plaid_velocity_metrics(feedback, params, metadata, score=[]):
     "data": [{"minimum_requirements": {"plaid": {"scores": {"models": {"velocity": {"metrics": {...}}}}}}}]
     '''
     try:
+        # ic(metadata)
         if metadata['checking']:
             # read metadata
             d = metadata['checking']['general']
@@ -223,32 +228,36 @@ def plaid_velocity_metrics(feedback, params, metadata, score=[]):
             expenses_avg_count = sum([de[k]['avg_monthly_count'] for k in keys])
             expenses_avg_value = sum([de[k]['avg_monthly_value'] for k in keys])
 
+            mag1 = stt.mean([abs(n) for n in [income_avg_value, expenses_avg_value]])
+            mag2 = 1
+            dir = 10  # count pos months / count neg months
+
             # read params
             w = np.digitize(income_avg_count, params['count_zero'], right=True)
             x = np.digitize(income_avg_value, params['volume_deposit'], right=True)
             y = np.digitize(expenses_avg_count, params['count_zero'], right=True)
             z = np.digitize(expenses_avg_value, params['volume_withdraw'], right=True)
 
-            mag = stt.mean([abs(n) for n in [income_avg_value, expenses_avg_value]])
-            dir = 10  # count pos months / count neg months
-            m = np.digitize(dir, params['flow_ratio'], right=True)
-            n = np.digitize(mag, params['volume_flow'], right=True)
+            p = np.digitize(dir, params['flow_ratio'], right=True)
+            q = np.digitize(mag1, params['volume_flow'], right=True)
+            r = 1
+            s = 1
 
             t = np.digitize(txn_avg_count, params['count_txn'], right=True)
 
-            # deposits
+            # 1. deposits
             score.append(params['diversity_velo_mtx'][w][x])
 
-            # withdrawals
+            # 2. withdrawals
             score.append(params['diversity_velo_mtx'][y][z])
 
-            # net_flow
-            score.append(params['activity_vol_mtx'][m][n])
+            # 3. net_flow
+            score.append(params['activity_vol_mtx'][p][q])
 
-            # slope
+            # 4. slope
             score.append(0)
 
-            # txn_count
+            # 5. txn_count
             score.append(params['fico_medians'][t])
 
             # update feedback
@@ -256,192 +265,21 @@ def plaid_velocity_metrics(feedback, params, metadata, score=[]):
             feedback['velocity']['deposits_volume'] = round(income_avg_value, 0)
             feedback['velocity']['withdrawals'] = round(expenses_avg_count, 0)
             feedback['velocity']['withdrawals_volume'] = round(expenses_avg_value, 0)
-            feedback['velocity']['avg_net_flow'] = round(mag, 2)
+            feedback['velocity']['avg_net_flow'] = round(mag1, 2)
+            feedback['velocity']['monthly_flow'] = round(mag2, 2)
             feedback['velocity']['count_monthly_txn'] = round(txn_avg_count, 0)
 
         else:
             raise Exception('no checking account')
 
     except Exception as e:
-        score = [0]*5
         feedback['velocity']['error'] = str(e)
 
     finally:
-        return score, feedback
-
-
-# @evaluate_function
-def velocity_withdrawals(txn, feedback, params):
-    '''
-    Description:
-        returns score based on count and volumne of monthly automated withdrawals
-
-    Parameters:
-        txn (list): Plaid 'Transactions' product
-        feedback (dict): score feedback
-        params (dict): model parameters, i.e. coefficients
-
-    Returns:
-        score (float): score associated with reccurring monthly withdrawals
-        feedback (dict): feedback describing the score
-    '''
-    try:
-        withdraw = [
-            ['Service', 'Subscription'],
-            ['Service', 'Financial', 'Loans and Mortgages'],
-            ['Service', 'Insurance'],
-            ['Payment', 'Rent'],
-        ]
-        dates = list()
-        amounts = list()
-
-        for t in txn:
-            if t['category'] in withdraw and t['amount'] > 15:
-                dates.append(t['date'])
-                amounts.append(abs(t['amount']))
-
-        df = pd.DataFrame(data={'amounts': amounts}, index=pd.DatetimeIndex(dates))
-
-        if len(df.index) > 0:
-            how_many = np.mean(
-                df.groupby(pd.Grouper(freq='M')).count().iloc[:, 0].tolist()
-            )
-            if how_many > 0:
-                volume = np.mean(
-                    df.groupby(pd.Grouper(freq='M')).sum().iloc[:, 0].tolist()
-                )
-
-                m = np.digitize(how_many, params['count_zero'], right=True)
-                n = np.digitize(volume, params['volume_withdraw'], right=True)
-                score = params['diversity_velo_mtx'][m][n]
-
-                feedback['velocity']['withdrawals'] = round(how_many, 0)
-                feedback['velocity']['withdrawals_volume'] = round(volume, 0)
-
-        else:
-            raise Exception('no withdrawals')
-
-    except Exception as e:
-        score = 0
-        feedback['velocity']['error'] = str(e)
-
-    finally:
-        return score, feedback
-
-
-# @evaluate_function
-def velocity_deposits(metadata, feedback, params):
-    '''
-    Description:
-        returns score based on count and volumne of monthly automated deposits
-
-    Parameters:
-        metadata (dict): Plaid accounts and transactions overview
-        feedback (dict): score feedback
-        params (dict): model parameters, i.e. coefficients
-
-    Returns:
-        score (float): score associated with direct deposits
-        feedback (dict): feedback describing the score
-    '''
-    try:
-        if metadata['checking']:
-            count = metadata['checking']['income']['payroll']['avg_monthly_count']
-            volume = metadata['checking']['income']['payroll']['avg_monthly_value']
-
-            m = np.digitize(count, params['count_zero'], right=True)
-            n = np.digitize(volume, params['volume_deposit'], right=True)
-            score = params['diversity_velo_mtx'][m][n]
-
-            feedback['velocity']['deposits'] = round(count, 0)
-            feedback['velocity']['deposits_volume'] = round(volume, 0)
-
-        else:
-            raise Exception('no deposits')
-
-    except Exception as e:
-        score = 0
-        feedback['velocity']['error'] = str(e)
-
-    finally:
-        return score, feedback
-
-
-# @evaluate_function
-def velocity_month_net_flow(acc, txn, feedback, params):
-    '''
-    Description:
-        returns score for monthly net flow
-
-    Parameters:
-        acc (list): Plaid 'Accounts' product
-        txn (list): Plaid 'Transactions' product
-        feedback (dict): score feedback
-        params (dict): model parameters, i.e. coefficients
-
-    Returns:
-        score (float): score associated with monthly new flow
-        feedback (dict): feedback describing the score
-    '''
-    try:
-        flow = flows(acc, txn, 12, feedback)
-
-        # Calculate magnitude of flow (how much is flowing monthly?)
-        cum_flow = [abs(x) for x in flow['amounts'].tolist()]
-        magnitude = np.mean(cum_flow)
-
-        # Calculate direction of flow (is money coming in or going out?)
-        neg = list(filter(lambda x: (x < 0), flow['amounts'].tolist()))
-        pos = list(filter(lambda x: (x >= 0), flow['amounts'].tolist()))
-
-        if neg:
-            direction = len(pos) / len(neg)  # output in range [0, ...)
-        else:
-            direction = 10  # 10 is an arbitrality chosen large positive integer
-
-        # Calculate score
-        m = np.digitize(direction, params['flow_ratio'], right=True)
-        n = np.digitize(magnitude, params['volume_flow'], right=True)
-        score = params['activity_vol_mtx'][m][n]
-
-        feedback['velocity']['avg_net_flow'] = round(magnitude, 2)
-
-    except Exception as e:
-        score = 0
-        feedback['velocity']['error'] = str(e)
-
-    finally:
-        return score, feedback
-
-
-# @evaluate_function
-def velocity_month_txn_count(metadata, feedback, params):
-    '''
-    Description:
-        returns score based on count of mounthly transactions
-
-    Parameters:
-        metadata (dict): Plaid accounts and transactions overview
-        feedback (dict): score feedback
-        params (dict): model parameters, i.e. coefficients
-
-    Returns:
-        score (float): the larger the monthly count the larger the score
-        feedback (dict): feedback describing the score
-    '''
-    try:
-        if metadata['checking']:
-            count = metadata['checking']['general']['transactions']['avg_monthly_count']
-
-        score = params['fico_medians'][np.digitize(count, params['count_txn'], right=True)]
-
-        feedback['velocity']['count_monthly_txn'] = round(count, 0)
-
-    except Exception as e:
-        score = 0
-        feedback['velocity']['error'] = str(e)
-
-    finally:
+        num, size = 5, len(score)
+        if size < num:
+            score = fill_list(score, num, size)
+        print(f'\033[36m  -> Velocity:\t{score}\033[0m')
         return score, feedback
 
 
@@ -508,82 +346,42 @@ def velocity_slope(acc, txn, feedback, params):
 # -------------------------------------------------------------------------- #
 
 
-def plaid_stability_metrics(feedback, params, metadata):
+def plaid_stability_metrics(feedback, params, metadata, score=[]):
     '''
     score[list] order must be the same as showed under metrics in the cofig.json file, e.g.
     "data": [{"minimum_requirements": {"plaid": {"scores": {"models": {"stability": {"metrics": {...}}}}}}}]
     '''
-    # b = [balance, run_balance]
-    return [0, 0], feedback
-
-
-# @evaluate_function
-def stability_tot_balance_now(depository, non_depository, feedback, params):
-    '''
-    Description:
-        A score based on total balance now across ALL accounts owned by the user
-
-    Parameters:
-        depository (list): Plaid 'Accounts' product - depository accounts only
-        non_depository (list): Plaid 'Accounts' product - except depository accounts
-        feedback (dict): score feedback
-        params (dict): model parameters, i.e. coefficients
-
-    Returns:
-        score (float): cumulative current balance
-        feedback (dict): score feedback
-    '''
     try:
-        x = sum([int(d['balances']['current']) if d['balances']['current'] else 0 for d in depository])
-        y = sum([int(d['balances']['available']) if d['balances']['available'] else 0 for d in non_depository])
-        balance = x + y
+        if not score:
+            # read metadata
+            keys = list(metadata.keys())
+            bal_total = [metadata[k]['general']['balances']['current'] for k in keys if metadata[k]['general']]
+            bal_total = sum(flatten_list(bal_total))
 
-        if balance > 0:
-            score = params['fico_medians'][
-                np.digitize(balance, params['volume_balance'], right=True)
-            ]
-            feedback['stability']['cumulative_current_balance'] = balance
-            stability_tot_balance_now.balance = balance
+            # read params
+            w = np.digitize(bal_total, params['volume_balance'], right=True)
+
+            # 1. balance
+            score.append(params['fico_medians'][w])
+
+            # 2. running balance
+            score.append(0)
+
+            # update feedback
+            feedback['stability']['cumulative_current_balance'] = bal_total
 
         else:
-            raise Exception('no balance')
+            raise Exception('no ...')
 
     except Exception as e:
-        score = 0
         feedback['stability']['error'] = str(e)
 
     finally:
+        num, size = 2, len(score)
+        if size < num:
+            score = fill_list(score, num, size)
+        print(f'\033[36m  -> Stability:\t{score}\033[0m')
         return score, feedback
-
-
-# @evaluate_function
-def stability_loan_duedate(timespan, feedback, params):
-    '''
-    Description:
-        returns how many months it'll take the user to pay back their loan
-
-    Parameters:
-        timespan (int): timespan since first transaction
-        feedback (dict): score feedback
-        params (dict): model parameters, i.e. coefficients
-
-    Returns:
-        feedback (dict): score feedback with a new key-value pair
-        'loan_duedate':float (# of months in range [3,6])
-    '''
-
-    try:
-        # Loan duedate is equal to the month of txn history there are
-        due = np.digitize(int(timespan / 30), params['due_date'], right=True)
-        how_many_months = np.append(params['due_date'], 6)
-
-        feedback['stability']['loan_duedate'] = how_many_months[due]
-
-    except Exception as e:
-        feedback['stability']['error'] = str(e)
-
-    finally:
-        return feedback
 
 
 # @evaluate_function
@@ -648,115 +446,54 @@ def stability_min_running_balance(acc, txn, feedback, params):
 # -------------------------------------------------------------------------- #
 
 
-def plaid_diversity_metrics(feedback, params, metadata):
+def plaid_diversity_metrics(feedback, params, metadata, score=[]):
     '''
     score[list] order must be the same as showed under metrics in the cofig.json file, e.g.
     "data": [{"minimum_requirements": {"plaid": {"scores": {"models": {"diversity": {"metrics": {...}}}}}}}]
     '''
     try:
-        if metadata['savings'] or metadata['checking']['investments']:
-            # read metadata
-            keys = list(metadata.keys())
-            acc_count = sum([metadata[k]['general']['accounts']['total_count'] for k in keys if metadata[k]['general']])
-            txn_timespan = max([metadata[k]['general']['transactions']['timespan']
-                               for k in keys if metadata[k]['general']])
+        # read metadata
+        keys = list(metadata.keys())
+        acc_count = sum([metadata[k]['general']['accounts']['total_count'] for k in keys if metadata[k]['general']])
+        txn_timespan = max([metadata[k]['general']['transactions']['timespan']
+                            for k in keys if metadata[k]['general']])
+        txn_mtimespan = int(txn_timespan / 30)
 
-            # read params
-            w = np.digitize(acc_count, [i + 2 for i in params['count_zero']], right=False)
-            x = np.digitize(txn_timespan, params['duration'], right=True)
+        bal_savings, bal_invest = 0, 0
 
-            # account
-            score.append(params['diversity_velo_mtx'][w][x])
+        if metadata['savings']['general']:
+            bal_savings = sum(metadata['savings']['general']['balances']['current'])
 
-            # profile
+        if metadata['checking']['investments']['earnings']:
+            bal_invest = metadata['checking']['investments']['earnings']['total_value']
 
-            # update feedback
-            feedback['diversity']['bank_accounts'] = acc_count
+        balance = bal_savings + bal_invest
 
-        else:
+        # read params
+        w = np.digitize(acc_count, [i + 2 for i in params['count_zero']], right=False)
+        x = np.digitize(txn_timespan, params['duration'], right=True)
+        y = np.digitize(txn_mtimespan, params['due_date'], right=True)
+        z = np.digitize(balance, params['volume_invest'], right=True)
+
+        # account
+        score.append(params['diversity_velo_mtx'][w][x])
+
+        # profile
+        score.append(params['fico_medians'][z])
+
+        # update feedback
+        feedback['diversity']['bank_accounts'] = acc_count
+        feedback['stability']['loan_duedate'] = np.append(params['due_date'], 6)[y]
+
+        if not balance:
             raise Exception('no savings or investment accounts')
 
     except Exception as e:
-        score = [0]*2
         feedback['diversity']['error'] = str(e)
 
     finally:
-        return score, feedback
-
-
-# @evaluate_function
-def diversity_acc_count(count, timespan, feedback, params):
-    '''
-    Description:
-        A score based on count of accounts owned by the user and account duration
-
-    Parameters:
-        count (int): active accounts count
-        timespan (int): timespan since first transaction
-        feedback (dict): score feedback
-        params (dict): model parameters, i.e. coefficients
-
-    Returns:
-        score (float): score for accounts count
-        feedback (dict): score feedback
-    '''
-
-    try:
-        m = np.digitize(count, [i + 2 for i in params['count_zero']], right=False)
-        n = np.digitize(timespan, params['duration'], right=True)
-        score = params['diversity_velo_mtx'][m][n]
-
-        feedback['diversity']['bank_accounts'] = count
-
-    except Exception as e:
-        score = 0
-        feedback['diversity']['error'] = str(e)
-
-    finally:
-        return score, feedback
-
-
-# @evaluate_function
-def diversity_profile(acc, feedback, params):
-    '''
-    Description:
-        A score for number of saving and investment accounts owned
-
-    Parameters:
-        acc (list): Plaid 'Accounts' product
-        feedback (dict): score feedback
-        params (dict): model parameters, i.e. coefficients
-
-    Returns:
-        score (float): points scored for accounts owned
-        feedback (dict): score feedback
-    '''
-
-    try:
-        acc = [x for x in acc if x['type'] == 'loan' or int(
-            x['balances']['current'] or 0) != 0]  # exclude $0 balance accounts
-
-        balance = 0
-        for a in acc:
-            type = '{}_{}'.format(a['type'], str(a['subtype']))
-
-            # Consider savings, hda, cd, money mart, paypal, prepaid, cash management, edt accounts
-            if (type.split('_')[0] == 'depository') & (type.split('_')[1] != 'checking'):
-                balance += int(a['balances']['current'] or 0)
-
-            # Consider ANY type of investment account
-            if type.split('_')[0] == 'investment':
-                balance += int(a['balances']['current'] or 0)
-
-        if balance != 0:
-            score = params['fico_medians'][np.digitize(balance, params['volume_invest'], right=True)]
-
-        else:
-            raise Exception('no investing nor savings accounts')
-
-    except Exception as e:
-        score = 0
-        feedback['diversity']['error'] = str(e)
-
-    finally:
+        num, size = 2, len(score)
+        if size < num:
+            score = fill_list(score, num, size)
+        print(f'\033[36m  -> Diversity:\t{score}\033[0m')
         return score, feedback
