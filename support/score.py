@@ -1,10 +1,9 @@
 from support.assessment import *
 from support.models import *
 from support.helper import *
-from icecream import ic
 
 
-@evaluate_function
+# @evaluate_function
 def plaid_score(data, score_range, feedback, model_weights, metric_weigths, params):
 
     # format params
@@ -62,7 +61,7 @@ def plaid_score(data, score_range, feedback, model_weights, metric_weigths, para
         metadata = general(metadata, savings, 'savings')
         metadata = cash_flow(metadata, savings, 'category', 'interest')
         metadata = earnings(metadata, savings, 'sub_category', 'interest earned')
-    ic(metadata)
+
     # create model
     credit, feedback = plaid_credit_model(feedback, params, metric_weigths, metadata)
     velocity, feedback = plaid_velocity_model(feedback, params, metric_weigths, metadata)
