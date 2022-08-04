@@ -1,74 +1,16 @@
 from support.assessment import *
-from datetime import timedelta
-from datetime import datetime
-import statistics as st
-import pandas as pd
+import statistics as stt
 import numpy as np
 
+
+import pandas as pd
+from datetime import datetime
 NOW = datetime.now().date()
 
 
 # -------------------------------------------------------------------------- #
 #                               Helper Functions                             #
 # -------------------------------------------------------------------------- #
-
-
-def dynamic_select(acc, txn, acc_name, feedback):
-    '''
-    Description:
-        dynamically pick the best credit account,
-        i.e. the account that performs best in 2 out of these 3 categories:
-        highest credit limit / largest txn count / longest txn history
-
-    Parameters:
-        acc (list): Plaid 'Accounts' product
-        txn (list): Plaid 'Transactions' product
-        acc_name (str): acccepts 'credit' or 'checking'
-        feedback (dict): feedback describing the score
-
-    Returns:
-        best (str or dict): Plaid account_id of best credit account
-    '''
-    try:
-        info = list()
-        matrix = []
-        for a in acc:
-            if (acc_name in '{1}{0}{2}'.format('_', str(a['type']), str(a['subtype'])).lower()):
-
-                id = a['account_id']
-
-                type = '{1}{0}{2}{0}{3}'.format('_', str(a['type']), str(a['subtype']), str(a['official_name'])).lower()
-
-                limit = int(a['balances']['limit'] or 0)
-                transat = [t for t in txn if t['account_id'] == id]
-                txn_count = len(transat)
-
-                if len(transat) != 0:
-                    length = (NOW - transat[-1]['date']).days
-                else:
-                    length = 0
-                info.append([id, type, limit, txn_count, length])
-                matrix.append([limit, txn_count, length])
-
-        if len(info) != 0:
-            # Build a matrix where each column is a different account.
-            # Choose the one performing best among the 3 categories
-            m = np.array(matrix).T
-            m[0] = m[0] * 1  # assign 1pt to credit limit
-            m[1] = m[1] * 10  # assign 10pt to txn count
-            m[2] = m[2] * 3  # assign 3pt to account length
-            cols = [sum(m[:, i]) for i in range(m.shape[1])]
-            index_best_acc = cols.index(max(cols))
-            best = {'id': info[index_best_acc][0], 'limit': info[index_best_acc][2]}
-        else:
-            best = {'id': 'inexistent', 'limit': 0}
-
-    except Exception as e:
-        feedback['fetch'][dynamic_select.__name__] = str(e)
-        best = {'id': 'inexistent', 'limit': 0}
-
-    finally:
-        return best
 
 
 def flows(acc, txn, how_many_months, feedback):
@@ -235,7 +177,7 @@ def plaid_credit_metrics(feedback, params, metadata, score=[]):
             score.append(params['fico_medians'][r])
 
             # credit mix
-            scorex = params['credit_mix_mtx'][w][y]
+            scorex = params['credit_mix_mtx'][w][y]  # why not using it?
 
             # update feedback
             feedback['credit']['credit_cards'] = acc_count
@@ -287,7 +229,7 @@ def plaid_velocity_metrics(feedback, params, metadata, score=[]):
             y = np.digitize(expenses_avg_count, params['count_zero'], right=True)
             z = np.digitize(expenses_avg_value, params['volume_withdraw'], right=True)
 
-            mag = st.mean([abs(n) for n in [income_avg_value, expenses_avg_value]])
+            mag = stt.mean([abs(n) for n in [income_avg_value, expenses_avg_value]])
             dir = 10  # count pos months / count neg months
             m = np.digitize(dir, params['flow_ratio'], right=True)
             n = np.digitize(mag, params['volume_flow'], right=True)
