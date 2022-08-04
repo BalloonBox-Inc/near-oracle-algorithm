@@ -15,6 +15,10 @@ def fill_list(lst, n, s):
     return lst
 
 
+def flatten_list(lst):
+    return [item for sublist in lst for item in sublist]
+
+
 def flatten_dict(d):
     return nested_to_record(d, sep='_')
 
