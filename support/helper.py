@@ -9,6 +9,12 @@ import numpy as np
 NOW = datetime.now().date()
 
 
+def fill_list(lst, n, s):
+    temp = [0]*(n-s)
+    lst.extend(temp)
+    return lst
+
+
 def flatten_dict(d):
     return nested_to_record(d, sep='_')
 
