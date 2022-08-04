@@ -235,7 +235,7 @@ def plaid_credit_metrics(feedback, params, metadata, score=[]):
             score.append(params['fico_medians'][r])
 
             # credit mix
-            scorex = params['credit_mix_mtx'][w][x]
+            scorex = params['credit_mix_mtx'][w][y]
 
             # update feedback
             feedback['credit']['credit_cards'] = acc_count
