@@ -285,24 +285,30 @@ def investments(metadata, lst, key, value, k1='checking', k2='investments', k3='
     if data:
         cash_in = [d for d in data if d['amount'] < 0]
         cash_out = [d for d in data if d['amount'] > 0]
-        k3i, d = 'deposits', 0  # FROM checking INTO external investment account
-        k3o, w = 'withdrawals', 0  # FROM external investment account INTO checking
+        k3i = 'deposits'  # FROM checking INTO external investment account
+        k3o = 'withdrawals'  # FROM external investment account INTO checking
+        dm, dt, wm, wt = 0, 0, 0, 0
         if cash_in:
             df = aggregate_dict_by_month(cash_in, {'amount': ['count', 'sum']})
             metadata[k1][k2][k3i]['avg_monthly_count'] = df[('amount', 'count')].mean()
             metadata[k1][k2][k3i]['avg_monthly_value'] = df[('amount', 'sum')].mean()
+            metadata[k1][k2][k3i]['total_value'] = df[('amount', 'sum')].sum()
             metadata[k1][k2][k3i]['last_event_timespan'] = abs((NOW - cash_in[-1]['date']).days)
             metadata[k1][k2][k3i]['last_montly_event_value'] = df[('amount', 'sum')].values[-1]
-            d = metadata[k1][k2][k3i]['avg_monthly_value']
+            dm = metadata[k1][k2][k3i]['avg_monthly_value']
+            dt = metadata[k1][k2][k3i]['total_value']
         if cash_out:
             df = aggregate_dict_by_month(cash_out, {'amount': ['count', 'sum']})
             metadata[k1][k2][k3o]['avg_monthly_count'] = df[('amount', 'count')].mean()
             metadata[k1][k2][k3o]['avg_monthly_value'] = df[('amount', 'sum')].mean()
+            metadata[k1][k2][k3o]['total_value'] = df[('amount', 'sum')].sum()
             metadata[k1][k2][k3o]['last_event_timespan'] = abs((NOW - cash_out[-1]['date']).days)
             metadata[k1][k2][k3o]['last_montly_event_value'] = df[('amount', 'sum')].values[-1]
-            w = metadata[k1][k2][k3o]['avg_monthly_value']
+            wm = metadata[k1][k2][k3o]['avg_monthly_value']
+            wt = metadata[k1][k2][k3o]['total_value']
 
-        metadata[k1][k2][k3]['avg_monthly_value'] = d + w
+        metadata[k1][k2][k3]['avg_monthly_value'] = dm + wm
+        metadata[k1][k2][k3]['total_value'] = dt + wt
     return metadata
 
 
