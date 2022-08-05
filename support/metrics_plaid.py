@@ -3,100 +3,6 @@ from support.helper import *
 import statistics as stt
 import numpy as np
 
-from icecream import ic
-import pandas as pd
-from datetime import datetime
-NOW = datetime.now().date()
-
-
-# -------------------------------------------------------------------------- #
-#                               Helper Functions                             #
-# -------------------------------------------------------------------------- #
-
-
-def flows(acc, txn, how_many_months, feedback):
-    '''
-    Description:
-        returns monthly net flow
-
-    Parameters:
-        acc (list): Plaid 'Accounts' product
-        txn (list): Plaid 'Transactions' product
-        how_many_month (float): how many months of transaction history are you considering?
-        feedback (dict): feedback describing the score
-
-    Returns:
-        flow (df): pandas dataframe with amounts for net monthly flow and datetime index
-    '''
-    try:
-        dates = list()
-        amounts = list()
-        deposit_acc = list()
-
-        # Keep only deposit->checking accounts
-        for a in acc:
-            type = '{1}{0}{2}'.format('_', str(a['type']), str(a['subtype'])).lower()
-            if type == 'depository_checking':
-                deposit_acc.append(a['account_id'])
-
-        # Keep only txn in deposit->checking accounts
-        transat = [t for t in txn if t['account_id'] in deposit_acc]
-
-        # Keep only income and expense transactions
-        for t in transat:
-            if not t['category']:
-                pass
-            else:
-                category = t['category']
-
-            # exclude micro txn and exclude internal transfers
-            if abs(t['amount']) > 5 and 'internal account transfer' not in category:
-                dates.append(t['date'])
-                amounts.append(t['amount'])
-        df = pd.DataFrame(data={'amounts': amounts}, index=pd.DatetimeIndex(dates))
-
-        # Bin by month
-        flow = df.groupby(pd.Grouper(freq='M')).sum()
-
-        # Exclude current month
-        if flow.iloc[-1, ].name.strftime('%Y-%m') == datetime.today().date().strftime('%Y-%m'):
-            flow = flow[:-1]
-
-        # Keep only past X months. If longer, then crop
-        flow.reset_index(drop=True, inplace=True)
-        if how_many_months - 1 in flow.index:
-            flow = flow[-(how_many_months):]
-
-        return flow
-
-    except Exception as e:
-        feedback['fetch'][flows.__name__] = str(e)
-
-
-def balance_now_checking_only(acc, feedback):
-    '''
-    Description:
-        returns total balance available now in the user's checking accounts
-
-    Parameters:
-        acc (list): Plaid 'Accounts' product
-        feedback (dict): feedback describing the score
-
-    Returns:
-        balance (float): cumulative current balance in checking accounts
-    '''
-    try:
-        balance = 0
-        for a in acc:
-            type = '{1}{0}{2}'.format('_', str(a['type']), str(a['subtype'])).lower()
-            if type == 'depository_checking':
-                balance += int(a['balances']['current'] or 0)
-
-        return balance
-
-    except Exception as e:
-        feedback['fetch'][balance_now_checking_only.__name__] = str(e)
-
 
 def plaid_kyc(acc, txn):
     '''
@@ -115,7 +21,9 @@ def plaid_kyc(acc, txn):
         # user is verified iff acc and txn data exist,
         # iff the account has been active for > 90 days
         # iff their cumulative balance across all account is > $500
-        if txn and acc and (NOW - txn[-1]['date']).days and sum([a['balances']['current'] for a in acc if a['balances']['current']]):
+        from datetime import datetime
+        now = datetime.now().date()
+        if txn and acc and (now - txn[-1]['date']).days and sum([a['balances']['current'] for a in acc if a['balances']['current']]):
             return True
         else:
             return False
@@ -129,11 +37,12 @@ def plaid_kyc(acc, txn):
 # -------------------------------------------------------------------------- #
 
 
-def plaid_credit_metrics(feedback, params, metadata, score=[]):
+def plaid_credit_metrics(feedback, params, metadata):
     '''
     score[list] order must be the same as showed under metrics in the cofig.json file, e.g.
     "data": [{"minimum_requirements": {"plaid": {"scores": {"models": {"credit": {"metrics": {...}}}}}}}]
     '''
+    score = []
     try:
         if metadata['credit_card']:
             # read metadata
@@ -207,13 +116,13 @@ def plaid_credit_metrics(feedback, params, metadata, score=[]):
 # -------------------------------------------------------------------------- #
 
 
-def plaid_velocity_metrics(feedback, params, metadata, score=[]):
+def plaid_velocity_metrics(feedback, params, metadata):
     '''
     score[list] order must be the same as showed under metrics in the cofig.json file, e.g.
     "data": [{"minimum_requirements": {"plaid": {"scores": {"models": {"velocity": {"metrics": {...}}}}}}}]
     '''
+    score = []
     try:
-        # ic(metadata)
         if metadata['checking']:
             # read metadata
             d = metadata['checking']['general']
@@ -300,7 +209,7 @@ def velocity_slope(acc, txn, feedback, params):
         feedback (dict): feedback describing the score
     '''
     try:
-        flow = flows(acc, txn, 24, feedback)
+        flow = 'dataframe checking sum per month'
 
         # If you have > 10 data points OR all net flows are positive, then perform linear regression
         if (
@@ -346,29 +255,40 @@ def velocity_slope(acc, txn, feedback, params):
 # -------------------------------------------------------------------------- #
 
 
-def plaid_stability_metrics(feedback, params, metadata, score=[]):
+def plaid_stability_metrics(feedback, params, metadata):
     '''
     score[list] order must be the same as showed under metrics in the cofig.json file, e.g.
     "data": [{"minimum_requirements": {"plaid": {"scores": {"models": {"stability": {"metrics": {...}}}}}}}]
     '''
+    score = []
     try:
         if not score:
             # read metadata
             keys = list(metadata.keys())
             bal_total = [metadata[k]['general']['balances']['current'] for k in keys if metadata[k]['general']]
             bal_total = sum(flatten_list(bal_total))
+            txn_timespan = metadata['checking']['general']['transactions']['timespan']
+            run_balance = metadata['checking']['general']['balances']['running_balance']
+            run_balance_overdraft = len([n for n in run_balance if n < 0])
+            run_bal_count = len(run_balance)
+            run_bal_weights = np.linspace(0.01, 1, run_bal_count).tolist()
+            run_bal_volume = sum([x * w for x, w in zip(run_balance, reversed(run_bal_weights))]) / sum(run_bal_weights)
 
             # read params
             w = np.digitize(bal_total, params['volume_balance'], right=True)
+            x = np.digitize(txn_timespan, params['duration'], right=True)
+            y = np.digitize(run_bal_volume, params['volume_min'], right=True)
 
             # 1. balance
             score.append(params['fico_medians'][w])
 
             # 2. running balance
-            score.append(0)
+            score.append(round(params['activity_cns_mtx'][x][y] - 0.025 * run_balance_overdraft, 2))
 
             # update feedback
             feedback['stability']['cumulative_current_balance'] = bal_total
+            feedback['stability']['min_running_balance'] = round(run_bal_volume, 2)
+            feedback['stability']['min_running_timeframe'] = txn_timespan
 
         else:
             raise Exception('no ...')
@@ -384,73 +304,17 @@ def plaid_stability_metrics(feedback, params, metadata, score=[]):
         return score, feedback
 
 
-# @evaluate_function
-def stability_min_running_balance(acc, txn, feedback, params):
-    '''
-    Description:
-        A score based on the average minimum balance maintained for 12 months
-
-    Parameters:
-        acc (list): Plaid 'Accounts' product
-        txn (list): Plaid 'Transactions' product
-        feedback (dict): score feedback
-        params (dict): model parameters, i.e. coefficients
-
-    Returns:
-        score (float): volume of minimum balance and duration
-        feedback (dict): score feedback
-    '''
-
-    try:
-        # Calculate net flow each month for past 12 months i.e, |income-expenses|
-        nets = flows(acc, txn, 12, feedback)['amounts'].tolist()
-
-        # Calculate total current balance now
-        balance = balance_now_checking_only(acc, feedback)
-
-        # Subtract net flow from balancenow to calculate the running balance for the past 12 months
-        running_balances = [balance + n for n in reversed(nets)]
-
-        # Calculate volume using a weighted average
-        weights = np.linspace(
-            0.01, 1, len(running_balances)
-        ).tolist()  # define your weights
-        volume = sum(
-            [x * w for x, w in zip(running_balances, reversed(weights))]
-        ) / sum(weights)
-        length = len(running_balances) * 30
-
-        # Compute the score
-        m = np.digitize(length, params['duration'], right=True)
-        n = np.digitize(volume, params['volume_min'], right=True)
-        # add 0.025 score penalty for each overdrafts
-        score = round(
-            params['activity_cns_mtx'][m][n]
-            - 0.025 * len(list(filter(lambda x: (x < 0), running_balances))),
-            2,
-        )
-
-        feedback['stability']['min_running_balance'] = round(volume, 2)
-        feedback['stability']['min_running_timeframe'] = length
-
-    except Exception as e:
-        score = 0
-        feedback['stability']['error'] = str(e)
-
-    finally:
-        return score, feedback
-
-
 # -------------------------------------------------------------------------- #
 #                            Metric #4 Diversity                             #
 # -------------------------------------------------------------------------- #
 
 
-def plaid_diversity_metrics(feedback, params, metadata, score=[]):
+def plaid_diversity_metrics(feedback, params, metadata):
     '''
     score[list] order must be the same as showed under metrics in the cofig.json file, e.g.
     "data": [{"minimum_requirements": {"plaid": {"scores": {"models": {"diversity": {"metrics": {...}}}}}}}]
     '''
+    score = []
     try:
         # read metadata
         keys = list(metadata.keys())
