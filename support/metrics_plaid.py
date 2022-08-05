@@ -22,7 +22,7 @@ def plaid_kyc(acc, txn):
         # iff the account has been active for > 90 days
         # iff their cumulative balance across all account is > $500
         from datetime import datetime
-        now = datetime.now().date()
+        now = datetime.now().date()  # remove it later, fetch from metadata
         if txn and acc and (now - txn[-1]['date']).days and sum([a['balances']['current'] for a in acc if a['balances']['current']]):
             return True
         else:
@@ -262,36 +262,32 @@ def plaid_stability_metrics(feedback, params, metadata):
     '''
     score = []
     try:
-        if not score:
-            # read metadata
-            keys = list(metadata.keys())
-            bal_total = [metadata[k]['general']['balances']['current'] for k in keys if metadata[k]['general']]
-            bal_total = sum(flatten_list(bal_total))
-            txn_timespan = metadata['checking']['general']['transactions']['timespan']
-            run_balance = metadata['checking']['general']['balances']['running_balance']
-            run_balance_overdraft = len([n for n in run_balance if n < 0])
-            run_bal_count = len(run_balance)
-            run_bal_weights = np.linspace(0.01, 1, run_bal_count).tolist()
-            run_bal_volume = sum([x * w for x, w in zip(run_balance, reversed(run_bal_weights))]) / sum(run_bal_weights)
+        # read metadata
+        keys = list(metadata.keys())
+        bal_total = [metadata[k]['general']['balances']['current'] for k in keys if metadata[k]['general']]
+        bal_total = sum(flatten_list(bal_total))
+        txn_timespan = metadata['checking']['general']['transactions']['timespan']
+        run_balance = metadata['checking']['general']['balances']['running_balance']
+        run_balance_overdraft = len([n for n in run_balance if n < 0])
+        run_bal_count = len(run_balance)
+        run_bal_weights = np.linspace(0.01, 1, run_bal_count).tolist()
+        run_bal_volume = sum([x * w for x, w in zip(run_balance, reversed(run_bal_weights))]) / sum(run_bal_weights)
 
-            # read params
-            w = np.digitize(bal_total, params['volume_balance'], right=True)
-            x = np.digitize(txn_timespan, params['duration'], right=True)
-            y = np.digitize(run_bal_volume, params['volume_min'], right=True)
+        # read params
+        w = np.digitize(bal_total, params['volume_balance'], right=True)
+        x = np.digitize(txn_timespan, params['duration'], right=True)
+        y = np.digitize(run_bal_volume, params['volume_min'], right=True)
 
-            # 1. balance
-            score.append(params['fico_medians'][w])
+        # 1. balance
+        score.append(params['fico_medians'][w])
 
-            # 2. running balance
-            score.append(round(params['activity_cns_mtx'][x][y] - 0.025 * run_balance_overdraft, 2))
+        # 2. running balance
+        score.append(round(params['activity_cns_mtx'][x][y] - 0.025 * run_balance_overdraft, 2))
 
-            # update feedback
-            feedback['stability']['cumulative_current_balance'] = bal_total
-            feedback['stability']['min_running_balance'] = round(run_bal_volume, 2)
-            feedback['stability']['min_running_timeframe'] = txn_timespan
-
-        else:
-            raise Exception('no ...')
+        # update feedback
+        feedback['stability']['cumulative_current_balance'] = bal_total
+        feedback['stability']['min_running_balance'] = round(run_bal_volume, 2)
+        feedback['stability']['min_running_timeframe'] = txn_timespan
 
     except Exception as e:
         feedback['stability']['error'] = str(e)
