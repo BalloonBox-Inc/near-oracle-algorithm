@@ -142,8 +142,8 @@ def filter_dict(lst, key, value):
     return [d for d in lst if d[key].lower() == value]
 
 
-def dict_reverse_cumsum(d, col, sum_col):
-    df = pd.DataFrame(d)
+def dict_reverse_cumsum(lst, col, sum_col):
+    df = pd.DataFrame(lst)
     cols = df.columns
     data = pd.DataFrame(columns=cols)
     accounts = df['account_id'].unique().tolist()
@@ -210,6 +210,12 @@ def general(metadata, lst, k1, k2='general', df=None):
     metadata[k1][k2][k3]['limit'] = limit
     metadata[k1][k2][k3]['high_balance'] = high_balance
 
+    # running balance
+    data = pd.DataFrame(lst)
+    data['date'] = pd.to_datetime(data['date'], format='%Y-%m-%d')
+    temp = data.groupby([data['date'].dt.year, data['date'].dt.month], as_index=False).last()
+    metadata[k1][k2][k3]['running_balance'] = temp['current'].tolist()
+
     # credit card util ratio
     if df is not None:
         metadata = util_ratio(metadata, df)
@@ -223,6 +229,7 @@ def general(metadata, lst, k1, k2='general', df=None):
     m = metadata[k1][k2][k3]['timespan'] / 30
     metadata[k1][k2][k3]['avg_monthly_count'] = metadata[k1][k2][k3]['total_count'] / m
     metadata[k1][k2][k3]['avg_monthly_value'] = sum(d['amount'] for d in lst) / m
+
     return metadata
 
 
