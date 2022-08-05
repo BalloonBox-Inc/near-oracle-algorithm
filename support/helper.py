@@ -206,6 +206,13 @@ def general(metadata, lst, k1, k2='general', df=None):
         else:
             high_balance.append(max([d['current'] for d in data]))
 
+        if k1 == 'checking':
+            df1 = aggregate_dict_by_month(data, {'amount': 'sum'})
+            metadata[k1][k2][k3]['monthly'] = {}
+            metadata[k1][k2][k3]['monthly']['total_count'] = len(df1)
+            metadata[k1][k2][k3]['monthly']['balance'] = df1['amount'].tolist()
+            metadata[k1][k2][k3]['monthly']['overdraft_count'] = len(df1[df1['amount'] < 0].index)
+
     metadata[k1][k2][k3]['current'] = current
     metadata[k1][k2][k3]['limit'] = limit
     metadata[k1][k2][k3]['high_balance'] = high_balance
