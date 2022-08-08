@@ -112,7 +112,7 @@ async def credit_score_coinbase(request: Request, response: Response, item: Coin
 
         # keep feedback data
         print(f'\033[36m Saving parameters ...\033[0m')
-        data = keep_feedback(feedback, score, item.loan_request, 'coinbase')
+        data = keep_dict(feedback, score, item.loan_request, 'coinbase')
         add_row_to_table('coinbase', data)
 
         # compute risk
