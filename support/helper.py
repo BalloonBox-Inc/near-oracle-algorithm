@@ -29,8 +29,8 @@ def keep_dict(d, score, loan_request, validator):
     d['request']['validator'] = validator
     d['request']['loan_amount'] = loan_request
     d['request']['timestamp'] = datetime.now(timezone.utc).strftime('%m-%d-%Y %H:%M:%S GMT')
-    d = flatten_dict(d)
     d = {k: v for k, v in d.items() if not isinstance(v, list)}
+    d = flatten_dict(d)
     return d
 
 
