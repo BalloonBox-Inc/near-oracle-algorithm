@@ -127,6 +127,9 @@ def plaid_velocity_metrics(feedback, params, metadata):
             # read metadata
             d = metadata['checking']['general']
             txn_avg_count = d['transactions']['avg_monthly_count']
+            monthly_count = d['balances']['monthly']['total_count']
+            overdraft_count = d['balances']['monthly']['overdraft_count']
+            monthly_balance = d['balances']['monthly']['balance']
 
             di = metadata['checking']['income']
             income_avg_count = di['payroll']['avg_monthly_count']
@@ -137,9 +140,19 @@ def plaid_velocity_metrics(feedback, params, metadata):
             expenses_avg_count = sum([de[k]['avg_monthly_count'] for k in keys])
             expenses_avg_value = sum([de[k]['avg_monthly_value'] for k in keys])
 
-            mag1 = stt.mean([abs(n) for n in [income_avg_value, expenses_avg_value]])
-            mag2 = 1
-            dir = 10  # count pos months / count neg months
+            positives = [n for n in monthly_balance if n >= 0]
+            negatives = [n for n in monthly_balance if n < 0]
+
+            direction1 = (monthly_count - overdraft_count) / overdraft_count
+            magnitude1 = abs(sum(positives) / sum(negatives))
+            if direction1 < 1:
+                magnitude1 = magnitude1 * -1
+
+            magnitude2 = stt.mean([abs(n) for n in [income_avg_value, expenses_avg_value]])
+            if negatives:
+                direction2 = direction1
+            else:
+                direction2 = 10
 
             # read params
             w = np.digitize(income_avg_count, params['count_zero'], right=True)
@@ -147,11 +160,8 @@ def plaid_velocity_metrics(feedback, params, metadata):
             y = np.digitize(expenses_avg_count, params['count_zero'], right=True)
             z = np.digitize(expenses_avg_value, params['volume_withdraw'], right=True)
 
-            p = np.digitize(dir, params['flow_ratio'], right=True)
-            q = np.digitize(mag1, params['volume_flow'], right=True)
-            r = 1
-            s = 1
-
+            p = np.digitize(direction2, params['flow_ratio'], right=True)
+            q = np.digitize(magnitude2, params['volume_flow'], right=True)
             t = np.digitize(txn_avg_count, params['count_txn'], right=True)
 
             # 1. deposits
@@ -164,7 +174,18 @@ def plaid_velocity_metrics(feedback, params, metadata):
             score.append(params['activity_vol_mtx'][p][q])
 
             # 4. slope
-            score.append(0)
+            if monthly_count >= 10 or overdraft_count == 0:
+                a, b = np.polyfit(range(monthly_count), monthly_balance, 1)
+                r = np.digitize(a, params['slope_lr'], right=True)
+                feedback['velocity']['slope'] = round(a, 2)
+                slope = params['fico_medians'][r]
+            else:
+                r = np.digitize(direction1, params['slope'], right=True)
+                s = np.digitize(magnitude1, params['slope'], right=True)
+                feedback['velocity']['monthly_flow'] = round(magnitude1, 2)
+                slope = params['activity_vol_mtx'].T[r][s]
+
+            score.append(slope)
 
             # 5. txn_count
             score.append(params['fico_medians'][t])
@@ -174,8 +195,7 @@ def plaid_velocity_metrics(feedback, params, metadata):
             feedback['velocity']['deposits_volume'] = round(income_avg_value, 0)
             feedback['velocity']['withdrawals'] = round(expenses_avg_count, 0)
             feedback['velocity']['withdrawals_volume'] = round(expenses_avg_value, 0)
-            feedback['velocity']['avg_net_flow'] = round(mag1, 2)
-            feedback['velocity']['monthly_flow'] = round(mag2, 2)
+            feedback['velocity']['avg_net_flow'] = round(magnitude2, 2)
             feedback['velocity']['count_monthly_txn'] = round(txn_avg_count, 0)
 
         else:
@@ -189,64 +209,6 @@ def plaid_velocity_metrics(feedback, params, metadata):
         if size < num:
             score = fill_list(score, num, size)
         print(f'\033[36m  -> Velocity:\t{score}\033[0m')
-        return score, feedback
-
-
-# @evaluate_function
-def velocity_slope(acc, txn, feedback, params):
-    '''
-    Description:
-        returns score for the historical behavior of the net monthly flow for past 24 months
-
-    Parameters:
-        acc (list): Plaid 'Accounts' product
-        txn (list): Plaid 'Transactions' product
-        feedback (dict): score feedback
-        params (dict): model parameters, i.e. coefficients
-
-    Returns:
-        score (float): score for flow net behavior over past 24 months
-        feedback (dict): feedback describing the score
-    '''
-    try:
-        flow = 'dataframe checking sum per month'
-
-        # If you have > 10 data points OR all net flows are positive, then perform linear regression
-        if (
-            len(flow) >= 10
-            or len(list(filter(lambda x: (x < 0), flow['amounts'].tolist()))) == 0
-        ):
-            # Perform Linear Regression using numpy.polyfit()
-            x = range(len(flow['amounts']))
-            y = flow['amounts']
-            a, b = np.polyfit(x, y, 1)
-
-            score = params['fico_medians'][np.digitize(a, params['slope_lr'], right=True)]
-
-            feedback['velocity']['slope'] = round(a, 2)
-
-        # If you have < 10 data points, then calculate the score accounting for two ratios
-        else:
-            # Multiply two ratios by each other
-            neg = list(filter(lambda x: (x < 0), flow['amounts'].tolist()))
-            pos = list(filter(lambda x: (x >= 0), flow['amounts'].tolist()))
-            direction = len(pos) / len(neg)  # output in range [0, 2+]
-            magnitude = abs(sum(pos) / sum(neg))  # output in range [0, 2+]
-            if direction >= 1:
-                pass
-            else:
-                magnitude = magnitude * -1
-            m = np.digitize(direction, params['slope'], right=True)
-            n = np.digitize(magnitude, params['slope'], right=True)
-            score = params['activity_vol_mtx'].T[m][n]
-
-            feedback['velocity']['monthly_flow'] = round(magnitude, 2)
-
-    except Exception as e:
-        score = 0
-        feedback['velocity']['error'] = str(e)
-
-    finally:
         return score, feedback
 
 
