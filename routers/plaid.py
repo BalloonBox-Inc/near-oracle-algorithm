@@ -99,8 +99,8 @@ async def credit_score_plaid(request: Request, response: Response, item: Plaid_I
 
         # keep metadata
         print(f'\033[36m Saving parameters ...\033[0m')
-        # keep = keep_feedback(metadata, score, item.loan_request, 'plaid')
-        # add_row_to_table('plaid', keep)
+        keep = keep_feedback(metadata, score, item.loan_request, 'plaid')
+        add_row_to_table('plaid', keep)
 
         # compute risk
         print(f'\033[36m Calculating risk ...\033[0m')
