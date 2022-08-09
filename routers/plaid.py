@@ -91,11 +91,15 @@ async def credit_score_plaid(request: Request, response: Response, item: Plaid_I
         # validate loan request and transaction history
         print(f'\033[36m Validating template ...\033[0m')
         if not validate_loan_request(loan_range, accounts) or not validate_txn_history(thresholds["transactions_period"], data):
-            raise Exception(messages["not_qualified"].format(loan_range[0]))
+            value = loan_range[0]
+            if value == 0:
+                raise Exception(messages["not_qualified"])
+            else:
+                raise Exception(messages["not_qualified"].format(value))
 
         # compute score, feedback, and metadata
         print(f'\033[36m Calculating score ...\033[0m')
-        score, feedback, metadata = plaid_score(data, score_range, feedback, models, metrics, parm)
+        score, feedback = plaid_score(data, score_range, feedback, models, metrics, parm)
 
         # keep feedback data
         print(f'\033[36m Saving parameters ...\033[0m')
