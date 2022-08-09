@@ -418,7 +418,8 @@ def immutable_array(arr):
 
 def validate_loan_request(loan_range, accounts):
     try:
-        available = sum([d['balances']['available'] for d in accounts if d['balances']['available']])
+        available = sum([d['balances']['available']
+                        for d in accounts if d['balances']['available'] and d['type'] == 'depository'])
         print(f'\033[36m  -> Available:\t{available:,.2f}\033[0m')
         if available > loan_range[0]:
             return True
