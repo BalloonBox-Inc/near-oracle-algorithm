@@ -68,6 +68,13 @@ def plaid_credit_metrics(feedback, params, metadata):
             late_pymt_mcount = dl['general']['month_count']
             late_pymt_freq = late_pymt_count / late_pymt_mcount
 
+            dlp = dl['period']
+            timeframe = 720  # fetch from config.json
+            late_pymt_values = list({k: v for k, v in dlp.items() if k <= timeframe}.values())
+            late_pymt_weights = cum_halves_list(0.33, len(late_pymt_values))
+            late_pymt_weights.reverse()
+            late_payment = 1 - sum([w/v for v, w in zip(late_pymt_values, late_pymt_weights) if v > 0])
+
             # read params
             w = np.digitize(acc_count, params['count_zero'], right=True)
             x = np.digitize(txn_avg_count, params['count_lively'], right=True)
@@ -93,6 +100,7 @@ def plaid_credit_metrics(feedback, params, metadata):
 
             # 5. interest
             score.append(params['fico_medians'][r])
+            score.append(late_payment)
 
             # credit mix
             scorex = params['credit_mix_mtx'][w][y]  # why not using it?

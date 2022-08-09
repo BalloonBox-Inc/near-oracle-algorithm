@@ -252,8 +252,15 @@ def late_payment(metadata, lst):
     period = [30, 60, 90, 180, 360, 720, 1800]
     data = [d for d in lst if d['sub_category'] == 'interest charged']
     if data:
+        values = []
         for p in period:
-            metadata['credit_card']['late_payment']['period'][p] = len([d for d in data if d['timespan'] <= p])
+            values.append(len([d for d in data if d['timespan'] <= p]))
+        values.reverse()
+        values.append(0)
+        values = [values[i]-values[i+1] for i in range(len(values)-1)]
+        values.reverse()
+
+        metadata['credit_card']['late_payment']['period'] = dict(zip(period, values))
         metadata['credit_card']['late_payment']['general']['total_count'] = len(data)
         metadata['credit_card']['late_payment']['general']['month_count'] = len(
             aggregate_dict_by_month(data, {'amount': ['count']}))
@@ -392,6 +399,16 @@ def earnings(metadata, lst, key, value):
         metadata[k1][k2]['avg_monthly_cash_flow'] = cash_flow
         metadata[k1][k2]['avg_monthly_return_pct'] = metadata[k1][k2]['avg_monthly_value'] / cash_flow
     return metadata
+
+
+def cum_halves_list(start, size):
+    lst = [start]
+    v = start
+    for n in range(size-2):
+        v += (1-v)/2
+        lst.append(v)
+    lst.append(1)
+    return lst
 
 
 def dot_product(l1, l2):

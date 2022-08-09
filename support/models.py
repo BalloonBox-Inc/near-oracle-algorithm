@@ -10,7 +10,7 @@ from support.helper import *
 
 def plaid_credit_model(feedback, params, metric_weigths, metadata):
 
-    a = list(metric_weigths.values())[:6]
+    a = list(metric_weigths.values())[:7]
     b, feedback = plaid_credit_metrics(feedback, params, metadata)
 
     score = dot_product(a, b)
@@ -20,7 +20,7 @@ def plaid_credit_model(feedback, params, metric_weigths, metadata):
 
 def plaid_velocity_model(feedback, params, metric_weigths, metadata):
 
-    a = list(metric_weigths.values())[6:11]
+    a = list(metric_weigths.values())[7:12]
     b, feedback = plaid_velocity_metrics(feedback, params, metadata)
 
     score = dot_product(a, b)
@@ -30,7 +30,7 @@ def plaid_velocity_model(feedback, params, metric_weigths, metadata):
 
 def plaid_stability_model(feedback, params, metric_weigths, metadata):
 
-    a = list(metric_weigths.values())[11:13]
+    a = list(metric_weigths.values())[12:14]
     b, feedback = plaid_stability_metrics(feedback, params, metadata)
 
     score = dot_product(a, b)
@@ -40,7 +40,7 @@ def plaid_stability_model(feedback, params, metric_weigths, metadata):
 
 def plaid_diversity_model(feedback, params, metric_weigths, metadata):
 
-    a = list(metric_weigths.values())[13:]
+    a = list(metric_weigths.values())[14:]
     b, feedback = plaid_diversity_metrics(feedback, params, metadata)
 
     score = dot_product(a, b)

@@ -18,11 +18,12 @@
                                 "penalty_weight": 0.0,
                                 "metrics": {
                                     "limit_usage": 0,
-                                    "limit": 0.45,
-                                    "length": 0.26,
+                                    "limit": 0.44,
+                                    "length": 0.22,
                                     "livelihood": 0.12,
                                     "util_ratio": 0.12,
-                                    "interest": 0.05
+                                    "interest": 0.05,
+                                    "late_payment": 0.05
                                 }
                             },
                             "velocity": {
@@ -243,11 +244,12 @@
                                 "penalty_weight": 0.0,
                                 "metrics": {
                                     "limit_usage": 0.15,
-                                    "limit": 0.3,
-                                    "length": 0.26,
-                                    "livelihood": 0.12,
-                                    "util_ratio": 0.12,
-                                    "interest": 0.05
+                                    "limit": 0.28,
+                                    "length": 0.24,
+                                    "livelihood": 0.1,
+                                    "util_ratio": 0.1,
+                                    "interest": 0.05,
+                                    "late_payment": 0.08
                                 }
                             },
                             "velocity": {
@@ -336,12 +338,13 @@
                                 "weight": 0.36,
                                 "penalty_weight": 0.0,
                                 "metrics": {
-                                    "limit_usage": 0.2,
-                                    "limit": 0.25,
-                                    "length": 0.26,
-                                    "livelihood": 0.12,
-                                    "util_ratio": 0.12,
-                                    "interest": 0.05
+                                    "limit_usage": 0.18,
+                                    "limit": 0.22,
+                                    "length": 0.25,
+                                    "livelihood": 0.1,
+                                    "util_ratio": 0.1,
+                                    "interest": 0.05,
+                                    "late_payment": 0.1
                                 }
                             },
                             "velocity": {
