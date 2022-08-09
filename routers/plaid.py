@@ -53,6 +53,7 @@ async def credit_score_plaid(request: Request, response: Response, item: Plaid_I
         qualitative_range = configs['qualitative_range']
 
         thresholds = configs['minimum_requirements']['plaid']['thresholds']
+        period = thresholds['transactions_period']
         parm = configs['minimum_requirements']['plaid']['params']
 
         models, metrics = read_models_and_metrics(
@@ -72,8 +73,7 @@ async def credit_score_plaid(request: Request, response: Response, item: Plaid_I
 
         # data fetching
         print(f'\033[36m Reading data ...\033[0m')
-        dataset = plaid_transactions(
-            item.plaid_access_token, client, thresholds['transactions_period'])
+        dataset = plaid_transactions(item.plaid_access_token, client, period)
         if isinstance(dataset, str):
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
@@ -99,7 +99,7 @@ async def credit_score_plaid(request: Request, response: Response, item: Plaid_I
 
         # compute score, feedback, and metadata
         print(f'\033[36m Calculating score ...\033[0m')
-        score, feedback = plaid_score(data, score_range, feedback, models, metrics, parm)
+        score, feedback = plaid_score(data, score_range, feedback, models, metrics, parm, period)
 
         # keep feedback data
         print(f'\033[36m Saving parameters ...\033[0m')

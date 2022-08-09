@@ -4,7 +4,7 @@ from support.helper import *
 
 
 # @evaluate_function
-def plaid_score(data, score_range, feedback, model_weights, metric_weigths, params):
+def plaid_score(data, score_range, feedback, model_weights, metric_weigths, params, period):
 
     # format params
     params = plaid_params(params, score_range)
@@ -63,7 +63,7 @@ def plaid_score(data, score_range, feedback, model_weights, metric_weigths, para
         metadata = earnings(metadata, savings, 'sub_category', 'interest earned')
 
     # create model
-    credit, feedback = plaid_credit_model(feedback, params, metric_weigths, metadata)
+    credit, feedback = plaid_credit_model(feedback, params, metric_weigths, metadata, period)
     velocity, feedback = plaid_velocity_model(feedback, params, metric_weigths, metadata)
     stability, feedback = plaid_stability_model(feedback, params, metric_weigths, metadata)
     diversity, feedback = plaid_diversity_model(feedback, params, metric_weigths,  metadata)

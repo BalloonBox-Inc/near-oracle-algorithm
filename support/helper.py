@@ -408,6 +408,7 @@ def cum_halves_list(start, size):
         v += (1-v)/2
         lst.append(v)
     lst.append(1)
+    lst.reverse()
     return lst
 
 

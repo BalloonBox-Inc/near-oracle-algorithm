@@ -37,7 +37,7 @@ def plaid_kyc(acc, txn):
 # -------------------------------------------------------------------------- #
 
 
-def plaid_credit_metrics(feedback, params, metadata):
+def plaid_credit_metrics(feedback, params, metadata, period):
     '''
     score[list] order must be the same as showed under metrics in the cofig.json file, e.g.
     "data": [{"minimum_requirements": {"plaid": {"scores": {"models": {"credit": {"metrics": {...}}}}}}}]
@@ -63,16 +63,24 @@ def plaid_credit_metrics(feedback, params, metadata):
             util_count = du['general']['month_count']
             util_avg = du['general']['avg_monthly_value']
 
+            dup = du['period']
+            util_values = list({k: v for k, v in dup.items() if k <= period}.values())
+            util_values = [n if n > 0.3 else 0 for n in util_values]
+            util_weights = cum_halves_list(0.25, len(util_values))
+            cum_util_ratio = [w/v for v, w in zip(util_values, util_weights) if v > 0]
+            if cum_util_ratio:
+                cum_util_ratio = 1 - stt.mean([n for n in cum_util_ratio if n < 1])
+            else:
+                cum_util_ratio = 1  # never used more than 30% of limit
+
             dl = metadata['credit_card']['late_payment']
             late_pymt_count = dl['general']['total_count']
             late_pymt_mcount = dl['general']['month_count']
             late_pymt_freq = late_pymt_count / late_pymt_mcount
 
             dlp = dl['period']
-            timeframe = 720  # fetch from config.json
-            late_pymt_values = list({k: v for k, v in dlp.items() if k <= timeframe}.values())
+            late_pymt_values = list({k: v for k, v in dlp.items() if k <= period}.values())
             late_pymt_weights = cum_halves_list(0.33, len(late_pymt_values))
-            late_pymt_weights.reverse()
             late_payment = 1 - sum([w/v for v, w in zip(late_pymt_values, late_pymt_weights) if v > 0])
 
             # read params
@@ -97,6 +105,7 @@ def plaid_credit_metrics(feedback, params, metadata):
 
             # 4. util ratio
             score.append(params['activity_cns_mtx'][p][q])
+            score.append(cum_util_ratio)
 
             # 5. interest
             score.append(params['fico_medians'][r])

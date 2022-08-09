@@ -8,10 +8,10 @@ from support.helper import *
 #                                Plaid Model                                 #
 # -------------------------------------------------------------------------- #
 
-def plaid_credit_model(feedback, params, metric_weigths, metadata):
+def plaid_credit_model(feedback, params, metric_weigths, metadata, period):
 
     a = list(metric_weigths.values())[:7]
-    b, feedback = plaid_credit_metrics(feedback, params, metadata)
+    b, feedback = plaid_credit_metrics(feedback, params, metadata, period)
 
     score = dot_product(a, b)
 
