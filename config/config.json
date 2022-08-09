@@ -331,7 +331,7 @@
                     "scores": {
                         "models": {
                             "credit": {
-                                "weight": 0.4,
+                                "weight": 0.36,
                                 "penalty_weight": 0.0,
                                 "metrics": {
                                     "limit": 0.45,
@@ -342,30 +342,30 @@
                                 }
                             },
                             "velocity": {
-                                "weight": 0.15,
+                                "weight": 0.12,
                                 "penalty_weight": 0.3,
                                 "metrics": {
                                     "deposits": 0.25,
                                     "withdrawals": 0.16,
-                                    "net_flow": 0.31,
+                                    "net_flow": 0.33,
                                     "slope": 0.18,
-                                    "txn_count": 0.1
+                                    "txn_count": 0.08
                                 }
                             },
                             "stability": {
-                                "weight": 0.3,
+                                "weight": 0.34,
                                 "penalty_weight": 0.4,
                                 "metrics": {
-                                    "balance": 0.6,
-                                    "running_balance": 0.4
+                                    "balance": 0.55,
+                                    "running_balance": 0.45
                                 }
                             },
                             "diversity": {
-                                "weight": 0.15,
+                                "weight": 0.18,
                                 "penalty_weight": 0.2,
                                 "metrics": {
-                                    "acc_count": 0.45,
-                                    "profile": 0.55
+                                    "acc_count": 0.5,
+                                    "profile": 0.5
                                 }
                             }
                         }
