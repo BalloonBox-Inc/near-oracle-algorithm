@@ -34,7 +34,9 @@ def keep_dict(d, score, loan_request, validator):
     return d
 
 
-def remove_key_dupes(lst, k, memo=set(), res=[]):
+def remove_key_dupes(lst, k):
+    memo = set()
+    res = []
     for d in lst:
         if d[k] not in memo:
             res.append(d)
@@ -182,8 +184,11 @@ def util_ratio(metadata, data):
     return metadata
 
 
-def general(metadata, lst, k1, k2='general', df=None):
+def general(metadata, lst, k1):
     ''' regardless how many different account within same account type '''
+    k2 = 'general'
+    df = None
+
     # accounts
     k3 = 'accounts'
     metadata[k1][k2][k3] = {}
@@ -255,7 +260,10 @@ def late_payment(metadata, lst):
     return metadata
 
 
-def income(metadata, lst, key, value, k1='checking', k2='income'):
+def income(metadata, lst, key, value):
+    k1 = 'checking'
+    k2 = 'income'
+
     data = [d for d in lst if d[key] == value]
     k3 = value
     metadata[k1][k2][k3] = {}
@@ -274,7 +282,10 @@ def filter_frame_outliers(data, col):
     return data[data[col] < high]
 
 
-def expenses(metadata, lst, key, value, k1='checking', k2='expenses'):
+def expenses(metadata, lst, key, value):
+    k1 = 'checking'
+    k2 = 'expenses'
+
     data = [d for d in lst if d[key] == value]
     k3 = value.split()[0]
     metadata[k1][k2][k3] = {}
@@ -294,7 +305,11 @@ def expenses(metadata, lst, key, value, k1='checking', k2='expenses'):
     return metadata
 
 
-def investments(metadata, lst, key, value, k1='checking', k2='investments', k3='earnings'):
+def investments(metadata, lst, key, value):
+    k1 = 'checking'
+    k2 = 'investments'
+    k3 = 'earnings'
+
     data = [d for d in lst if d[key] == value]
     if data:
         cash_in = [d for d in data if d['amount'] < 0]
@@ -326,7 +341,10 @@ def investments(metadata, lst, key, value, k1='checking', k2='investments', k3='
     return metadata
 
 
-def cash_flow(metadata, lst, key, value, k1='savings', k2='cash_flow'):
+def cash_flow(metadata, lst, key, value):
+    k1 = 'savings'
+    k2 = 'cash_flow'
+
     data = [d for d in lst if d[key] != value]
     if data:
         cash_in = [d for d in data if d['amount'] > 0]
@@ -348,7 +366,10 @@ def cash_flow(metadata, lst, key, value, k1='savings', k2='cash_flow'):
     return metadata
 
 
-def earnings(metadata, lst, key, value, k1='savings', k2='earnings'):
+def earnings(metadata, lst, key, value):
+    k1 = 'savings'
+    k2 = 'earnings'
+
     data = [d for d in lst if d[key] == value]
     if data:
         df = aggregate_dict_by_month(data, {'amount': ['count', 'sum']})
@@ -397,7 +418,8 @@ def immutable_array(arr):
 
 def validate_loan_request(loan_range, accounts):
     try:
-        available = sum([d['balances']['available'] for d in accounts])
+        available = sum([d['balances']['available'] for d in accounts if d['balances']['available']])
+        print(f'\033[36m  -> Available:\t{available:,.2f}\033[0m')
         if available > loan_range[0]:
             return True
     except Exception:
@@ -407,6 +429,7 @@ def validate_loan_request(loan_range, accounts):
 def validate_txn_history(req_period, data):
     try:
         txn_history = data[0]['timespan']
+        print(f'\033[36m  -> History:\t{txn_history}\033[0m')
         if txn_history > req_period / 2:
             return True
     except Exception:
