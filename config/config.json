@@ -17,6 +17,7 @@
                                 "weight": 0.42,
                                 "penalty_weight": 0.0,
                                 "metrics": {
+                                    "limit_usage": 0,
                                     "limit": 0.45,
                                     "length": 0.26,
                                     "livelihood": 0.12,
@@ -241,7 +242,8 @@
                                 "weight": 0.4,
                                 "penalty_weight": 0.0,
                                 "metrics": {
-                                    "limit": 0.45,
+                                    "limit_usage": 0.15,
+                                    "limit": 0.3,
                                     "length": 0.26,
                                     "livelihood": 0.12,
                                     "util_ratio": 0.12,
@@ -334,7 +336,8 @@
                                 "weight": 0.36,
                                 "penalty_weight": 0.0,
                                 "metrics": {
-                                    "limit": 0.45,
+                                    "limit_usage": 0.2,
+                                    "limit": 0.25,
                                     "length": 0.26,
                                     "livelihood": 0.12,
                                     "util_ratio": 0.12,

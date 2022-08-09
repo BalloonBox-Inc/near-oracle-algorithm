@@ -50,7 +50,14 @@ def plaid_credit_metrics(feedback, params, metadata):
             acc_count = d['accounts']['total_count']
             txn_avg_count = d['transactions']['avg_monthly_count']
             txn_timespan = d['transactions']['timespan']
-            bal_limit = sum(d['balances']['limit'])  # shouldnt be average?
+            bal_limit = sum(d['balances']['limit'])
+            limit_usage = [1 - (high - limit)/limit for high, limit in zip(
+                d['balances']['high_balance'], d['balances']['limit']) if high > limit]
+            if limit_usage:
+                limit_usage = [n if n > 0 else 0 for n in limit_usage]
+                limit_usage = stt.mean(limit_usage)
+            else:
+                limit_usage = 1  # never went over limit
 
             du = metadata['credit_card']['util_ratio']
             util_count = du['general']['month_count']
@@ -72,6 +79,7 @@ def plaid_credit_metrics(feedback, params, metadata):
             r = np.digitize(late_pymt_freq, params['frequency_interest'], right=True)
 
             # 1. limit
+            score.append(limit_usage)
             score.append(params['activity_vol_mtx'][y][z])
 
             # 2. length
