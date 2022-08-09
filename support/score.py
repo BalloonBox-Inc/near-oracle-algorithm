@@ -74,7 +74,7 @@ def plaid_score(data, score_range, feedback, model_weights, metric_weigths, para
     head, tail = head_tail_list(score_range)
     score = head + (tail - head) * (dot_product(a, b))
 
-    return score, feedback, metadata
+    return score, feedback
 
 
 # @evaluate_function
