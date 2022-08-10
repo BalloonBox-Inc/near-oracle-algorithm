@@ -53,13 +53,14 @@ async def credit_score_plaid(request: Request, response: Response, item: Plaid_I
         qualitative_range = configs['qualitative_range']
 
         thresholds = configs['minimum_requirements']['plaid']['thresholds']
+        period = thresholds['transactions_period']
         parm = configs['minimum_requirements']['plaid']['params']
 
         models, metrics = read_models_and_metrics(
             configs['minimum_requirements']['plaid']['scores']['models'])
 
-        penalties = read_model_penalties(
-            configs['minimum_requirements']['plaid']['scores']['models'])
+        # penalties = read_model_penalties(
+        #     configs['minimum_requirements']['plaid']['scores']['models'])
 
         messages = configs['minimum_requirements']['plaid']['messages']
         feedback = create_feedback(models)
@@ -72,34 +73,38 @@ async def credit_score_plaid(request: Request, response: Response, item: Plaid_I
 
         # data fetching
         print(f'\033[36m Reading data ...\033[0m')
-        transactions = plaid_transactions(
-            item.plaid_access_token, client, thresholds['transactions_period'])
-        if isinstance(transactions, str):
+        dataset = plaid_transactions(item.plaid_access_token, client, period)
+        if isinstance(dataset, str):
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f'Unable to fetch transactions data: {transactions}')
+                detail=f'Unable to fetch transactions data: {dataset}')
 
-        bank_name = plaid_bank_name(
-            client, transactions['item']['institution_id'])
+        bank_name = plaid_bank_name(client, dataset['item']['institution_id'])
         feedback['diversity']['bank_name'] = bank_name
 
-        # compute score and feedback
-        print(f'\033[36m Calculating score ...\033[0m')
-        score, feedback = plaid_score(
-            transactions, score_range, feedback, models, penalties, metrics, parm)
+        # data formatting
+        print(f'\033[36m Formatting data ...\033[0m')
+        transactions = dataset['transactions']
+        accounts = remove_key_dupes(dataset['accounts'], 'account_id')
+        data = format_plaid_data(transactions, accounts)
 
         # validate loan request and transaction history
         print(f'\033[36m Validating template ...\033[0m')
-        if not validate_loan_request(
-            loan_range, feedback, "stability", "cumulative_current_balance"
-        ) or not validate_txn_history(
-                thresholds["transactions_period"], feedback, "stability", "txn_history"):
-            raise Exception(messages["not_qualified"].format(loan_range[0]))
+        if not validate_loan_request(loan_range, accounts) or not validate_txn_history(thresholds["transactions_period"], data):
+            value = loan_range[0]
+            if value == 0:
+                raise Exception(messages["not_qualified"])
+            else:
+                raise Exception(messages["not_qualified"].format(value))
+
+        # compute score, feedback, and metadata
+        print(f'\033[36m Calculating score ...\033[0m')
+        score, feedback = plaid_score(data, score_range, feedback, models, metrics, parm, period)
 
         # keep feedback data
         print(f'\033[36m Saving parameters ...\033[0m')
-        data = keep_feedback(feedback, score, item.loan_request, 'plaid')
-        add_row_to_table('plaid', data)
+        keep = keep_dict(feedback, score, item.loan_request, 'plaid')
+        add_row_to_table('plaid', keep)
 
         # compute risk
         print(f'\033[36m Calculating risk ...\033[0m')

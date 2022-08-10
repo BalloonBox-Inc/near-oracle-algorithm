@@ -6,6 +6,8 @@ NOW = datetime.now().date()
 # -------------------------------------------------------------------------- #
 #                               Helper Functions                             #
 # -------------------------------------------------------------------------- #
+
+
 def swiffer_duster(txn, feedback):
     '''
     Description:
@@ -39,7 +41,7 @@ def swiffer_duster(txn, feedback):
 def purge_portfolio(portfolio, feedback):
     '''
     Description:
-        remove 'dusty' tokens from portfolio. That is, we consider only those tokens 
+        remove 'dusty' tokens from portfolio. That is, we consider only those tokens
         that had a closing day balance of >$50 for at least 3 days in the last month
 
     Parameters:
@@ -78,9 +80,9 @@ def purge_portfolio(portfolio, feedback):
 
 
 def top_erc_only(data, feedback, top_erc):
-    ''' 
+    '''
     Description:
-        filter the Covalent API data by keeping only the assets in the ETH 
+        filter the Covalent API data by keeping only the assets in the ETH
         wallet address which are top ranked on Coinmarketcap as ERC20 tokens
 
     Parameters:
@@ -98,7 +100,7 @@ def top_erc_only(data, feedback, top_erc):
             if b['contract_ticker_symbol'] in top_erc:
                 skimmed.append(b)
 
-        data['items'] = skimmed                 
+        data['items'] = skimmed
         return data
 
     except Exception as e:
@@ -130,7 +132,7 @@ def covalent_kyc(txn, balances, portfolio):
         if txn['items']\
             and portfolio['items']\
                 and sum([b['quote'] for b in balances['items']]) > 150\
-                    and how_long >= 90:
+            and how_long >= 90:
             return True
         else:
             return False
@@ -217,7 +219,7 @@ def credibility_oldest_txn(txn, feedback, params):
         how_long = (NOW - oldest).days
 
         score = params['fico_medians'][np.digitize(how_long, params['duration'], right=True)]
-        feedback['credibility']['longevity(days)'] = how_long
+        feedback['credibility']['longevity_days'] = how_long
 
     except Exception as e:
         score = 0
@@ -267,7 +269,7 @@ def wealth_capital_now(balances, feedback, params):
 
 
 def wealth_capital_now_adjusted(balances, feedback, erc_rank, params):
-    ''' 
+    '''
     Description:
         adjusted tot balance of token owned (USD). Accounts for the Coinmarketcap ranking of the token owned
 
@@ -290,7 +292,7 @@ def wealth_capital_now_adjusted(balances, feedback, erc_rank, params):
         total = sum([b['quote'] for b in wealth_capital_now_adjusted.top['items']])
         if total == 0:
             score = 0
-            feedback['wealth']['cum_balance_now(adjusted)'] = 0
+            feedback['wealth']['cum_balance_now_adjusted'] = 0
         else:
             adjusted_balance = 0
             for b in wealth_capital_now_adjusted.top['items']:
@@ -303,7 +305,7 @@ def wealth_capital_now_adjusted(balances, feedback, erc_rank, params):
 
                 score = params['fico_medians'][np.digitize(
                     adjusted_balance, params['volume_now'], right=True)]
-                feedback['wealth']['cum_balance_now(adjusted)'] = round(
+                feedback['wealth']['cum_balance_now_adjusted'] = round(
                     adjusted_balance, 2)
 
     except Exception as e:
@@ -356,6 +358,8 @@ def wealth_volume_per_txn(txn, feedback, params):
 # -------------------------------------------------------------------------- #
 #                             Metric #3 Traffic                              #
 # -------------------------------------------------------------------------- #
+
+
 def traffic_cred_deb(txn, feedback, operation, params):
     '''
     Description:
@@ -367,7 +371,7 @@ def traffic_cred_deb(txn, feedback, operation, params):
         operation (str): accepts 'credit', 'debit', or 'transfer'
         count_operations (array): bins transaction count
         cred_deb (array): bins transaction volume
-        mtx_traffic (array): score matrix 
+        mtx_traffic (array): score matrix
 
     Returns:
         score (float): for the count and volume of credit or debit transactions
@@ -407,7 +411,7 @@ def traffic_cred_deb(txn, feedback, operation, params):
                         volume += t['value_quote']
                 count_operations = params['count_operations']/2.5
                 cred_deb = params['cred_deb']/2
-                
+
             # except
             else:
                 raise Exception(
@@ -420,7 +424,7 @@ def traffic_cred_deb(txn, feedback, operation, params):
         m = np.digitize(counts, count_operations, right=True)
         n = np.digitize(volume, cred_deb, right=True)
         score = params['mtx_traffic'][m][n]
-        feedback['traffic'][f'count_{operation}_txns'] =  counts
+        feedback['traffic'][f'count_{operation}_txns'] = counts
         feedback['traffic'][f'volume_{operation}_txns'] = round(volume, 2)
 
     except Exception as e:
@@ -474,7 +478,7 @@ def traffic_running_balance(portfolio, feedback, params, erc_rank):
         erc_rank (dict): ERC tokens and their associated Coinmarketcap rank
 
     Returns:
-        score (float): points earned for the average running 
+        score (float): points earned for the average running
             balance (over the last month) of the best token owned
         feedback (dict): updated score feedback
     '''
@@ -497,7 +501,7 @@ def traffic_running_balance(portfolio, feedback, params, erc_rank):
         best_avg = max(overview.values())
         traffic_running_balance.best_token = list(overview.keys())[list(overview.values()).index(best_avg)]
         score = params['fico_medians'][np.digitize(best_avg, params['avg_run_bal'], right=True)]
-        feedback['traffic']['avg_running_balance(best_token)'] = round(
+        feedback['traffic']['avg_running_balance_best_token'] = round(
             best_avg, 2)
 
     except Exception as e:
@@ -552,7 +556,7 @@ def traffic_frequency(txn, feedback, params):
 def stamina_methods_count(txn, feedback, params):
     '''
     Description:
-        rewards the user for the number of distinct methods they performed in their 
+        rewards the user for the number of distinct methods they performed in their
         transaction history and for the volume of currency traded for each unique method
 
     Parameters:
@@ -569,8 +573,8 @@ def stamina_methods_count(txn, feedback, params):
         # remove 'dusty' transactions
         txn = swiffer_duster(txn, feedback)
         if txn['items']:
-            all = [(t['log_events'][0]['decoded']['name'], t['value_quote'])\
-                for t in txn['items'] if t['log_events'] and t['log_events'][0]['decoded']]
+            all = [(t['log_events'][0]['decoded']['name'], t['value_quote'])
+                   for t in txn['items'] if t['log_events'] and t['log_events'][0]['decoded']]
 
             stamina_methods_count.methods = {}
             for a in set([x[0] for x in all]):
@@ -600,7 +604,7 @@ def stamina_methods_count(txn, feedback, params):
 def stamina_coins_count(balances, feedback, params, erc_rank):
     '''
     Description:
-        How many cryptocurrencies does the wallet address own? 
+        How many cryptocurrencies does the wallet address own?
         What is the tot weighted volume owned right now?
 
     Parameters:
@@ -622,7 +626,7 @@ def stamina_coins_count(balances, feedback, params, erc_rank):
         weighted_sum = 0
         volumes = [b['quote'] for b in balances['items'] if b['quote'] != 0]
         ranks = [erc_rank[b['contract_ticker_symbol']]
-                    for b in balances['items'] if b['quote'] != 0]
+                 for b in balances['items'] if b['quote'] != 0]
         stamina_coins_count.unique_coins = len(volumes)
 
         for b in balances['items']:
@@ -646,9 +650,9 @@ def stamina_coins_count(balances, feedback, params, erc_rank):
 def stamina_dexterity(portfolio, feedback, params):
     '''
     Description:
-        does this user buy when the market is bearish and sell when the market is bullish? 
+        does this user buy when the market is bearish and sell when the market is bullish?
         Let's define a smart trade to be the operation of either buying in bear market and selling in bullish
-        How often do smart trades occur? 
+        How often do smart trades occur?
         How much capital is traded cumulatively across ALL smart trades?
 
     Parameters:

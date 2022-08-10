@@ -1,62 +1,74 @@
 from support.assessment import *
 from support.models import *
-from support.metrics_plaid import *
 from support.helper import *
-from icecream import ic
 
 
 # @evaluate_function
-def plaid_score(data, score_range, feedback, model_weights, model_penalties, metric_weigths, params):
+def plaid_score(data, score_range, feedback, model_weights, metric_weigths, params, period):
 
-    txn = data['transactions']
-    acc = data['accounts']
-    dataset = format_plaid_data(txn, acc)
-
-    feedback['stability']['txn_history'] = dataset[0]['timespan']
-
-    credit_card = filter_dict(dataset, 'type', 'credit')
-    checking = filter_dict(dataset, 'subtype', 'checking')
-    savings = filter_dict(dataset, 'subtype', 'savings')
-
-    metadata = {'credit_card': {}, 'checking': {}, 'savings': {}}
-    if credit_card:
-        credit_card = dict_reverse_cumsum(credit_card, 'amount', 'current')
-        metadata = balances(metadata, credit_card, 'credit_card')
-        metadata = transactions(metadata, credit_card, 'credit_card')
-        metadata = late_payment(metadata, credit_card)
-    if checking:
-        checking = dict_reverse_cumsum(checking, 'amount', 'current')
-        metadata = balances(metadata, checking, 'checking')
-        metadata = transactions(metadata, checking, 'checking')
-    if savings:
-        savings = dict_reverse_cumsum(savings, 'amount', 'current')
-        metadata = balances(metadata, savings, 'savings')
-        metadata = transactions(metadata, savings, 'savings')
-
-    # accounts
-    cred = [d for d in acc if d['type'].lower() == 'credit']
-    dep = [d for d in acc if d['type'].lower() == 'depository']
-    n_dep = [d for d in acc if d['type'].lower() != 'depository']
-
+    # format params
     params = plaid_params(params, score_range)
 
-    credit, feedback = credit_mix(txn, cred, feedback, params)  # name, account_id
+    # split data: mutually exclusive
+    credit_card = filter_dict(data, 'type', 'credit')
+    checking = filter_dict(data, 'subtype', 'checking')
+    savings = filter_dict(data, 'subtype', 'savings')
 
-    if credit == 0:
-        velocity, feedback = plaid_velocity(acc, txn, feedback, metric_weigths, params)
-        stability, feedback = plaid_stability(acc, txn, dep, n_dep, feedback, metric_weigths, params)
-        diversity, feedback = plaid_diversity(acc, txn, feedback, metric_weigths, params)
+    # create metadata
+    metadata = {
+        'credit_card': {
+            'general': {},
+            'util_ratio': {},
+            'late_payment': {}
+        },
+        'checking': {
+            'general': {},
+            'income': {},
+            'expenses': {},
+            'investments': {
+                'earnings': {},
+                'deposits': {},
+                'withdrawals': {}
+            }
+        },
+        'savings': {
+            'general': {},
+            'earnings': {},
+            'cash_flow': {
+                'deposits': {},
+                'withdrawals': {}
+            }
+        }
+    }
 
-        a = list(model_penalties.values())
+    if credit_card:
+        credit_card = dict_reverse_cumsum(credit_card, 'amount', 'current')
+        metadata = general(metadata, credit_card, 'credit_card')
+        metadata = late_payment(metadata, credit_card)
 
-    else:
-        credit, feedback = plaid_credit(acc, txn, cred, feedback, metric_weigths, params)  # limit, account_id
-        velocity, feedback = plaid_velocity(acc, txn, feedback, metric_weigths, params)
-        stability, feedback = plaid_stability(acc, txn, dep, n_dep, feedback, metric_weigths, params)
-        diversity, feedback = plaid_diversity(acc, txn, feedback, metric_weigths, params)
+    if checking:
+        checking = dict_reverse_cumsum(checking, 'amount', 'current')
+        metadata = general(metadata, checking, 'checking')
+        metadata = income(metadata, checking, 'sub_category', 'payroll')
+        metadata = expenses(metadata, checking, 'sub_category', 'rent')
+        metadata = expenses(metadata, checking, 'sub_category', 'insurance')
+        metadata = expenses(metadata, checking, 'sub_category', 'utilities')
+        metadata = expenses(metadata, checking, 'sub2_category', 'loans and mortgages')
+        metadata = investments(metadata, checking, 'sub2_category', 'financial planning and investments')
 
-        a = list(model_weights.values())
+    if savings:
+        savings = dict_reverse_cumsum(savings, 'amount', 'current')
+        metadata = general(metadata, savings, 'savings')
+        metadata = cash_flow(metadata, savings, 'category', 'interest')
+        metadata = earnings(metadata, savings, 'sub_category', 'interest earned')
 
+    # create model
+    credit, feedback = plaid_credit_model(feedback, params, metric_weigths, metadata, period)
+    velocity, feedback = plaid_velocity_model(feedback, params, metric_weigths, metadata)
+    stability, feedback = plaid_stability_model(feedback, params, metric_weigths, metadata)
+    diversity, feedback = plaid_diversity_model(feedback, params, metric_weigths,  metadata)
+
+    a = list(model_weights.values())
     b = [credit, velocity, stability, diversity]
 
     head, tail = head_tail_list(score_range)
@@ -65,6 +77,7 @@ def plaid_score(data, score_range, feedback, model_weights, model_penalties, met
     return score, feedback
 
 
+# @evaluate_function
 def coinbase_score(score_range, feedback, model_weights, metric_weigths, params, acc, txn):
 
     params = coinbase_params(params, score_range)
@@ -83,6 +96,7 @@ def coinbase_score(score_range, feedback, model_weights, metric_weigths, params,
     return score, feedback
 
 
+# @evaluate_function
 def covalent_score(score_range, feedback, model_weights, metric_weigths, params, erc_rank, txn, balances, portfolio):
 
     params = covalent_params(params, score_range)

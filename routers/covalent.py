@@ -79,7 +79,7 @@ async def credit_score_covalent(request: Request, response: Response, item: Cova
 
         # keep feedback data
         print(f'\033[36m Saving parameters ...\033[0m')
-        data = keep_feedback(feedback, score, item.loan_request, 'covalent')
+        data = keep_dict(feedback, score, item.loan_request, 'covalent')
         add_row_to_table('covalent', data)
 
         # compute risk
