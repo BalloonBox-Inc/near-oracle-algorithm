@@ -6,7 +6,7 @@ asttokens==2.0.5
 astunparse==1.6.3
 async-timeout==4.0.2
 attrs==21.4.0
-autopep8==1.6.0
+autopep8==1.7.0
 backcall==0.2.0
 black==22.6.0
 cachetools==5.2.0
@@ -23,11 +23,11 @@ email-validator==1.2.1
 entrypoints==0.4
 executing==0.8.3
 fastapi==0.79.0
-flake8==5.0.3
-Flask==2.2.0
+flake8==5.0.4
+Flask==2.2.2
 flatbuffers==1.12
 gast==0.4.0
-google-auth==2.9.1
+google-auth==2.10.0
 google-auth-oauthlib==0.4.6
 google-pasta==0.2.0
 grpcio==1.47.0
@@ -65,7 +65,7 @@ parso==0.8.3
 pathspec==0.9.0
 pexpect==4.8.0
 pickleshare==0.7.5
-plaid-python==9.8.0
+plaid-python==9.9.0
 platformdirs==2.5.2
 pluggy==1.0.0
 prompt-toolkit==3.0.30
@@ -78,7 +78,7 @@ pure-eval==0.2.2
 py==1.11.0
 pyasn1==0.4.8
 pyasn1-modules==0.2.8
-pycodestyle==2.9.0
+pycodestyle==2.9.1
 pycryptodome==3.14.1
 pydantic==1.9.1
 pyflakes==2.5.0
@@ -117,5 +117,5 @@ watchfiles==0.16.1
 watchgod==0.8.2
 wcwidth==0.2.5
 websockets==10.3
-Werkzeug==2.2.1
+Werkzeug==2.2.2
 wrapt==1.14.1
