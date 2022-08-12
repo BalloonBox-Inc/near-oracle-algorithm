@@ -1,6 +1,6 @@
 from support.assessment import *
-from support.models import *
-from support.helper import *
+from helpers.models import *
+from helpers.helper import *
 
 
 # @evaluate_function
@@ -74,7 +74,7 @@ def plaid_score(data, score_range, feedback, model_weights, metric_weigths, para
     head, tail = head_tail_list(score_range)
     score = head + (tail - head) * (dot_product(a, b))
 
-    return score, feedback
+    return score, feedback, metadata
 
 
 # @evaluate_function

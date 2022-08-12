@@ -5,10 +5,10 @@ from validator.covalent import *
 from icecream import ic
 
 from config.helper import *
-from support.helper import *
-from support.risk import *
-from support.feedback import *
-from support.score import *
+from helpers.helper import *
+from helpers.risk import *
+from helpers.feedback import *
+from helpers.score import *
 from market.coinmarketcap import *
 from validator.covalent import *
 

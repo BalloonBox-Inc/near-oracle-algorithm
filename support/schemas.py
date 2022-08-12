@@ -2,6 +2,7 @@ from pydantic import BaseModel
 from typing import Optional
 
 
+# http request classes
 class Plaid_Item(BaseModel):
     plaid_access_token: str
     plaid_client_id: str

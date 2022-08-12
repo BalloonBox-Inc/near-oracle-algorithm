@@ -1,15 +1,17 @@
 from support.assessment import *
 from config.helper import *
-from support.helper import *
+from helpers.helper import *
 from market.coinmarketcap import *
 from validator.plaid import *
 from validator.coinbase import *
 from validator.covalent import *
-from support.metrics_plaid import *
-from support.metrics_coinbase import *
-from support.metrics_covalent import *
-from routers.schemas import *
+from helpers.metrics_plaid import *
+from helpers.metrics_coinbase import *
+from helpers.metrics_covalent import *
+
 from fastapi import APIRouter, Request, Response, HTTPException, status
+from support.schemas import KYC_Item
+
 from dotenv import load_dotenv
 from os import getenv
 load_dotenv()

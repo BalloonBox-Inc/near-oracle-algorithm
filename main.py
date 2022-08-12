@@ -7,8 +7,11 @@ from slowapi.middleware import SlowAPIMiddleware
 from slowapi import Limiter, _rate_limit_exceeded_handler
 from slowapi.util import get_remote_address
 from routers import plaid, coinbase, covalent, kyc
+from support.database import engine
+from support import models
 
 
+models.Base.metadata.create_all(bind=engine)
 app = FastAPI()
 
 

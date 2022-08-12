@@ -1,14 +1,17 @@
 from support.assessment import *
 from config.helper import *
-from support.helper import *
-from support.risk import *
-from support.feedback import *
-from support.score import *
-from support.database import *
+from helpers.helper import *
+from helpers.risk import *
+from helpers.feedback import *
+from helpers.score import *
 from market.coinmarketcap import *
 from validator.covalent import *
-from routers.schemas import *
-from fastapi import APIRouter, Request, Response, HTTPException, status
+
+from fastapi import APIRouter, Depends, Request, Response, HTTPException, status
+from sqlalchemy.orm import Session
+from support.database import get_db
+from support.schemas import Covalent_Item
+from support import crud
 
 
 router = APIRouter(
@@ -19,7 +22,7 @@ router = APIRouter(
 
 # @evaluate_function
 @router.post('/covalent', status_code=status.HTTP_200_OK, summary='Covalent credit score')
-async def credit_score_covalent(request: Request, response: Response, item: Covalent_Item):
+async def credit_score_covalent(request: Request, response: Response, item: Covalent_Item, db: Session = Depends(get_db)):
     '''
     Calculates credit score based on Covalent data.
 
@@ -77,15 +80,14 @@ async def credit_score_covalent(request: Request, response: Response, item: Cova
         score, feedback = covalent_score(
             score_range, feedback, models, metrics, parm, erc_rank, txn, balances, portfolio)
 
-        # keep feedback data
-        print(f'\033[36m Saving parameters ...\033[0m')
-        data = keep_dict(feedback, score, item.loan_request, 'covalent')
-        add_row_to_table('covalent', data)
-
         # compute risk
         print(f'\033[36m Calculating risk ...\033[0m')
-        risk = calc_risk(
-            score, score_range, loan_range)
+        risk = calc_risk(score, score_range, loan_range)
+
+        # keep feedback data
+        print(f'\033[36m Saving parameters ...\033[0m')
+        data = keep_dict(score, feedback, risk, item.loan_request)
+        crud.add_event(db, 'covalent', data)
 
         # update feedback
         print(f'\033[36m Preparing feedback 1/2 ...\033[0m')

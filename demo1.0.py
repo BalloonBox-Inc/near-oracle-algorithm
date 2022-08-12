@@ -7,12 +7,12 @@ from datetime import datetime, timezone
 from dotenv import load_dotenv, dotenv_values
 from icecream import ic
 
-from support.score import *
-from support.feedback import *
+from helpers.score import *
+from helpers.feedback import *
 from validator.plaid import *
 from validator.coinbase import *
-from support.metrics_plaid import *
-from support.metrics_coinbase import *
+from helpers.metrics_plaid import *
+from helpers.metrics_coinbase import *
 
 
 # ------------------------------------- #
@@ -199,6 +199,7 @@ def hit_coinbase_api(coinbase_client_id, coinbase_client_secret, coinmarketcap_k
 
         ic(output)
         return make_response(output, output['status_code'])
+
 
 # ------------------------------------- #
 #                  DEMO                 #
