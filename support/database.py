@@ -5,7 +5,11 @@ from os import getenv
 load_dotenv()
 
 
-engine = create_engine(getenv('DATABASE_URL'))
+db_uri = getenv('DATABASE_URL')
+if 'postgresql' not in db_uri:
+    db_uri = db_uri.replace('postgres', 'postgresql')
+
+engine = create_engine(db_uri)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 Base = declarative_base()
 
