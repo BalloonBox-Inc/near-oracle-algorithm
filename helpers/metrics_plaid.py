@@ -93,22 +93,28 @@ def plaid_credit_metrics(feedback, params, metadata, period):
             q = np.digitize(util_avg, params['credit_util_pct'], right=True)
             r = np.digitize(late_pymt_freq, params['frequency_interest'], right=True)
 
-            # 1. limit
+            # 1. limit_usage
             score.append(limit_usage)
+
+            # 2. limit
             score.append(params['activity_vol_mtx'][y][z])
 
-            # 2. length
+            # 3. length
             score.append(params['fico_medians'][y])
 
-            # 3. livelihood
+            # 4. livelihood
             score.append(params['fico_medians'][x])
 
-            # 4. util ratio
+            # 5. util ratio
             score.append(params['activity_cns_mtx'][p][q])
+
+            # 6. cum_util_ratio
             score.append(cum_util_ratio)
 
-            # 5. interest
+            # 7. interest
             score.append(params['fico_medians'][r])
+
+            # 8. late_payment
             score.append(late_payment)
 
             # credit mix
@@ -129,7 +135,7 @@ def plaid_credit_metrics(feedback, params, metadata, period):
         feedback['credit']['error'] = str(e)
 
     finally:
-        num, size = 5, len(score)
+        num, size = 8, len(score)
         if size < num:
             score = fill_list(score, num, size)
         print(f'\033[36m  -> Credit:\t{score}\033[0m')
