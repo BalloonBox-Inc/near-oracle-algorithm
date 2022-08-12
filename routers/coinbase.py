@@ -1,14 +1,17 @@
 from support.assessment import *
 from config.helper import *
-from support.helper import *
-from support.risk import *
-from support.feedback import *
-from support.score import *
-from support.database import *
+from helpers.helper import *
+from helpers.risk import *
+from helpers.feedback import *
+from helpers.score import *
 from market.coinmarketcap import *
 from validator.coinbase import *
-from routers.schemas import *
-from fastapi import APIRouter, Request, Response, HTTPException, status
+
+from fastapi import APIRouter, Depends, Request, Response, HTTPException, status
+from sqlalchemy.orm import Session
+from support.database import get_db
+from support.schemas import Coinbase_Item
+from support import crud
 
 
 router = APIRouter(
@@ -19,7 +22,7 @@ router = APIRouter(
 
 # @evaluate_function
 @router.post('/coinbase', status_code=status.HTTP_200_OK, summary='Coinbase credit score')
-async def credit_score_coinbase(request: Request, response: Response, item: Coinbase_Item):
+async def credit_score_coinbase(request: Request, response: Response, item: Coinbase_Item, db: Session = Depends(get_db)):
     '''
     Calculates credit score based on Coinbase data.
 
@@ -110,15 +113,14 @@ async def credit_score_coinbase(request: Request, response: Response, item: Coin
         score, feedback = coinbase_score(
             score_range, feedback, models, metrics, parm, accounts, transactions)
 
-        # keep feedback data
-        print(f'\033[36m Saving parameters ...\033[0m')
-        data = keep_dict(feedback, score, item.loan_request, 'coinbase')
-        add_row_to_table('coinbase', data)
-
         # compute risk
         print(f'\033[36m Calculating risk ...\033[0m')
-        risk = calc_risk(
-            score, score_range, loan_range)
+        risk = calc_risk(score, score_range, loan_range)
+
+        # keep feedback data
+        print(f'\033[36m Saving parameters ...\033[0m')
+        data = keep_dict(score, feedback, risk, item.loan_request)
+        crud.add_event(db, 'coinbase', data)
 
         # update feedback
         print(f'\033[36m Preparing feedback 1/2 ...\033[0m')

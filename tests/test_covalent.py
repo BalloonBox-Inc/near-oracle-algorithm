@@ -1,6 +1,6 @@
-from support.metrics_covalent import *
+from helpers.metrics_covalent import *
 from config.helper import *
-from support.helper import *
+from helpers.helper import *
 import unittest
 import json
 import os

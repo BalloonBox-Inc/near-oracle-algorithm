@@ -1,14 +1,18 @@
 from support.assessment import *
 from config.helper import *
-from support.helper import *
-from support.risk import *
-from support.feedback import *
-from support.score import *
-from support.database import *
+from helpers.helper import *
+from helpers.risk import *
+from helpers.feedback import *
+from helpers.score import *
 from market.coinmarketcap import *
 from validator.plaid import *
-from routers.schemas import *
-from fastapi import APIRouter, Request, Response, HTTPException, status
+
+from fastapi import APIRouter, Depends, Request, Response, HTTPException, status
+from sqlalchemy.orm import Session
+from support.database import get_db
+from support.schemas import Plaid_Item
+from support import crud
+
 from dotenv import load_dotenv
 from os import getenv
 load_dotenv()
@@ -22,7 +26,7 @@ router = APIRouter(
 
 # @evaluate_function
 @router.post('/plaid', status_code=status.HTTP_200_OK, summary='Plaid credit score')
-async def credit_score_plaid(request: Request, response: Response, item: Plaid_Item):
+async def credit_score_plaid(request: Request, response: Response, item: Plaid_Item, db: Session = Depends(get_db)):
     '''
     Calculates credit score based on Plaid data.
 
@@ -99,16 +103,16 @@ async def credit_score_plaid(request: Request, response: Response, item: Plaid_I
 
         # compute score, feedback, and metadata
         print(f'\033[36m Calculating score ...\033[0m')
-        score, feedback = plaid_score(data, score_range, feedback, models, metrics, parm, period)
-
-        # keep feedback data
-        print(f'\033[36m Saving parameters ...\033[0m')
-        keep = keep_dict(feedback, score, item.loan_request, 'plaid')
-        add_row_to_table('plaid', keep)
+        score, feedback, metadata = plaid_score(data, score_range, feedback, models, metrics, parm, period)
 
         # compute risk
         print(f'\033[36m Calculating risk ...\033[0m')
         risk = calc_risk(score, score_range, loan_range)
+
+        # keep metadata
+        print(f'\033[36m Saving parameters ...\033[0m')
+        data = keep_dict(score, metadata, risk, item.loan_request)
+        crud.add_event(db, 'plaid', data)
 
         # update feedback
         print(f'\033[36m Preparing feedback 1/2...\033[0m')

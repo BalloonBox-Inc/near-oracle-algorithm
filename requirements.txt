@@ -99,6 +99,7 @@ rsa==4.8
 six==1.16.0
 slowapi==0.1.5
 sniffio==1.2.0
+SQLAlchemy==1.4.40
 stack-data==0.3.0
 starlette==0.19.1
 style==1.1.0

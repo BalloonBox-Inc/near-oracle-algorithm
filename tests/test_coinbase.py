@@ -1,6 +1,6 @@
-from support.metrics_coinbase import *
+from helpers.metrics_coinbase import *
 from config.helper import *
-from support.helper import *
+from helpers.helper import *
 from datetime import datetime
 import unittest
 import json

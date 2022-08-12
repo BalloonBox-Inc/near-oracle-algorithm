@@ -23,14 +23,20 @@ def flatten_dict(d):
     return nested_to_record(d, sep='_')
 
 
-def keep_dict(d, score, loan_request, validator):
+def keep_dict(score, data, risk, loan_request):
+    d = {}
+    d['data'] = data
+
     d['request'] = {}
-    d['request']['score'] = score
-    d['request']['validator'] = validator
     d['request']['loan_amount'] = loan_request
-    d['request']['timestamp'] = datetime.now(timezone.utc).strftime('%m-%d-%Y %H:%M:%S GMT')
+    d['request']['datetime'] = datetime.now(timezone.utc)
+
+    d['response'] = {}
+    d['response']['score'] = score
+    d['response']['loan_amount'] = risk['loan_amount']
+    d['response']['risk'] = risk['risk_level']
+
     d = {k: v for k, v in d.items() if not isinstance(v, list)}
-    d = flatten_dict(d)
     return d
 
 
