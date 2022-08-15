@@ -63,9 +63,6 @@ async def credit_score_plaid(request: Request, response: Response, item: Plaid_I
         models, metrics = read_models_and_metrics(
             configs['minimum_requirements']['plaid']['scores']['models'])
 
-        # penalties = read_model_penalties(
-        #     configs['minimum_requirements']['plaid']['scores']['models'])
-
         messages = configs['minimum_requirements']['plaid']['messages']
         feedback = create_feedback(models)
         feedback['fetch'] = {}
