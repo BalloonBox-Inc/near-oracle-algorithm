@@ -311,11 +311,24 @@ def plaid_stability_metrics(feedback, params, metadata):
     "data": [{"minimum_requirements": {"plaid": {"scores": {"models": {"stability": {"metrics": {...}}}}}}}]
     '''
     score = []
+
+    # 1. balance
     try:
-        # read metadata
         keys = list(metadata.keys())
         bal_total = [metadata[k]['general']['balances']['current'] for k in keys if metadata[k]['general']]
         bal_total = sum(flatten_list(bal_total))
+
+        w = np.digitize(bal_total, params['volume_balance'], right=True)
+
+        score.append(params['fico_medians'][w])
+        feedback['stability']['cumulative_current_balance'] = bal_total
+
+    except Exception as e:
+        print(f'\033[33m Warning: {e}\033[0m')
+        score.append(0)
+
+    # 2. running balance
+    try:
         txn_timespan = metadata['checking']['general']['transactions']['timespan']
         run_balance = metadata['checking']['general']['balances']['running_balance']
         run_balance_overdraft = len([n for n in run_balance if n < 0])
@@ -323,31 +336,23 @@ def plaid_stability_metrics(feedback, params, metadata):
         run_bal_weights = np.linspace(0.01, 1, run_bal_count).tolist()
         run_bal_volume = sum([x * w for x, w in zip(run_balance, reversed(run_bal_weights))]) / sum(run_bal_weights)
 
-        # read params
-        w = np.digitize(bal_total, params['volume_balance'], right=True)
         x = np.digitize(txn_timespan, params['duration'], right=True)
         y = np.digitize(run_bal_volume, params['volume_min'], right=True)
 
-        # 1. balance
-        score.append(params['fico_medians'][w])
-
-        # 2. running balance
         score.append(round(params['activity_cns_mtx'][x][y] - 0.025 * run_balance_overdraft, 2))
-
-        # update feedback
-        feedback['stability']['cumulative_current_balance'] = bal_total
         feedback['stability']['min_running_balance'] = round(run_bal_volume, 2)
         feedback['stability']['min_running_timeframe'] = txn_timespan
 
     except Exception as e:
-        feedback['stability']['error'] = str(e)
+        print(f'\033[33m Warning: {e}\033[0m')
+        score.append(0)
 
-    finally:
-        num, size = 2, len(score)
-        if size < num:
-            score = fill_list(score, num, size)
-        print(f'\033[36m  -> Stability:\t{score}\033[0m')
-        return score, feedback
+    # fill up score list if size different from metrics count
+    metrics, size = 2, len(score)
+    if size < metrics:
+        score = fill_list(score, metrics, size)
+    print(f'\033[36m  -> Stability:\t{score}\033[0m')
+    return score, feedback
 
 
 # -------------------------------------------------------------------------- #
@@ -361,14 +366,29 @@ def plaid_diversity_metrics(feedback, params, metadata):
     "data": [{"minimum_requirements": {"plaid": {"scores": {"models": {"diversity": {"metrics": {...}}}}}}}]
     '''
     score = []
+
+    # 1. account
     try:
-        # read metadata
         keys = list(metadata.keys())
         acc_count = sum([metadata[k]['general']['accounts']['total_count'] for k in keys if metadata[k]['general']])
         txn_timespan = max([metadata[k]['general']['transactions']['timespan']
                             for k in keys if metadata[k]['general']])
         txn_mtimespan = int(txn_timespan / 30)
 
+        w = np.digitize(acc_count, [i + 2 for i in params['count_zero']], right=False)
+        x = np.digitize(txn_timespan, params['duration'], right=True)
+        y = np.digitize(txn_mtimespan, params['due_date'], right=True)
+
+        score.append(params['diversity_velo_mtx'][w][x])
+        feedback['diversity']['bank_accounts'] = acc_count
+        feedback['stability']['loan_duedate'] = np.append(params['due_date'], 6)[y]
+
+    except Exception as e:
+        print(f'\033[33m Warning: {e}\033[0m')
+        score.append(0)
+
+    # 2 .profile
+    try:
         bal_savings, bal_invest = 0, 0
 
         if metadata['savings']['general']:
@@ -379,31 +399,17 @@ def plaid_diversity_metrics(feedback, params, metadata):
 
         balance = bal_savings + bal_invest
 
-        # read params
-        w = np.digitize(acc_count, [i + 2 for i in params['count_zero']], right=False)
-        x = np.digitize(txn_timespan, params['duration'], right=True)
-        y = np.digitize(txn_mtimespan, params['due_date'], right=True)
         z = np.digitize(balance, params['volume_invest'], right=True)
 
-        # account
-        score.append(params['diversity_velo_mtx'][w][x])
-
-        # profile
         score.append(params['fico_medians'][z])
 
-        # update feedback
-        feedback['diversity']['bank_accounts'] = acc_count
-        feedback['stability']['loan_duedate'] = np.append(params['due_date'], 6)[y]
-
-        if not balance:
-            raise Exception('no savings or investment accounts')
-
     except Exception as e:
-        feedback['diversity']['error'] = str(e)
+        print(f'\033[33m Warning: {e}\033[0m')
+        score.append(0)
 
-    finally:
-        num, size = 2, len(score)
-        if size < num:
-            score = fill_list(score, num, size)
-        print(f'\033[36m  -> Diversity:\t{score}\033[0m')
-        return score, feedback
+    # fill up score list if size different from metrics count
+    metrics, size = 2, len(score)
+    if size < metrics:
+        score = fill_list(score, metrics, size)
+    print(f'\033[36m  -> Diversity:\t{score}\033[0m')
+    return score, feedback
