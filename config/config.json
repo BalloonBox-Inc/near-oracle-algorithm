@@ -15,7 +15,6 @@
                         "models": {
                             "credit": {
                                 "weight": 0.42,
-                                "penalty_weight": 0.0,
                                 "metrics": {
                                     "limit_usage": 0,
                                     "limit": 0.44,
@@ -29,7 +28,6 @@
                             },
                             "velocity": {
                                 "weight": 0.2,
-                                "penalty_weight": 0.33,
                                 "metrics": {
                                     "deposits": 0.25,
                                     "withdrawals": 0.16,
@@ -40,7 +38,6 @@
                             },
                             "stability": {
                                 "weight": 0.28,
-                                "penalty_weight": 0.42,
                                 "metrics": {
                                     "balance": 0.7,
                                     "running_balance": 0.3
@@ -48,7 +45,6 @@
                             },
                             "diversity": {
                                 "weight": 0.1,
-                                "penalty_weight": 0.2,
                                 "metrics": {
                                     "acc_count": 0.4,
                                     "profile": 0.6
@@ -242,7 +238,6 @@
                         "models": {
                             "credit": {
                                 "weight": 0.45,
-                                "penalty_weight": 0.0,
                                 "metrics": {
                                     "limit_usage": 0.15,
                                     "limit": 0.27,
@@ -256,7 +251,6 @@
                             },
                             "velocity": {
                                 "weight": 0.18,
-                                "penalty_weight": 0.3,
                                 "metrics": {
                                     "deposits": 0.25,
                                     "withdrawals": 0.16,
@@ -267,7 +261,6 @@
                             },
                             "stability": {
                                 "weight": 0.25,
-                                "penalty_weight": 0.4,
                                 "metrics": {
                                     "balance": 0.6,
                                     "running_balance": 0.4
@@ -275,7 +268,6 @@
                             },
                             "diversity": {
                                 "weight": 0.12,
-                                "penalty_weight": 0.2,
                                 "metrics": {
                                     "acc_count": 0.45,
                                     "profile": 0.55
@@ -318,7 +310,7 @@
                     "messages": {
                         "failed": "NEAR Oracle could not calculate your credit score as there is no active credit line nor transaction history associated with your Plaid bank account. Please use a different bank account",
                         "success": "Congrats, you have successfully obtained a credit score! Your NEAR Oracle score is {} - {} points. This score qualifies you for a short term loan of up to {:,} NEAR which is equivalent to {:,} USD",
-                        "not_qualified": "Unfortunately it looks like you do not qualify for the requested loan amount. Please try another time for a loan lower than USD {:,}."
+                        "not_qualified": "Unfortunately it looks like you do not qualify for the requested loan amount. You may be better suited for a smaller loan size, try another loan application lower than USD {:,}."
                     }
                 }
             }
@@ -338,7 +330,6 @@
                         "models": {
                             "credit": {
                                 "weight": 0.48,
-                                "penalty_weight": 0.0,
                                 "metrics": {
                                     "limit_usage": 0.18,
                                     "limit": 0.22,
@@ -352,7 +343,6 @@
                             },
                             "velocity": {
                                 "weight": 0.15,
-                                "penalty_weight": 0.3,
                                 "metrics": {
                                     "deposits": 0.25,
                                     "withdrawals": 0.16,
@@ -363,7 +353,6 @@
                             },
                             "stability": {
                                 "weight": 0.22,
-                                "penalty_weight": 0.4,
                                 "metrics": {
                                     "balance": 0.55,
                                     "running_balance": 0.45
@@ -371,7 +360,6 @@
                             },
                             "diversity": {
                                 "weight": 0.15,
-                                "penalty_weight": 0.2,
                                 "metrics": {
                                     "acc_count": 0.5,
                                     "profile": 0.5
@@ -414,7 +402,7 @@
                     "messages": {
                         "failed": "NEAR Oracle could not calculate your credit score as there is no active credit line nor transaction history associated with your Plaid bank account. Please use a different bank account",
                         "success": "Congrats, you have successfully obtained a credit score! Your NEAR Oracle score is {} - {} points. This score qualifies you for a short term loan of up to {:,} NEAR which is equivalent to {:,} USD",
-                        "not_qualified": "Unfortunately it looks like you do not qualify for the requested loan amount. Please try another time for a loan lower than USD {:,}."
+                        "not_qualified": "Unfortunately it looks like you do not qualify for the requested loan amount. You may be better suited for a smaller loan size, try another loan application lower than USD {:,}."
                     }
                 }
             }
