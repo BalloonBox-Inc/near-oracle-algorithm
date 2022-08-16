@@ -127,6 +127,8 @@ async def credit_score_plaid(request: Request, response: Response, item: Plaid_I
     except Exception as e:
         print(f'\033[35;1m Unable to complete credit scoring calculation.\033[0m')
         status_msg = 'error'
+        if 'do not qualify' in str(e):
+            status_msg = 'not qualified'
         score = 0
         risk = 'undefined'
         message = str(e)
