@@ -8,12 +8,12 @@
 
 ## At a Glance
 
-NEARoracle is an oracle for credit scoring designed for the web3 community. The oracle returns a numerical score affirming users' credibility and trustworthiness in the web3 space. The DApp was designed with one specific use case in mind: unsecured P2P lending, which is facilitating lending and borrowing of crypto loans.
+NearOracle is an oracle for credit scoring designed for the web3 community. The oracle returns a numerical score affirming users' credibility and trustworthiness in the web3 space. The dApp was designed with one specific use case in mind: unsecured P2P lending: facilitating lending and borrowing of crypto loans.
 
-The DApp works as follow:
+The dApp works as follow:
 
-- it acquires user's financial data by integrating with two validators ([Plaid](https://dashboard.plaid.com/overview) & [Coinbase](https://developers.coinbase.com/))
-- it runs an algorithm on given data to compute a score representing the financial health of a user
+- it acquires user's financial data by integrating with three validators ([Plaid](https://dashboard.plaid.com/overview), [Coinbase](https://developers.coinbase.com/), and [Covalent](https://www.covalenthq.com/))
+- it runs a credit scoring algorithm on given data to compute a score representing the financial health of a user
 - it writes the score to the NEAR Protocol blockchain via a Wasm smart contract build using the Rust `NEAR SDK`
 
 Ultimately, this will incentivize on-chain traffic, it will affirm the reputation of those users requesting a credit score, and it will execute a credit score check to validate their credibility, while also preserving their privacy.
@@ -22,7 +22,7 @@ Ultimately, this will incentivize on-chain traffic, it will affirm the reputatio
 
 ## This Repo
 
-This GitHub repo contains the codebase of the NEARoracle credit score algorithm. The code features 2 validators, 3 API integrations, 10 score metrics, and 25+ functions to calculate users' credit scores. The front end of the NEARoracle DApp, after fetching the user's data, passes it to the algorithm to execute and return a score. The Rust smart contract is stored at the [NEARoracle-Oracle](https://github.com/BalloonBox-Inc/NEARoracle-Contract) repo.
+This GitHub repo contains the codebase of the NearOracle credit score algorithm. The code features 3 validators, 4 API integrations, 12 score metrics, and 25+ functions to calculate users' credit scores. The front end of the NearOracle DApp, after fetching the user's data, passes it to the algorithm to execute and return a score. The Rust smart contract is stored at the [near-oracle-contract](https://github.com/BalloonBox-Inc/near-oracle-contract) repo.
 
 ## Execute Locally
 
@@ -51,19 +51,13 @@ conda create --name <env_name> --file requirements.txt          # using Conda
 
 ### Credentials Required :old_key: :lock:
 
-If you want to test the algorithm alone (independently from the DApp frontend), then continue reading this page and follow the step-by-step guide below. You'll need to create a Developer CoinMarketCap API Key, following the CoinMarketCap Developers guide [here](https://coinmarketcap.com/api/documentation/v1/#section/Introduction). In addition, you'll need either a Plaid or Coinbase account or (ideally) both. If you don't own one yet, you can create an account [here](https://dashboard.plaid.com/signin) and [here](https://www.coinbase.com/signup), respectively and then retrieve your Plaid [keys](https://dashboard.plaid.com/team/keys) and your Coinbase [keys](https://www.coinbase.com/settings/api). For Coinbase, you'll need to generate a new set of API keys. Do so, following this flow: `Coinbase` -> `settings` -> `API` -> `New API Key`.
+If you want to test the algorithm alone (independently from the dApp frontend), then continue reading this page and follow the step-by-step guide below. You'll need to create a Developer CoinMarketCap API Key, following the CoinMarketCap Developers guide [here](https://coinmarketcap.com/api/documentation/v1/#section/Introduction). In addition, you'll need either a Plaid account, Coinbase account, or MetaMask wallet. If you don't own one yet, you can create an account [here](https://dashboard.plaid.com/signin) and [here](https://www.coinbase.com/signup), respectively and then retrieve your Plaid [keys](https://dashboard.plaid.com/team/keys) and your Coinbase [keys](https://www.coinbase.com/settings/api). For Coinbase, you'll need to generate a new set of API keys. Do so, following this flow: `Coinbase` -> `settings` -> `API` -> `New API Key`.
 
 Next, create a `.env` local file in your root folder:
 
 ```bash
-PLAID_CLIENT_ID=your_client_id
-PLAID_CLIENT_SECRET=your_secret_sandbox_key
-PLAID_ACCESS_TOKEN=your_unique_access_token
-
-COINBASE_CLIENT_ID=your_coinbase_id
-COINBASE_CLIENT_SECRET=your_coinbase_secret_key
-
-COINMARKETCAP_KEY=your_coinmarketcap_key
+PLAID_ENV='sandbox'
+DATABASE_URL='postgres_url'
 ```
 
 ### Run Locally
@@ -72,9 +66,8 @@ COINMARKETCAP_KEY=your_coinmarketcap_key
 
 ```bash
 cd my-project-name
-python demo.py
+python demo1.0.py
 ```
-
 > :warning: The oracle will execute properly, only if you set up a correct and complete `.env` file.
 
 ## Credit Score Model
@@ -114,15 +107,15 @@ There are three distinct models, one for each of our chosen validators, namely P
 
 ## Interpret Your Score :mag:
 
-NEARoracle returns to the user a numerical score ranging from 300-900 points. The score is partitioned into categorical bins (very poor | poor | fair | good | very good | excellent | exceptional), which describe the score qualitatively (see fuel gauge in the diagram below). Every bin is associated with a USD equivalent, which represents the maximum loan amount in USD that a user qualifies for, based on NEARoracle oracle calculation. Lastly, the NEARoracle also returns the estimated payback period, namely the expected time it will take for the user to pay back the loan. The loan terms (loan amount, qualitative descriptor, and payback period) are algorithmic recommendations, and, therefore, they are not prescriptive. Although we strongly advise lenders and borrowers to consider the NEARoracle Oracle's parameters, we also encourage them to stipulate loan terms to best suit their needs.
+NarOracle returns to the user a numerical score ranging from 300-900 points. The score is partitioned into categorical bins (very poor | poor | fair | good | very good | excellent | exceptional), which describe the score qualitatively (see fuel gauge in the diagram below). Every bin is associated with a USD equivalent, which represents the maximum loan amount in USD that a user qualifies for, based on the NearOracle calculation. Lastly, the NearOracle also returns the estimated payback period, namely the expected time it will take for the user to pay back the loan. The loan terms (loan amount, qualitative descriptor, and payback period) are algorithmic recommendations, and, therefore, they are not prescriptive. Although we strongly advise lenders and borrowers to consider the NearOracle's parameters, we also encourage them to stipulate loan terms to best suit their needs.
 ![](./images/credit_score_range.png)
 
-### Unit tests :pencil2: :black_nib: :page_facing_up:
+### Unit tests :page_facing_up:
 
 The algorithm has undergone extensive unit testing. To execute these tests yourself, run the following command in terminal, from the root folder of this Git repo:
 
 ```bash
-python -m unittest -v unit_tests                # for both Coinbase & Plaid
+python -m unittest -v unit_tests                # for both Plaid, Coinbase, and Covalent
 ```
 
-> :warning: both Coinbase and Plaid `unittest` relies on imported test data (_json_ files). We crafted two fake and anonimized test data-sets with the explicit goal of executing unit tests. Find these two data sets in the `data` directory, under the names of `test_user_coinbase.json` and `test_user_plaid.json`, respectively.
+> :warning: `unittest` relies on imported test data (_json_ files). We crafted some fake and anonimized test data-sets with the explicit goal of executing unit tests. Find these two data sets in the `tests` directory.
