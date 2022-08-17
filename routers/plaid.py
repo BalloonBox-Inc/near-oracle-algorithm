@@ -70,7 +70,7 @@ async def credit_score_plaid(request: Request, response: Response, item: Plaid_I
         # plaid client connection
         print(f'\033[36m Connecting with validator ...\033[0m')
         client = plaid_client(
-            getenv('ENV'), item.plaid_client_id, item.plaid_client_secret)
+            getenv('PLAID_ENV'), item.plaid_client_id, item.plaid_client_secret)
 
         # data fetching
         print(f'\033[36m Reading data ...\033[0m')
