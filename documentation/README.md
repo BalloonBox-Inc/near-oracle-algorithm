@@ -4,7 +4,7 @@
   </a>
 </p>
 
-# NEAR ORACLE API
+# NearOracle API
 
 ## About :mailbox_with_mail:
 
@@ -220,7 +220,7 @@ Response: **200**
             "loan_amount": 500,
             "risk_level": "medium"
         },
-        "message": "Congrats! Your NEAR Oracle score is VERY POOR - 401 points. This score qualifies you for a <br/>
+        "message": "Congrats! Your NearOracle score is VERY POOR - 401 points. This score qualifies you for a <br/>
         short term loan of up to 93 NEAR which is equivalent to 500 USD over a recommended pay back period of <br/>
         6 monthly installments Your total current balance is $320 USD across all accounts held with Chase NEARoracle <br/>
         found no credit card associated with your bank account. Credit scores rely heavily on credit card history. <br/>
@@ -339,7 +339,7 @@ Response: **200**
         "loan_amount": 10000,
         "risk_level": "medium"
       },
-      "message": "Congrats, you have successfully obtained a credit score! Your NEAR Oracle score is GOOD - 701 points. <br/>
+      "message": "Congrats, you have successfully obtained a credit score! Your NearOracle score is GOOD - 701 points. <br/>
       This score qualifies you for a short term loan of up to 2934 NEAR which is equivalent to 10000 USD over a <br/>
       recommended pay back period of 6 monthly installments. Your ETH wallet address has been active for 414 days <br/>
       and your total balance across all cryptocurrencies owned is $143 USD.",

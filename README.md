@@ -1,4 +1,4 @@
-# 🔮 NEAR Oracle
+# 🔮 NearOracle
 
 <p align="center">
   <a href="https://near.org/">
@@ -98,7 +98,7 @@ There are three distinct models, one for each of our chosen validators, namely P
 
 [**Covalent model**](./images/logic_covalent.png) diagram and features:
 
-- :fox_face: authenticate user via MetaMask 
+- :fox_face: authenticate user via MetaMask
 - :parachute: account for credits, debits transactions, transfers, frequency, cumulative balance now, and more
 - :chains: fetch up to 100 top ERC20 tokens (by market capitalization) via [CoinMarketCap](https://coinmarketcap.com/) API
 - :bar_chart: analyze time series of latest 400 transactions on MetaMask wallet
