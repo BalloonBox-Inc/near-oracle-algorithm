@@ -8,7 +8,7 @@ import os
 
 ERC_RANK = {'ETH': 2, 'USDT': 3, 'USDC': 4, 'MATIC': 11, 'CRO': 22, 'LINK': 23, 'TUSD': 45,
             'MKR': 49, 'HT': 60, 'BAT': 68, 'ENJ': 77, 'HOT': 92, 'NEXO': 94, 'WETH': 2.5}
-LOAN_AMOUNT = 24000
+LOAN_AMOUNT = 10000
 dummy_data = 'test_covalent.json'
 
 json_file = os.path.join(os.path.dirname(__file__), dummy_data)
@@ -498,7 +498,3 @@ class TestParametrizeCovalent(unittest.TestCase):
                 self.assertIsInstance(x, tuple)
                 self.assertIsInstance(x[1], dict)
                 self.assertIsInstance(x[0], (float, int))
-
-
-if __name__ == '__main__':
-    unittest.main()
