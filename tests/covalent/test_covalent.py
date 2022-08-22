@@ -10,8 +10,33 @@ ERC_RANK = {'ETH': 2, 'USDT': 3, 'USDC': 4, 'MATIC': 11, 'CRO': 22, 'LINK': 23, 
             'MKR': 49, 'HT': 60, 'BAT': 68, 'ENJ': 77, 'HOT': 92, 'NEXO': 94, 'WETH': 2.5}
 LOAN_AMOUNT = 10000
 dummy_data = 'test_covalent.json'
-
 json_file = os.path.join(os.path.dirname(__file__), dummy_data)
+
+
+class CovalentData:
+
+    def __init__(self):
+        with open(json_file) as f:
+            data = json.load(f)
+
+        self.txn = data['txn']
+        self.bal = data['balances']
+        self.por = data['portfolio']
+
+
+class CovalentSupportData:
+
+    def __init__(self):
+        configs = read_config_file(LOAN_AMOUNT)
+        score_range = configs['score_range']
+        parm = configs['minimum_requirements']['covalent']['params']
+        models, metrics = read_models_and_metrics(
+            configs['minimum_requirements']['covalent']['scores']['models'])
+
+        self.parm = covalent_params(parm, score_range)
+        self.fb = create_feedback(models)
+        self.fb['fetch'] = {}
+
 
 # -------------------------------------------------------------------------- #
 #                                TEST CASES                                  #
@@ -22,21 +47,11 @@ json_file = os.path.join(os.path.dirname(__file__), dummy_data)
 class TestMetricCredibility(unittest.TestCase):
 
     def setUp(self):
-
-        # import model parameters from config.json
-        configs = read_config_file(LOAN_AMOUNT)
-        score_range = configs['score_range']
-        parm = configs['minimum_requirements']['covalent']['params']
-        self.parm = covalent_params(parm, score_range)
-        models, metrics = read_models_and_metrics(
-            configs['minimum_requirements']['covalent']['scores']['models'])
-        self.fb = create_feedback(models)
-
         # import data
-        with open(json_file) as f:
-            self.txn = json.load(f)['txn']
-        with open(json_file) as f:
-            self.bal = json.load(f)['balances']
+        self.fb = CovalentSupportData().__dict__['fb']
+        self.txn = CovalentData().__dict__['txn']
+        self.bal = CovalentData().__dict__['bal']
+        self.parm = CovalentSupportData().__dict__['parm']
 
     def tearDown(self):
         # post-test cleanup
@@ -73,21 +88,11 @@ class TestMetricCredibility(unittest.TestCase):
 class TestMetricWealth(unittest.TestCase):
 
     def setUp(self):
-
-        # import model parameters from config.json
-        configs = read_config_file(LOAN_AMOUNT)
-        score_range = configs['score_range']
-        parm = configs['minimum_requirements']['covalent']['params']
-        self.parm = covalent_params(parm, score_range)
-        models, metrics = read_models_and_metrics(
-            configs['minimum_requirements']['covalent']['scores']['models'])
-        self.fb = create_feedback(models)
-
         # import data
-        with open(json_file) as f:
-            self.txn = json.load(f)['txn']
-        with open(json_file) as f:
-            self.bal = json.load(f)['balances']
+        self.fb = CovalentSupportData().__dict__['fb']
+        self.txn = CovalentData().__dict__['txn']
+        self.bal = CovalentData().__dict__['bal']
+        self.parm = CovalentSupportData().__dict__['parm']
 
     def tearDown(self):
         # post-test cleanup
@@ -146,23 +151,12 @@ class TestMetricWealth(unittest.TestCase):
 class TestMetricTraffic(unittest.TestCase):
 
     def setUp(self):
-
-        # import model parameters from config.json
-        configs = read_config_file(LOAN_AMOUNT)
-        score_range = configs['score_range']
-        parm = configs['minimum_requirements']['covalent']['params']
-        self.parm = covalent_params(parm, score_range)
-        models, metrics = read_models_and_metrics(
-            configs['minimum_requirements']['covalent']['scores']['models'])
-        self.fb = create_feedback(models)
-
         # import data
-        with open(json_file) as f:
-            self.txn = json.load(f)['txn']
-        with open(json_file) as f:
-            self.bal = json.load(f)['balances']
-        with open(json_file) as f:
-            self.por = json.load(f)['portfolio']
+        self.fb = CovalentSupportData().__dict__['fb']
+        self.txn = CovalentData().__dict__['txn']
+        self.bal = CovalentData().__dict__['bal']
+        self.por = CovalentData().__dict__['por']
+        self.parm = CovalentSupportData().__dict__['parm']
 
     def tearDown(self):
         # post-test cleanup
@@ -222,23 +216,12 @@ class TestMetricTraffic(unittest.TestCase):
 class TestMetricStamina(unittest.TestCase):
 
     def setUp(self):
-
-        # import model parameters from config.json
-        configs = read_config_file(LOAN_AMOUNT)
-        score_range = configs['score_range']
-        parm = configs['minimum_requirements']['covalent']['params']
-        self.parm = covalent_params(parm, score_range)
-        models, metrics = read_models_and_metrics(
-            configs['minimum_requirements']['covalent']['scores']['models'])
-        self.fb = create_feedback(models)
-
         # import data
-        with open(json_file) as f:
-            self.txn = json.load(f)['txn']
-        with open(json_file) as f:
-            self.bal = json.load(f)['balances']
-        with open(json_file) as f:
-            self.por = json.load(f)['portfolio']
+        self.fb = CovalentSupportData().__dict__['fb']
+        self.txn = CovalentData().__dict__['txn']
+        self.bal = CovalentData().__dict__['bal']
+        self.por = CovalentData().__dict__['por']
+        self.parm = CovalentSupportData().__dict__['parm']
 
     def tearDown(self):
         # post-test cleanup
@@ -312,24 +295,12 @@ class TestMetricStamina(unittest.TestCase):
 class TestCovHelperFunctions(unittest.TestCase):
 
     def setUp(self):
-
-        # import model parameters from config.json
-        configs = read_config_file(LOAN_AMOUNT)
-        score_range = configs['score_range']
-        parm = configs['minimum_requirements']['covalent']['params']
-        self.parm = covalent_params(parm, score_range)
-        models, metrics = read_models_and_metrics(
-            configs['minimum_requirements']['covalent']['scores']['models'])
-        self.fb = create_feedback(models)
-        self.fb['fetch'] = {}
-
         # import data
-        with open(json_file) as f:
-            self.txn = json.load(f)['txn']
-        with open(json_file) as f:
-            self.bal = json.load(f)['balances']
-        with open(json_file) as f:
-            self.por = json.load(f)['portfolio']
+        self.fb = CovalentSupportData().__dict__['fb']
+        self.txn = CovalentData().__dict__['txn']
+        self.bal = CovalentData().__dict__['bal']
+        self.por = CovalentData().__dict__['por']
+        self.parm = CovalentSupportData().__dict__['parm']
 
     def tearDown(self):
         # post-test cleanup
@@ -388,23 +359,12 @@ class TestCovHelperFunctions(unittest.TestCase):
 class TestParametrizeCovalent(unittest.TestCase):
 
     def setUp(self):
-
-        # import model parameters from config.json
-        configs = read_config_file(LOAN_AMOUNT)
-        score_range = configs['score_range']
-        parm = configs['minimum_requirements']['covalent']['params']
-        self.parm = covalent_params(parm, score_range)
-        models, metrics = read_models_and_metrics(
-            configs['minimum_requirements']['covalent']['scores']['models'])
-        self.fb = create_feedback(models)
-
         # import data
-        with open(json_file) as f:
-            self.txn = json.load(f)['txn']
-        with open(json_file) as f:
-            self.bal = json.load(f)['balances']
-        with open(json_file) as f:
-            self.por = json.load(f)['portfolio']
+        self.fb = CovalentSupportData().__dict__['fb']
+        self.txn = CovalentData().__dict__['txn']
+        self.bal = CovalentData().__dict__['bal']
+        self.por = CovalentData().__dict__['por']
+        self.parm = CovalentSupportData().__dict__['parm']
 
         self.args1 = {
             'good':
