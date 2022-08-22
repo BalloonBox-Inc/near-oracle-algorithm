@@ -30,8 +30,10 @@ class PlaidParams:
         configs = read_config_file(LOAN_AMOUNT)
         score_range = configs['score_range']
         params = configs['minimum_requirements']['plaid']['params']
+        thresholds = configs['minimum_requirements']['plaid']['thresholds']
 
         self.prm = plaid_params(params, score_range)
+        self.prd = thresholds['transactions_period']
 
 
 class PlaidMetadata:
@@ -110,6 +112,7 @@ class PlaidMetadata:
 #                - test core functions of Plaid algorithm -                  #
 # -------------------------------------------------------------------------- #
 
+
 class TestMetricCredit(unittest.TestCase):
 
     def setUp(self):
@@ -121,6 +124,7 @@ class TestMetricCredit(unittest.TestCase):
         # inputs
         self.fb = PlaidFeedback().__dict__['fb']
         self.prm = PlaidParams().__dict__['prm']
+        self.prd = PlaidParams().__dict__['prd']
         self.mtd = PlaidMetadata().__dict__['mtd']
 
     def tearDown(self):
@@ -128,12 +132,13 @@ class TestMetricCredit(unittest.TestCase):
 
         self.fb = None
         self.prm = None
+        self.prd = None
         self.mtd = None
 
-    def plaid_credit_metrics(self):
+    def test_credit(self):
         ''' perform test calling app functions '''
 
-        s, f = plaid_diversity_metrics(self.fb, self.prm, self.mtd)
+        s, f = plaid_credit_metrics(self.fb, self.prm, self.mtd, self.prd)
 
         self.assertCountEqual(s, self.expected)
         self.assertListEqual(s, self.expected)
@@ -159,7 +164,7 @@ class TestMetricVelocity(unittest.TestCase):
         self.prm = None
         self.mtd = None
 
-    def test_diversity_acc_count(self):
+    def test_velocity(self):
         ''' perform test calling app functions '''
 
         s, f = plaid_velocity_metrics(self.fb, self.prm, self.mtd)
@@ -188,7 +193,7 @@ class TestMetricStability(unittest.TestCase):
         self.prm = None
         self.mtd = None
 
-    def test_diversity_acc_count(self):
+    def test_stability(self):
         ''' perform test calling app functions '''
 
         s, f = plaid_stability_metrics(self.fb, self.prm, self.mtd)
@@ -217,7 +222,7 @@ class TestMetricDiversity(unittest.TestCase):
         self.prm = None
         self.mtd = None
 
-    def test_diversity_acc_count(self):
+    def test_diversity(self):
         ''' perform test calling app functions '''
 
         s, f = plaid_diversity_metrics(self.fb, self.prm, self.mtd)
