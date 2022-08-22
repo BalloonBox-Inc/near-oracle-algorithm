@@ -7,7 +7,7 @@ import json
 import os
 
 
-LOAN_AMOUNT = 24000
+LOAN_AMOUNT = 10000
 dummy_data = 'test_coinbase.json'
 
 json_file = os.path.join(os.path.dirname(__file__), dummy_data)
@@ -293,7 +293,3 @@ class TestParametrizeCoinbase(unittest.TestCase):
                 self.assertEqual(x[0], 0)
                 self.assertIsInstance(x[0], (float, int))
                 self.assertIsInstance(x[1], dict)
-
-
-if __name__ == '__main__':
-    unittest.main()
