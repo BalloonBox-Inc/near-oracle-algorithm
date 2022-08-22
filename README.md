@@ -8,17 +8,17 @@
 
 ## Credit Scoring on NEAR Protocol 🔮 :ringed_planet: :mag:
 
-NearOracle is an oracle for credit scoring that runs on the NEAR protocol and serves web3 users intrerested in lending or borrowing money in the crypto space. This repo contains the Python codebase of the credit scoring algorithm used by the NearOracle dApp, a dApp that BalloonBox developped through a grant by the [NEAR Foundation](https://near.foundation/). The oracle reads in user's fiat or crypto financial history and uses it to calculate a numerical score, namely an intreger representing a user's financial health. Ranking users through a credit score is essential to distinguish trusted and supsicious agents in the web3 space. The dApp caters for a specific use case, namely unsecured P2P lending: facilitating lending and borrowing of crypto loans.
+NearOracle is an oracle for credit scoring that runs on the NEAR protocol and serves web3 users interested in lending or borrowing money in the crypto space. This repo contains the Python codebase of the credit scoring algorithm used by the NearOracle dApp, a dApp that BalloonBox developed through a grant by the [NEAR Foundation](https://near.foundation/). The oracle reads in the user's fiat or crypto financial history and uses it to calculate a numerical score, namely an integer representing a user's financial health. Ranking users through a credit score is essential to distinguish between trusted and suspicious agents in the web3 space. The dApp caters to a specific use case, namely unsecured P2P lending: facilitating lending and borrowing of crypto loans.
 
 ###### How does the dApp work?
 - it acquires user's financial data by integrating with three validators ([Plaid](https://dashboard.plaid.com/overview), [Coinbase](https://developers.coinbase.com/), and [MetaMask](https://metamask.io/))
 - it runs the credit scoring algorithm to compute a score assessing a user's financial health
-- it writes the score to blockchain via a Wasm smart contract build using the Rust `NEAR SDK`
+- it writes the score to the blockchain via a Wasm smart contract build using the Rust `NEAR SDK`
 
 ###### In this Repo
 This GitHub repo contains the codebase of the NearOracle credit score algorithm. The code features 3 validators, 4 API integrations, 12 score metrics, and 25+ functions to calculate users' credit scores. The front end of the NearOracle DApp (see codebase at [`near-oracle-client`](https://github.com/BalloonBox-Inc/near-oracle-client)), after fetching the user's data, passes it to the algorithm, which executes and returns a score via a Rust smart contract (see codebase at [`near-oracle-contract`](https://github.com/BalloonBox-Inc/near-oracle-contract)).
 
-Continue to read this docs to understand the algorithm or clone this project and spin it up in your local machine.
+Continue to read these docs to understand the algorithm or clone this project and spin it up in your local machine.
 
 ---
 
@@ -36,7 +36,7 @@ There are three distinct models, one for each of our chosen validators, namely P
 - :gem: dynamically select user's best credit card products
 - :dart: detect recurring deposits and withdrawals (monthly)
 - :hammer_and_wrench: deploy linear regression on minimum running balance over the past 24 months
-- :magnet: auto-filter & discard micro transactions
+- :magnet: auto-filter & discard microtransactions
 - :pushpin: inspect loan, investment, and saving accounts
 
 **Coinbase** model (powered by [Coinbase](./images/logic_coinbase.png))
@@ -51,7 +51,7 @@ There are three distinct models, one for each of our chosen validators, namely P
 **MetaMask** model (powered by [Covalent](./images/logic_covalent.png))
 
 - :fox_face: authenticate user via MetaMask
-- :parachute: account for credits, debits transactions, transfers, frequency, cumulative balance now, and more
+- :parachute: account for credits, debits transactions, transfers, frequency, the cumulative balance now, and more
 - :chains: fetch up to 100 top ERC20 tokens (by market capitalization) via [CoinMarketCap](https://coinmarketcap.com/) API
 - :bar_chart: analyze time series of latest 400 transactions on MetaMask wallet
 - :lady_beetle: inspect historical OHLCV for last 30 days
@@ -61,7 +61,7 @@ There are three distinct models, one for each of our chosen validators, namely P
 
 NarOracle returns to the user a numerical score ranging from 300-900 points. The score is partitioned into categorical bins </br> (`very poor` | `poor` | `fair` | `good` | `very good` | `excellent` | `exceptional`), which describe the score qualitatively (see fuel gauge in the diagram below). Every bin is associated with a USD equivalent, which represents the maximum loan amount in USD that a user qualifies for, based on the NearOracle calculation. Lastly, the NearOracle also returns the estimated payback period, namely the expected time it will take for the user to pay back the loan.
 
-The loan terms (loan amount, qualitative descriptor, and payback period) are algorithmic recommendations, and, therefore, they are not prescriptive. Although we strongly advise lenders and borrowers to consider the NearOracle's parameters, we also encourage them to stipulate loan terms that best suit their unique needs.
+The loan terms (loan amount, qualitative descriptor, and payback period) are algorithmic recommendations, and, therefore, they are not prescriptive. Although we strongly advise lenders and borrowers to consider NearOracle's parameters, we also encourage them to stipulate loan terms that best suit their unique needs.
 
 ![](./images/credit_score_range.png)
 
@@ -70,15 +70,15 @@ The loan terms (loan amount, qualitative descriptor, and payback period) are alg
 ## Clone This Project :key: :lock: :package:
 
 ### 1. Clone locally
-Download or clone the repo to your machine, running in temrinal
+Download or clone the repo to your machine, running in terminal
 
   ```bash
   git clone  ... my-project-name
   cd my-project-name
   ```
 
-### 2. Install dependancies
-Run either of the command below. You'll need either `pip` or `conda` package manager
+### 2. Install dependencies
+Run either of the commands below. You'll need either `pip` or `conda` package manager
 
   ```bash
   pip install -r requirements.txt                                 # using pip
