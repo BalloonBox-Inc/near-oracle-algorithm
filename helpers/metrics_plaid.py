@@ -35,8 +35,6 @@ def plaid_kyc(acc, txn):
 # -------------------------------------------------------------------------- #
 #                               Metric #1 Credit                             #
 # -------------------------------------------------------------------------- #
-
-
 def plaid_credit_metrics(feedback, params, metadata, period):
     '''
     score[list] order must be the same as showed under metrics in the cofig.json file, e.g.
@@ -173,8 +171,6 @@ def plaid_credit_metrics(feedback, params, metadata, period):
 # -------------------------------------------------------------------------- #
 #                            Metric #2 Velocity                              #
 # -------------------------------------------------------------------------- #
-
-
 def plaid_velocity_metrics(feedback, params, metadata):
     '''
     score[list] order must be the same as showed under metrics in the cofig.json file, e.g.
@@ -303,8 +299,6 @@ def plaid_velocity_metrics(feedback, params, metadata):
 # -------------------------------------------------------------------------- #
 #                            Metric #3 Stability                             #
 # -------------------------------------------------------------------------- #
-
-
 def plaid_stability_metrics(feedback, params, metadata):
     '''
     score[list] order must be the same as showed under metrics in the cofig.json file, e.g.
@@ -358,8 +352,6 @@ def plaid_stability_metrics(feedback, params, metadata):
 # -------------------------------------------------------------------------- #
 #                            Metric #4 Diversity                             #
 # -------------------------------------------------------------------------- #
-
-
 def plaid_diversity_metrics(feedback, params, metadata):
     '''
     score[list] order must be the same as showed under metrics in the cofig.json file, e.g.
