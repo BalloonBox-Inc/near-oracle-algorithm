@@ -63,18 +63,21 @@ async def credit_score_covalent(request: Request, item: Covalent_Item, db: Sessi
         txn = covalent_get_transactions(
             '1', item.eth_address, item.covalent_key, False, 500, 0)
         if isinstance(txn, dict) and 'found_error' in txn and txn['found_error']:
-            raise Exception(txn['error_message'])
+            error = txn['error_message']
+            raise Exception(f'Unable to fetch transactions data: {error}')
 
         balances = covalent_get_balances_or_portfolio(
             '1', item.eth_address, 'balances_v2', item.
             covalent_key)
         if isinstance(balances, dict) and 'found_error' in balances and balances['found_error']:
-            raise Exception(balances['error_message'])
+            error = balances['error_message']
+            raise Exception(f'Unable to fetch balances data: {error}')
 
         portfolio = covalent_get_balances_or_portfolio(
             '1', item.eth_address, 'portfolio_v2', item.covalent_key)
         if isinstance(portfolio, dict) and 'found_error' in portfolio and portfolio['found_error']:
-            raise Exception(portfolio['error_message'])
+            error = portfolio['error_message']
+            raise Exception(f'Unable to fetch portfolio data: {error}')
 
         # coinmarketcap
         print(f'\033[36m Connecting with Coinmarketcap ...\033[0m')
