@@ -62,7 +62,7 @@ async def credit_score_coinbase(request: Request, item: Coinbase_Item, db: Sessi
         top_marketcap = coinmarketcap_currencies(
             item.coinmarketcap_key, thresholds['coinmarketcap_currencies'])
         if isinstance(top_marketcap, str):
-            raise Exception(top_marketcap)
+            raise Exception(f'Unable to fetch coinmarketcap data: {top_marketcap}')
 
         # coinbase client connection
         print(f'\033[36m Connecting with validator ...\033[0m')
@@ -73,7 +73,8 @@ async def credit_score_coinbase(request: Request, item: Coinbase_Item, db: Sessi
         print(f'\033[36m Checking supported currencies 1/2 ...\033[0m')
         currencies = coinbase_currencies(client)
         if 'error' in currencies:
-            raise Exception(currencies['error']['message'])
+            error = currencies['error']['message']
+            raise Exception(f'Unable to fetch coinbase data: {error}')
 
         # add top coinmarketcap currencies and coinbase currencies
         print(f'\033[36m Checking supported currencies 2/2 ...\033[0m')
@@ -84,7 +85,8 @@ async def credit_score_coinbase(request: Request, item: Coinbase_Item, db: Sessi
         print(f'\033[36m Setting native currency 1/2 ...\033[0m')
         native = coinbase_native_currency(client)
         if 'error' in native:
-            raise Exception(native['error']['message'])
+            error = native['error']['message']
+            raise Exception(f'Unable to fetch coinbase native currency: {error}')
         if native != 'USD':
             set_native = coinbase_set_native_currency(client, 'USD')
 
