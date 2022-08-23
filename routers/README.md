@@ -4,17 +4,17 @@
   </a>
 </p>
 
-# NearOracle API
+# NearOracle API Docs
 
 ## About :mailbox_with_mail:
 
-This documentation contains all APIs endpoints featured in our NearOracle DApp.
+This documentation contains all APIs endpoints featured in our NearOracle dApp.
 
 Imagine you are a user who owns a NEAR wallet and wants to be issued a loan.
-The NearOracle DApp leverages public APIs to allow users to:
+The NearOracle dApp leverages public APIs to allow users to:
 
-- integrate their existing Plaid, Coinbase, and NEAR wallet accounts with the NearOracle Credit Score model,
-- undergo a credit score check,
+- integrate their existing Coinbase account, MetaMask wallet, or the financial institution with whom their bank with the NearOracle Credit Score model
+- undergo a credit score check
 - validate their credibility to lenders issuing them a loan.
 
 When using the NearOracle API you agree with our [Terms and Conditions](https://) :copyright:.
