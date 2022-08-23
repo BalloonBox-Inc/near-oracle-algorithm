@@ -4,7 +4,7 @@
   </a>
 </p>
 
-## NearOracle Credit Score Model :8ball: :dart: :chess_pawn:
+## NearOracle Credit Score Model :8ball: :chess_pawn: :spades:
 
 ### Algorithm Architecture
 

@@ -50,7 +50,7 @@ The tree diagram below describes the structure of this Git Repo. Notice that the
     │   ├── plaid.py                  #core execution logic - Plaid
     │   └── README.md                 #docs on the API endpoints
     ├── support
-    │   ├── assessment.py             #auto generates from Cargo.toml
+    │   ├── assessment.py             #tracking memory allocation in database
     │   ├── crud.py                   #Create, Read, Update, Delete (CRUD) - database handler
     │   ├── database.py               #set up PostgreSQL database to store computed scores
     │   ├── models.py                 #clases with data to enter in new row of database
@@ -66,7 +66,7 @@ The tree diagram below describes the structure of this Git Repo. Notice that the
     ├── LICENCE
     ├── main.py                       #core file - handle API calls, directing them to the router folder
     ├── Procfile                      #set up uvicorn app in Heroku
-    ├── pytest.ini                    #???
+    ├── pytest.ini                    #pytest initializer
     ├── README.md                     #this landing page
     └── requirements.txt              #Pyhon module required to run this project
 ```
