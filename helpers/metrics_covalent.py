@@ -531,8 +531,8 @@ def traffic_frequency(txn, feedback, params):
         # remove 'dusty' transactions
         txn = swiffer_duster(txn, feedback)
         if txn['items']:
-            datum = txn['items'][-1]['block_signed_at'].split('T')[0]
-            oldest = datetime.strptime(datum, '%Y-%M-%d').date()
+            oldest = datetime.strptime(
+                txn['items'][-1]['block_signed_at'].split('T')[0], '%Y-%M-%d').date()
             duration = int((NOW - oldest).days/30)  # months
 
             frequency = round(len(txn['items']) / duration, 2)
