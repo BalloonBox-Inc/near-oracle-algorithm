@@ -22,94 +22,51 @@ Continue to read these docs to understand the algorithm or clone this project an
 
 ---
 
-## Credit Score Model
 
-### Algorithm Architecture
-
-Understand the credit score model at a glance.
-There are three distinct models, one for each of our chosen validators, namely Plaid, Coinbase & MetaMask.
-
-**Plaid** model (powered by [Plaid](./images/logic_plaid.png))
-
-- :curling_stone: analyze up to 5 years of transaction history
-- :gem: dynamically select user's best credit card products
-- :dart: detect recurring deposits and withdrawals (monthly)
-- :hammer_and_wrench: deploy linear regression on minimum running balance over the past 24 months
-- :magnet: auto-filter & discard microtransactions
-- :pushpin: inspect loan, investment, and saving accounts
-
-**Coinbase** model (powered by [Coinbase](./images/logic_coinbase.png))
-
-- :bell: check for user KYC status
-- :key: live fetch of top 25 cryptos by market cap via [CoinMarketCap](https://coinmarketcap.com/) API
-- :fire: dynamically select user's best crypto wallets
-- :closed_lock_with_key: auto-convert any currency to USD in real-time
-- :bulb: analyze all transactions since Coinbase account inception
-- :moneybag: compute user's net profit
-
-**MetaMask** model (powered by [Covalent](./images/logic_covalent.png))
-
-- :fox_face: authenticate user via MetaMask
-- :parachute: account for credits, debits transactions, transfers, frequency, the cumulative balance now, and more
-- :chains: fetch up to 100 top ERC20 tokens (by market capitalization) via [CoinMarketCap](https://coinmarketcap.com/) API
-- :bar_chart: analyze time series of latest 400 transactions on MetaMask wallet
-- :lady_beetle: inspect historical OHLCV for last 30 days
-
-### Interpret Your Score
-
-NarOracle returns to the user a numerical score ranging from 300-900 points. The score is partitioned into categorical bins </br> (`very poor` | `poor` | `fair` | `good` | `very good` | `excellent` | `exceptional`), which describe the score qualitatively (see fuel gauge in the diagram below). Every bin is associated with a USD equivalent, which represents the maximum loan amount in USD that a user qualifies for, based on the NearOracle calculation. Lastly, the NearOracle also returns the estimated payback period, namely the expected time it will take for the user to pay back the loan.
-
-The loan terms (loan amount, qualitative descriptor, and payback period) are algorithmic recommendations, and, therefore, they are not prescriptive. Although we strongly advise lenders and borrowers to consider NearOracle's parameters, we also encourage them to stipulate loan terms that best suit their unique needs.
-
-![](./images/credit_score_range.png)
-
----
-
-## Clone This Project :key: :lock: :package:
-
-### 1. Clone locally
-
-Download or clone the repo to your machine, running in terminal
+### :octopus: Directory Structure
+The tree diagram below describes the structure of this Git Repo. Notice that the decision tree only features the most important files and disregards all others.
 
 ```bash
-git clone  ... my-project-name
-cd my-project-name
+.
+└───
+    ├── config
+    │   └── config.json               #contains all model parameters and weights - tune this file to alter the model
+    ├── helpers
+    │   ├── feedback.py               #string formatter returning a qualitative score feedback
+    │   ├── helper.py                 #helper functions for data cleaning
+    │   ├── metrics_coinbase.py       #logic to analyze a user's Coinbase account data
+    │   ├── metrics_covalent.py       #logic to analyze a user's ETH wallet data (powered by Covalent)
+    │   ├── metrics_plaid.py          #logic to analyze a user's bank account data (powered by Plaid)
+    │   ├── models.py                 #aggregre the granular credit score logic into 4 metrics
+    │   ├── risk.py                   #high/med/low risk indicators
+    │   ├── score.py                  #aggregate score metrics into an actual credit score
+    │   └── README.md                 #docs on credit score model & guideline to clone project
+    ├── market
+    │   └── coinmarketcap.py          #hit a few endpoints on Coinmarketcap (live exchange rate & top cryptos)
+    ├── routers
+    │   ├── coinbase.py               #core execution logic - Coinbase
+    │   ├── covalent.py               #core execution logic - Covalent
+    │   ├── kyc.py                    #core execution logic - KYC template
+    │   ├── plaid.py                  #core execution logic - Plaid
+    │   └── README.md                 #docs on the API endpoints
+    ├── support
+    │   ├── assessment.py             #auto generates from Cargo.toml
+    │   ├── crud.py                   #Create, Read, Update, Delete (CRUD) - database handler
+    │   ├── database.py               #set up PostgreSQL database to store computed scores
+    │   ├── models.py                 #clases with data to enter in new row of database
+    │   └── schemas.py                #http request classes
+    ├── tests
+    │   ├── coinbase                  #directory with 2 files: Coinbase pytests & dummy test data json
+    │   ├── covalent                  #directory with 2 files: Covalent pytests & dummy test data json
+    │   └── plaid                     #directory with 2 files: Plaid pytests & dummy test data json
+    ├── validator
+    │   ├── coinbase.py               #functions calling Coinbase API
+    │   ├── covalent.py               #functions calling Covalent API
+    │   └── plaid.py                  #functions calling Plaid API
+    ├── LICENCE
+    ├── main.py                       #core file - handle API calls, directing them to the router folder
+    ├── Procfile                      #set up uvicorn app in Heroku
+    ├── pytest.ini                    #???
+    ├── README.md                     #this landing page
+    └── requirements.txt              #Pyhon module required to run this project
 ```
-
-### 2. Install dependencies
-
-Run either of the commands below. You'll need either `pip` or `conda` package manager
-
-```bash
-pip install -r requirements.txt                                 # using pip
-conda create --name <env_name> --file requirements.txt          # using Conda
-```
-
-### 3. Environment variables
-
-Create a `.env` local file in your root folder. The required credentials are
-
-```bash
-PLAID_ENV='sandbox'
-DATABASE_URL='postgres_url'
-```
-
-### 4. Execute locally
-
-If you want to test the algorithm alone in the backend (independently from the dApp frontend) we recommend you do so using the Swagger API platform. Running the commands below will redirect you to the Swagger, where you'll be able to run _in the backend_ trial credit score calculations for your preferred validator (Plaid, Coinbase, or Covalent)
-
-```bash
-cd my-project-name
-uvicorn main:app –reload
-```
-
-> :warning: The oracle will execute properly, only if you set up a correct and complete `.env` file. <br/>
-> :radioactive: depending on the validator you choose you'll need to enter the parameters for the API endpoint request.
-
-Procure the necessary keys here:
-
-- CoinMarketCap API key &#8594; follow the Developers guide [here](https://coinmarketcap.com/api/documentation/v1/#section/Introduction)
-- Plaid client_id and secret_key &#8594; create a Plaid account [here](https://dashboard.plaid.com/signin), then retrieve your Plaid [keys](https://dashboard.plaid.com/team/keys)
-- Coinbase API Key &#8594; create a Coinbase account [here](https://www.coinbase.com/signup), then retrieve your Coinbase [keys](https://www.coinbase.com/settings/api) </br>
-  To generate a new set of API keys follow this flow: `Coinbase` -> `settings` -> `API` -> `New API Key`.
-- Covalent API key &#8594; register [here](https://www.covalenthq.com/platform/#/auth/register/)
