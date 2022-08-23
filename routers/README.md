@@ -15,9 +15,9 @@ The NearOracle dApp leverages public APIs to allow users to:
 
 - integrate their existing Coinbase account, MetaMask wallet, or the financial institution with whom their bank with the NearOracle Credit Score model
 - undergo a credit score check
-- validate their credibility to lenders issuing them a loan.
+- validate their credibility to lenders issuing them a loan
 
-When using the NearOracle API you agree with our [Terms and Conditions](https://) :copyright:.
+When using the NearOracle API you agree with our [Terms and Conditions](../LICENSE) :copyright:.
 
 ## To Notice :eyes:
 
@@ -25,9 +25,9 @@ When using the NearOracle API you agree with our [Terms and Conditions](https://
 
 All times provided are in UTC timezone :clock4:.
 
-#### Authentication
+#### Authentication & Security
 
-Every endpoint is secured by either a User Oauth token or by the pair Oauth Client key & secret key.
+Every endpoint is secured by third parties authentication processes. The NearOracle dApp only have access to the data allowed by user. No user data is stored.
 
 #### Help Us
 
@@ -39,10 +39,10 @@ The API is in active development and we are changing things rapdily. Once we are
 
 ## Resources :gear:
 
-## [COINBASE](https://coinmarketcap.com/) : credit score model based on Coinbase account.
+## [COINBASE](https://www.coinbase.com/) : credit score model based on Coinbase account.
 
 ```bash
-    POST {base_url}/credit_score/coinbase
+    POST {BASE_URL}/credit_score/coinbase
 ```
 
 Headers
@@ -64,6 +64,152 @@ Body
 
 Response: **200**
 
+- Sample response from a Coinbase test account
+
+```bash
+    {
+        "endpoint": "/credit_score/coinbase",
+        "status": "success",
+        "score": 300,
+        "risk": {
+            "loan_amount": 500,
+            "risk_level": "high"
+        },
+        "message": "NearOracle could not calculate your credit score as there is no active wallet nor transaction history associated with your Coinbase account. Please use a different account.",
+        "feedback": {
+            "score": {
+                "score_exist": false,
+                "points": 300,
+                "quality": "very poor",
+                "loan_amount": null,
+                "loan_duedate": null,
+                "wallet_age(days)": null,
+                "current_balance": null
+            },
+            "advice": {
+                "kyc_error": false,
+                "history_error": false,
+                "liquidity_error": false,
+                "activity_error": false,
+            }
+        }
+    }
+```
+
+- Generalized Typescript response
+
+```bash
+    enum ScoreQuality {
+        'very poor',
+        'poor',
+        'fair',
+        'good',
+        'very good',
+        'excellent',
+        'exceptional',
+    }
+
+    export interface IScoreResponseCoinbase {
+        endpoint: '/credit_score/coinbase';
+        status: 'success' | 'error';
+        score: number;
+        risk: {
+            loan_amount: number;
+            risk_level: 'low' | 'medium' | 'high';
+        };
+        message: string;
+        feedback: {
+            score: {
+                score_exist: boolean;
+                points: number;
+                quality: ScoreQuality;
+                loan_amount: 500 | 1000 | 5000 | 10000 | 15000 | 20000 | 25000;
+                loan_duedate: 3 | 4 | 5 | 6;
+                wallet_age(days): number;
+                current_balance: number;
+            };
+            advice: {
+                kyc_error: boolean;
+                history_error: boolean;
+                liquidity_error: boolean;
+                activity_error: boolean;
+            };
+        };
+    }
+```
+
+Response: **400**
+
+- Sample error response from a Coinbase test account requesting more than what is allowed for that template.
+
+```bash
+    {
+    "endpoint": "/credit_score/coinbase",
+    "status": "error",
+    "message": "Loan amount requested is over the limit."
+    }
+```
+
+## [COVALENT](https://www.covalenthq.com/) : credit score model based on your ETH wallet address.
+
+```bash
+    POST {BASE_URL}/credit_score/covalent
+```
+
+Headers
+
+```bash
+    {"Content-Type": "application/json"}
+```
+
+Body
+
+```bash
+      {
+        "eth_address": "YOUR_ETH_WALLET_ADDRESS",
+        "covalent_key": "FREE_COVALENT_API_KEY",
+        "coinmarketcap_key": "YOUR_COINMARKETCAP_KEY",
+        "loan_request": INTEGER_NUMBER
+      }
+```
+
+Response: **200**
+
+- Sample response for a test ETH address
+
+```bash
+    {
+      "endpoint": "/credit_score/covalent",
+      "status": "success",
+      "score": 701,
+      "risk": {
+        "loan_amount": 10000,
+        "risk_level": "medium"
+      },
+      "message": "Congrats, you have successfully obtained a credit score! Your NearOracle score is GOOD - 701 points. <br/>
+      This score qualifies you for a short term loan of up to 2934 NEAR which is equivalent to 10000 USD over a <br/>
+      recommended pay back period of 6 monthly installments. Your ETH wallet address has been active for 414 days <br/>
+      and your total balance across all cryptocurrencies owned is $143 USD.",
+      "feedback": {
+        "score": {
+          "score_exist": true,
+          "points": 701,
+          "quality": "good",
+          "loan_amount": 10000,
+          "loan_duedate": 6,
+          "longevity(days)": 414,
+          "cum_balance_now": 14297.00
+        },
+        "advice": {
+          "credibility_error": false,
+          "wealth_error": false,
+          "traffic_error": false,
+          "stamina_error": false
+        }
+      }
+    }
+```
+
 - Generalized Typescript response
 
 ```bash
@@ -81,19 +227,19 @@ Response: **200**
     endpoint: '/credit_score/coinbase';
     feedback: {
         advice: {
-            activity_error: boolean;
-            history_error: boolean;
-            kyc_error: boolean;
-            liquidity_error: boolean;
+            credibility_error: false,
+            wealth_error: false,
+            traffic_error: false,
+            stamina_error: false,
         };
         score: {
-            current_balance: number;
+            cum_balance_now: number;
             loan_amount: 500 | 1000 | 5000 | 10000 | 15000 | 20000 | 25000;
             loan_duedate: 3 | 4 | 5 | 6;
+            longevity(days): number;
             points: number;  # integer in range [300, 900]
             quality: ScoreQuality;
             score_exist: boolean;
-            wallet_age(days): number;
         };
     };
     message: string;
@@ -106,43 +252,14 @@ Response: **200**
     }
 ```
 
-- Sample response from a Coinbase test account
+Response: **400**
 
-```bash
-{
-    "endpoint": "/credit_score/coinbase",
-    "feedback": {
-        "advice": {
-            "activity_error": false,
-            "history_error": false,
-            "kyc_error": false,
-            "liquidity_error": false
-        },
-        "score": {
-            "current_balance": null,
-            "loan_amount": null,
-            "loan_duedate": null,
-            "points": null,
-            "quality": null,
-            "score_exist": false,
-            "wallet_age(days)": null
-        }
-    },
-    "message": "NearOracle could not calculate your credit score because there is no active wallet nor transaction history <br/>
-    in your Coinbase account. Try to log into Coinbase with a different account.",
-    "risk": {
-        "loan_amount": 500,
-        "risk_level": "medium"
-    }
-    "score": 300.0,
-    "status": "success"
-}
-```
+Sample error response from a non-existing ETH wallet address
 
 ## [PLAID](https://plaid.com/) : credit score model based on Plaid account.
 
 ```bash
-    POST {base_url}/credit_score/plaid
+    POST {BASE_URL}/credit_score/plaid
 ```
 
 Headers
@@ -164,6 +281,44 @@ Body
 ```
 
 Response: **200**
+
+- Sample response from Plaid Sandbox environment
+
+```bash
+    {
+        "endpoint": "/credit_score/plaid",
+        "status": "success",
+        "score": 401,
+        "risk": {
+            "loan_amount": 500,
+            "risk_level": "medium"
+        },
+        "message": "Congrats! Your NearOracle score is VERY POOR - 401 points. This score qualifies you for a <br/>
+        short term loan of up to 93 NEAR which is equivalent to 500 USD over a recommended pay back period of <br/>
+        6 monthly installments Your total current balance is $320 USD across all accounts held with Chase NearOracle <br/>
+        found no credit card associated with your bank account. Credit scores rely heavily on credit card history. <br/>
+        Improve your score by selecting a different bank account which shows credit history.",
+        "feedback": {
+            "score": {
+                "score_exist": true,
+                "points": 401,
+                "quality": "very poor",
+                "loan_amount": 500,
+                "loan_duedate": 6,
+                "card_names": null,
+                "cum_balance": 320,
+                "bank_accounts": 2
+            },
+            "advice": {
+                "credit_exist": false,
+                "credit_error": true,
+                "velocity_error": true,
+                "stability_error": false,
+                "diversity_error": false
+            }
+        }
+    }
+```
 
 - Generalized Typescript response
 
@@ -209,49 +364,9 @@ Response: **200**
     }
 ```
 
-- Sample response from Plaid Sandbox environment
+Response: **400**
 
-```bash
-    {
-        "endpoint": "/credit_score/plaid",
-        "status": "success",
-        "score": 401,
-        "risk": {
-            "loan_amount": 500,
-            "risk_level": "medium"
-        },
-        "message": "Congrats! Your NearOracle score is VERY POOR - 401 points. This score qualifies you for a <br/>
-        short term loan of up to 93 NEAR which is equivalent to 500 USD over a recommended pay back period of <br/>
-        6 monthly installments Your total current balance is $320 USD across all accounts held with Chase NearOracle <br/>
-        found no credit card associated with your bank account. Credit scores rely heavily on credit card history. <br/>
-        Improve your score by selecting a different bank account which shows credit history.",
-        "feedback": {
-            "score": {
-                "score_exist": true,
-                "points": 401,
-                "quality": "very poor",
-                "loan_amount": 500,
-                "loan_duedate": 6,
-                "card_names": null,
-                "cum_balance": 320,
-                "bank_accounts": 2
-            },
-            "advice": {
-                "credit_exist": false,
-                "credit_error": true,
-                "velocity_error": true,
-                "stability_error": false,
-                "diversity_error": false
-            }
-        }
-    }
-```
-
-## **Errors**
-
-Note that error returns do not have `score` or `feedback` keys. The error description will appear under the message key.
-
-Sample error response from Plaid Sandbox environment
+- Sample error response from an invalid Plaid account
 
 ```bash
     {
@@ -261,10 +376,10 @@ Sample error response from Plaid Sandbox environment
     }
 ```
 
-## [COVALENT](https://www.covalenthq.com/) : credit score model based on your ETH wallet address.
+## [KYC](http://) : KYC verification model.
 
 ```bash
-    POST {base_url}/credit_score/covalent
+    POST {BASE_URL}/kyc
 ```
 
 Headers
@@ -277,10 +392,18 @@ Body
 
 ```bash
       {
-        "eth_address": "YOUR_ETH_WALLET_ADDRESS",
-        "covalent_key": "FREE_COVLENT_API_KEY",
+        "chosen_validator": "YOUR_CHOSEN_VALIDATOR",
         "coinmarketcap_key": "YOUR_COINMARKETCAP_KEY",
-        "loan_request": INTEGER_NUMBER
+
+        "coinbase_access_token" [optional]: "YOUR_COINBASE_ACCESS_TOKEN",
+        "coinbase_refresh_token" [optional]: "YOUR_COINBASE_REFRESH_TOKEN",
+
+        "eth_address" [optional]: "YOUR_ETH_WALLET_ADDRESS",
+        "covalent_key" [optional]: "FREE_COVALENT_API_KEY",
+
+        "plaid_access_token" [optional]: "YOUR_PLAID_TOKEN",
+        "plaid_client_id" [optional]: "YOUR_PLAID_CLIENT_ID",
+        "plaid_client_secret" [optional]: "YOUR_CLIENT_SECRET"
       }
 ```
 

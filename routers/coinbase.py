@@ -6,7 +6,8 @@ from helpers.score import *
 from market.coinmarketcap import *
 from validator.coinbase import *
 
-from fastapi import APIRouter, Depends, Request, Response, HTTPException, status
+from fastapi import APIRouter, Depends, Request, status
+from fastapi.responses import JSONResponse
 from sqlalchemy.orm import Session
 from support.database import get_db
 from support.schemas import Coinbase_Item
@@ -20,7 +21,7 @@ router = APIRouter(
 
 
 @router.post('/coinbase', status_code=status.HTTP_200_OK, summary='Coinbase credit score')
-async def credit_score_coinbase(request: Request, response: Response, item: Coinbase_Item, db: Session = Depends(get_db)):
+async def credit_score_coinbase(request: Request, item: Coinbase_Item, db: Session = Depends(get_db)):
     '''
     Calculates credit score based on Coinbase data.
 
@@ -41,9 +42,7 @@ async def credit_score_coinbase(request: Request, response: Response, item: Coin
         print(f'\033[36m Accessing settings ...\033[0m')
         configs = read_config_file(item.loan_request)
         if isinstance(configs, str):
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail='Unable to read config file.')
+            raise Exception(configs)
 
         loan_range = configs['loan_range']
         score_range = configs['score_range']
@@ -94,13 +93,9 @@ async def credit_score_coinbase(request: Request, response: Response, item: Coin
         accounts, transactions = coinbase_accounts_and_transactions(
             client, top_currencies, thresholds['transaction_types'])
         if isinstance(accounts, str):
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f'Unable to fetch accounts data: {accounts}')
+            raise Exception(f'Unable to fetch accounts data: {accounts}')
         if isinstance(transactions, str):
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f'Unable to fetch transactions data: {transactions}')
+            raise Exception(f'Unable to fetch transactions data: {transactions}')
 
         # reset native currency
         print(f'\033[36m Setting native currency 2/2 ...\033[0m')
@@ -131,28 +126,22 @@ async def credit_score_coinbase(request: Request, response: Response, item: Coin
 
         # return success
         print(f'\033[35;1m Credit score has successfully been calculated.\033[0m')
-        status_msg = 'success'
-
-    except Exception as e:
-        print(f'\033[35;1m Unable to complete credit scoring calculation.\033[0m')
-        status_msg = 'error'
-        score = 0
-        risk = 'undefined'
-        message = str(e)
-        feedback = {}
-
-    finally:
-        output = {
+        return {
             'endpoint': '/credit_score/coinbase',
-            'status': status_msg,
+            'status': 'success',
             'score': int(score),
             'risk': risk,
             'message': message,
             'feedback': feedback
         }
-        if score == 0:
-            output.pop('score', None)
-            output.pop('risk', None)
-            output.pop('feedback', None)
 
-        return output
+    except Exception as e:
+        print(f'\033[35;1m Unable to complete credit scoring calculation.\033[0m')
+        return JSONResponse(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            content={
+                'endpoint': '/credit_score/coinbase',
+                'status': 'error',
+                'message': str(e),
+            }
+        )
