@@ -16,7 +16,7 @@ NearOracle is an oracle for credit scoring that runs on the NEAR protocol and se
 
 ###### In this Repo
 
-This GitHub repo contains the codebase of the NearOracle credit score algorithm. The code features 3 validators, 4 API integrations, 12 score metrics, and 25+ functions to calculate users' credit scores. The front end of the NearOracle DApp (see codebase at [`near-oracle-client`](https://github.com/BalloonBox-Inc/near-oracle-client)), after fetching the user's data, passes it to the algorithm, which executes and returns a score via a Rust smart contract (see codebase at [`near-oracle-contract`](https://github.com/BalloonBox-Inc/near-oracle-contract)).
+This GitHub repo contains the codebase of the NearOracle credit score algorithm. The code features 3 validators, 4 API integrations, 12 score metrics, and 25+ functions to calculate users' credit scores. The front end of the NearOracle dApp (see codebase at [`near-oracle-client`](https://github.com/BalloonBox-Inc/near-oracle-client)), after fetching the user's data, passes it to the algorithm, which executes and returns a score via a Rust smart contract (see codebase at [`near-oracle-contract`](https://github.com/BalloonBox-Inc/near-oracle-contract)).
 
 Continue to read these docs to understand the algorithm or clone this project and spin it up in your local machine.
 
