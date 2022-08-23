@@ -336,7 +336,7 @@ Response: **200**
 
     export interface IScoreResponsePlaid {
         endpoint: '/credit_score/plaid';
-        status: 'success' | 'error';
+        status: 'success' | 'error' | 'not_qualified';
         score: number;
         risk: {
             loan_amount: number;
