@@ -221,8 +221,8 @@ Response: **200**
     }
 
     export interface IScoreResponseCovalent {
-    endpoint: '/credit_score/covalent';
-    status: 'success' | 'error';
+        endpoint: '/credit_score/covalent';
+        status: 'success' | 'error';
         score: number;
         risk: {
             loan_amount: number;
@@ -293,33 +293,29 @@ Response: **200**
     {
         "endpoint": "/credit_score/plaid",
         "status": "success",
-        "score": 401,
+        "score": 514,
         "risk": {
-            "loan_amount": 500,
-            "risk_level": "medium"
+            "loan_amount": 1000,
+            "risk_level": "high"
         },
-        "message": "Congrats! Your NearOracle score is VERY POOR - 401 points. This score qualifies you for a <br/>
-        short term loan of up to 93 NEAR which is equivalent to 500 USD over a recommended pay back period of <br/>
-        6 monthly installments Your total current balance is $320 USD across all accounts held with Chase NearOracle <br/>
-        found no credit card associated with your bank account. Credit scores rely heavily on credit card history. <br/>
-        Improve your score by selecting a different bank account which shows credit history.",
+        "message": "Congrats, you have successfully obtained a credit score! Your NearOracle score is POOR - 514 points. This score qualifies you for a short term loan of up to 234 NEAR which is equivalent to 1,000 USD over a recommended pay back period of 6 monthly installments. Your total current balance is $730 USD across all accounts held with Chase.",
         "feedback": {
             "score": {
                 "score_exist": true,
-                "points": 401,
-                "quality": "very poor",
-                "loan_amount": 500,
+                "points": 514,
+                "quality": "poor",
+                "loan_amount": 1000,
                 "loan_duedate": 6,
                 "card_names": null,
-                "cum_balance": 320,
-                "bank_accounts": 2
+                "cum_balance": 730,
+                "bank_accounts": 3
             },
             "advice": {
-                "credit_exist": false,
-                "credit_error": true,
-                "velocity_error": true,
+                "credit_exist": true,
+                "credit_error": false,
+                "velocity_error": false,
                 "stability_error": false,
-                "diversity_error": false
+                "diversity_error": false,
             }
         }
     }
@@ -339,45 +335,45 @@ Response: **200**
     }
 
     export interface IScoreResponsePlaid {
-    endpoint: '/credit_score/plaid';
-    feedback: {
-        advice: {
-            credit_error: boolean;
-            credit_exist: boolean;
-            diversity_error: boolean;
-            stability_error: boolean;
-            velocity_error: boolean;
-        };
-        score: {
-            bank_accounts: number;
-            card_names: string[];
-            cum_balance: number;
-            loan_amount: 500 | 1000 | 5000 | 10000 | 15000 | 20000 | 25000;
-            loan_duedate: 3 | 4 | 5 | 6;
-            points: number; # integer in range [300, 900]
-            quality: ScoreQuality;
-            score_exist: boolean;
-        };
-    };
-    message: string;
-    score: number;
-    risk: {
+        endpoint: '/credit_score/plaid';
+        status: 'success' | 'error';
+        score: number;
+        risk: {
             loan_amount: number;
             risk_level: 'low' | 'medium' | 'high';
-    };
-    status: 'success' | 'error';
+        };
+        message: string;
+        feedback: {
+            score: {
+                score_exist: boolean;
+                points: number;
+                quality: ScoreQuality;
+                loan_amount: 500 | 1000 | 5000 | 10000 | 15000 | 20000 | 25000;
+                loan_duedate: 3 | 4 | 5 | 6;
+                card_names: string;
+                cum_balance: number;
+                bank_accounts: number;
+            };
+            advice: {
+                credit_exist: boolean;
+                credit_error: boolean;
+                velocity_error: boolean;
+                stability_error: boolean;
+                diversity_error: boolean;
+            };
+        };
     }
 ```
 
 Response: **400**
 
-- Sample error response from an invalid Plaid account
+- Sample error response from a wrong Plaid environment attempt
 
 ```bash
     {
-        'endpoint': '/credit_score/plaid',
-        'message': 'invalid client_id or secret provided',
-        'status': 'error'
+        "endpoint": "/credit_score/coinbase",
+        "status": "error",
+        "message": "Unable to fetch transactions data: provided access token is for the wrong Plaid environment. expected \"sandbox\", got \"sand\""
     }
 ```
 

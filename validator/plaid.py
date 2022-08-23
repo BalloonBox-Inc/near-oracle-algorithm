@@ -38,12 +38,11 @@ def plaid_client(plaid_env, client_id, secret):
 
 def format_error(e):
     r = json.loads(e.body)
-    error = {'error': {
+    error = {
         'status_code': e.status,
         'message': r['error_message'],
         'error_code': r['error_code'],
         'error_type': r['error_type']
-    }
     }
     ic(error)
     return error

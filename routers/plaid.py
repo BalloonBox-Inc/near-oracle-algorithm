@@ -6,7 +6,8 @@ from helpers.score import *
 from market.coinmarketcap import *
 from validator.plaid import *
 
-from fastapi import APIRouter, Depends, Request, Response, HTTPException, status
+from fastapi import APIRouter, Depends, Request, status
+from fastapi.responses import JSONResponse
 from sqlalchemy.orm import Session
 from support.database import get_db
 from support.schemas import Plaid_Item
@@ -24,7 +25,7 @@ router = APIRouter(
 
 
 @router.post('/plaid', status_code=status.HTTP_200_OK, summary='Plaid credit score')
-async def credit_score_plaid(request: Request, response: Response, item: Plaid_Item, db: Session = Depends(get_db)):
+async def credit_score_plaid(request: Request, item: Plaid_Item, db: Session = Depends(get_db)):
     '''
     Calculates credit score based on Plaid data.
 
@@ -46,9 +47,7 @@ async def credit_score_plaid(request: Request, response: Response, item: Plaid_I
         print(f'\033[36m Accessing settings ...\033[0m')
         configs = read_config_file(item.loan_request)
         if isinstance(configs, str):
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail='Unable to read config file.')
+            raise Exception(configs)
 
         loan_range = configs['loan_range']
         score_range = configs['score_range']
@@ -73,10 +72,9 @@ async def credit_score_plaid(request: Request, response: Response, item: Plaid_I
         # data fetching
         print(f'\033[36m Reading data ...\033[0m')
         dataset = plaid_transactions(item.plaid_access_token, client, period)
-        if isinstance(dataset, str):
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f'Unable to fetch transactions data: {dataset}')
+        if isinstance(dataset, dict) and 'error_code' in dataset:
+            error = dataset['message']
+            raise Exception(f'Unable to fetch transactions data: {error}')
 
         bank_name = plaid_bank_name(client, dataset['item']['institution_id'])
         feedback['diversity']['bank_name'] = bank_name
@@ -89,12 +87,12 @@ async def credit_score_plaid(request: Request, response: Response, item: Plaid_I
 
         # validate loan request and transaction history
         print(f'\033[36m Validating template ...\033[0m')
-        if not validate_loan_request(loan_range, accounts) or not validate_txn_history(thresholds["transactions_period"], data):
+        if not validate_loan_request(loan_range, accounts) or not validate_txn_history(thresholds['transactions_period'], data):
             value = loan_range[0]
             if value == 0:
-                raise Exception(messages["not_qualified"])
+                raise Exception(messages['not_qualified'])
             else:
-                raise Exception(messages["not_qualified"].format(value))
+                raise Exception(messages['not_qualified'].format(value))
 
         # compute score, feedback, and metadata
         print(f'\033[36m Calculating score ...\033[0m')
@@ -120,30 +118,33 @@ async def credit_score_plaid(request: Request, response: Response, item: Plaid_I
 
         # return success
         print(f'\033[35;1m Credit score has successfully been calculated.\033[0m')
-        status_msg = 'success'
-
-    except Exception as e:
-        print(f'\033[35;1m Unable to complete credit scoring calculation.\033[0m')
-        status_msg = 'error'
-        if 'do not qualify' in str(e):
-            status_msg = 'not qualified'
-        score = 0
-        risk = 'undefined'
-        message = str(e)
-        feedback = {}
-
-    finally:
-        output = {
+        return {
             'endpoint': '/credit_score/plaid',
-            'status': status_msg,
+            'status': 'success',
             'score': int(score),
             'risk': risk,
             'message': message,
             'feedback': feedback
         }
-        if score == 0:
-            output.pop('score', None)
-            output.pop('risk', None)
-            output.pop('feedback', None)
 
-        return output
+    except Exception as e:
+        print(f'\033[35;1m Unable to complete credit scoring calculation.\033[0m')
+        error_msg = str(e)
+        if 'do not qualify' in error_msg:
+            return JSONResponse(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                content={
+                    'endpoint': '/credit_score/plaid',
+                    'status': 'not qualified',
+                    'message': str(e),
+                }
+            )
+
+        return JSONResponse(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            content={
+                'endpoint': '/credit_score/coinbase',
+                'status': 'error',
+                'message': error_msg,
+            }
+        )
