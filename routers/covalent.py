@@ -1,4 +1,3 @@
-from support.assessment import *
 from config.helper import *
 from helpers.helper import *
 from helpers.risk import *
@@ -16,11 +15,10 @@ from support import crud
 
 router = APIRouter(
     prefix='/credit_score',
-    tags=['Credit Score']
+    tags=['Credit Scoring']
 )
 
 
-# @evaluate_function
 @router.post('/covalent', status_code=status.HTTP_200_OK, summary='Covalent credit score')
 async def credit_score_covalent(request: Request, response: Response, item: Covalent_Item, db: Session = Depends(get_db)):
     '''
@@ -28,7 +26,7 @@ async def credit_score_covalent(request: Request, response: Response, item: Cova
 
     Input:
     - **eth_address [string]**: eth address
-    - **covalent_key [string]**: covalentkey
+    - **covalent_key [string]**: covalent key
     - **coinmarketcap_key [string]**: coinmarketcap key
     - **loan_request [integer]**: loan request amount
 

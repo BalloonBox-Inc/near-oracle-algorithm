@@ -1,4 +1,3 @@
-from support.assessment import *
 from config.helper import *
 from helpers.helper import *
 from market.coinmarketcap import *
@@ -18,16 +17,14 @@ load_dotenv()
 
 
 router = APIRouter(
-    prefix='/credit_score',
-    tags=['Credit Score']
+    tags=['KYC Verification']
 )
 
 
-# @evaluate_function
-@router.post('/kyc', status_code=status.HTTP_200_OK, summary='KYC credit score')
+@router.post('/kyc', status_code=status.HTTP_200_OK, summary='Verify KYC')
 async def credit_score_kyc(request: Request, response: Response, item: KYC_Item):
     '''
-    Calculates credit score based on KYC data from one of the validators.
+    Verifies chosen account (Coinbase, Covalent, or Plaid) through set of rules to determine whether KYC or not.
 
     Input:
     - **chosen_validator [string]**: chosen validator
