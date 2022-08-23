@@ -1,4 +1,3 @@
-from support.assessment import *
 from datetime import datetime
 import pandas as pd
 import numpy as np
@@ -83,7 +82,6 @@ def net_flow(txn, timeframe, feedback):
         return df, feedback
 
 
-# @evaluate_function
 def coinbase_kyc(acc, txn):
     '''
     Description:
@@ -120,7 +118,6 @@ def coinbase_kyc(acc, txn):
 # -------------------------------------------------------------------------- #
 
 
-# @evaluate_function
 def kyc(acc, txn, feedback):
     '''
     Description:
@@ -156,8 +153,6 @@ def kyc(acc, txn, feedback):
 # -------------------------------------------------------------------------- #
 #                               Metric #2 History                            #
 # -------------------------------------------------------------------------- #
-
-# @evaluate_function
 
 
 def history_acc_longevity(acc, feedback, params):
@@ -202,7 +197,6 @@ def history_acc_longevity(acc, feedback, params):
 # -------------------------------------------------------------------------- #
 
 
-# @evaluate_function
 def liquidity_tot_balance_now(acc, feedback, params):
     '''
     Description:
@@ -246,7 +240,6 @@ def liquidity_tot_balance_now(acc, feedback, params):
         return score, feedback
 
 
-# @evaluate_function
 def liquidity_loan_duedate(txn, feedback, params):
     '''
     Description:
@@ -282,7 +275,6 @@ def liquidity_loan_duedate(txn, feedback, params):
         return feedback
 
 
-# @evaluate_function
 def liquidity_avg_running_balance(acc, txn, feedback, params):
     '''
     Description:
@@ -347,7 +339,6 @@ def liquidity_avg_running_balance(acc, txn, feedback, params):
 # -------------------------------------------------------------------------- #
 
 
-# @evaluate_function
 def activity_tot_volume_tot_count(txn, type, feedback, params):
     '''
     Description:
@@ -397,7 +388,6 @@ def activity_tot_volume_tot_count(txn, type, feedback, params):
         return score, feedback
 
 
-# @evaluate_function
 def activity_consistency(txn, type, feedback, params):
     '''
     Description:
@@ -469,7 +459,6 @@ def activity_consistency(txn, type, feedback, params):
         return score, feedback
 
 
-# @evaluate_function
 def activity_profit_since_inception(acc, txn, feedback, params):
     '''
     Description:

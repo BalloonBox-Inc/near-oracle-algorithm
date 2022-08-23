@@ -1,9 +1,7 @@
-from support.assessment import *
 from helpers.models import *
 from helpers.helper import *
 
 
-# @evaluate_function
 def plaid_score(data, score_range, feedback, model_weights, metric_weigths, params, period):
 
     # format params
@@ -77,7 +75,6 @@ def plaid_score(data, score_range, feedback, model_weights, metric_weigths, para
     return score, feedback, metadata
 
 
-# @evaluate_function
 def coinbase_score(score_range, feedback, model_weights, metric_weigths, params, acc, txn):
 
     params = coinbase_params(params, score_range)
@@ -96,7 +93,6 @@ def coinbase_score(score_range, feedback, model_weights, metric_weigths, params,
     return score, feedback
 
 
-# @evaluate_function
 def covalent_score(score_range, feedback, model_weights, metric_weigths, params, erc_rank, txn, balances, portfolio):
 
     params = covalent_params(params, score_range)
