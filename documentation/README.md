@@ -1,6 +1,6 @@
 <p align="center">
   <a href="https://near.org/">
-    <img alt="NearBlackLogo" src="https://github.com/BalloonBox-Inc/NEARoracle-Oracle/blob/dev/images/logo_near_oracle_black.png" width="450" />
+    <img alt="NearBlackLogo" src="https://github.com/BalloonBox-Inc/near-oracle-algorithm/blob/dev/images/logo_NearOracle_black.png" width="450" />
   </a>
 </p>
 
@@ -8,16 +8,16 @@
 
 ## About :mailbox_with_mail:
 
-This documentation contains all APIs endpoints featured in our NEARoracle DApp.
+This documentation contains all APIs endpoints featured in our NearOracle DApp.
 
 Imagine you are a user who owns a NEAR wallet and wants to be issued a loan.
-The NEARoracle DApp leverages public APIs to allow users to:
+The NearOracle DApp leverages public APIs to allow users to:
 
-- integrate their existing Plaid, Coinbase, and NEAR wallet accounts with the NEARoracle Credit Score model,
+- integrate their existing Plaid, Coinbase, and NEAR wallet accounts with the NearOracle Credit Score model,
 - undergo a credit score check,
 - validate their credibility to lenders issuing them a loan.
 
-When using the NEARoracle API you agree with our [Terms and Conditions](https://) :copyright:.
+When using the NearOracle API you agree with our [Terms and Conditions](https://) :copyright:.
 
 ## To Notice :eyes:
 
@@ -128,7 +128,7 @@ Response: **200**
             "wallet_age(days)": null
         }
     },
-    "message": "NEARoracle could not calculate your credit score because there is no active wallet nor transaction history <br/>
+    "message": "NearOracle could not calculate your credit score because there is no active wallet nor transaction history <br/>
     in your Coinbase account. Try to log into Coinbase with a different account.",
     "risk": {
         "loan_amount": 500,
@@ -222,7 +222,7 @@ Response: **200**
         },
         "message": "Congrats! Your NearOracle score is VERY POOR - 401 points. This score qualifies you for a <br/>
         short term loan of up to 93 NEAR which is equivalent to 500 USD over a recommended pay back period of <br/>
-        6 monthly installments Your total current balance is $320 USD across all accounts held with Chase NEARoracle <br/>
+        6 monthly installments Your total current balance is $320 USD across all accounts held with Chase NearOracle <br/>
         found no credit card associated with your bank account. Credit scores rely heavily on credit card history. <br/>
         Improve your score by selecting a different bank account which shows credit history.",
         "feedback": {
