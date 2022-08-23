@@ -140,7 +140,7 @@ Response: **200**
 
 Response: **400**
 
-- Sample error response from a Coinbase test account requesting more than what is allowed for that template.
+- Sample error response from a Coinbase test account requesting more than what is allowed for that template
 
 ```bash
     {
@@ -179,34 +179,31 @@ Response: **200**
 
 ```bash
     {
-      "endpoint": "/credit_score/covalent",
-      "status": "success",
-      "score": 701,
-      "risk": {
-        "loan_amount": 10000,
-        "risk_level": "medium"
-      },
-      "message": "Congrats, you have successfully obtained a credit score! Your NearOracle score is GOOD - 701 points. <br/>
-      This score qualifies you for a short term loan of up to 2934 NEAR which is equivalent to 10000 USD over a <br/>
-      recommended pay back period of 6 monthly installments. Your ETH wallet address has been active for 414 days <br/>
-      and your total balance across all cryptocurrencies owned is $143 USD.",
-      "feedback": {
-        "score": {
-          "score_exist": true,
-          "points": 701,
-          "quality": "good",
-          "loan_amount": 10000,
-          "loan_duedate": 6,
-          "longevity(days)": 414,
-          "cum_balance_now": 14297.00
+        "endpoint": "/credit_score/covalent",
+        "status": "success",
+        "score": 686,
+        "risk": {
+            "loan_amount": 10000,
+            "risk_level": "medium"
         },
-        "advice": {
-          "credibility_error": false,
-          "wealth_error": false,
-          "traffic_error": false,
-          "stamina_error": false
+        "message": "Congrats, you have successfully obtained a credit score! Your NearOracle score is GOOD - 686 points. This score qualifies you for a short term loan of up to 2,340 NEAR which is equivalent to 10,000 USD over a recommended pay back period of 6 monthly installments. Your total balance across all cryptocurrencies is $1981.28 USD.",
+        "feedback": {
+            "score": {
+                "score_exist": true,
+                "points": 686,
+                "quality": "good",
+                "loan_amount": 10000,
+                "loan_duedate": 6,
+                "longevity(days)": null,
+                "cum_balance_now": 1981.28
+            },
+            "advice": {
+                "credibility_error": false,
+                "wealth_error": false,
+                "traffic_error": false,
+                "stamina_error": false,
+            }
         }
-      }
     }
 ```
 
@@ -223,38 +220,46 @@ Response: **200**
         'exceptional',
     }
 
-    export interface IScoreResponseCoinbase {
-    endpoint: '/credit_score/coinbase';
-    feedback: {
-        advice: {
-            credibility_error: false,
-            wealth_error: false,
-            traffic_error: false,
-            stamina_error: false,
-        };
-        score: {
-            cum_balance_now: number;
-            loan_amount: 500 | 1000 | 5000 | 10000 | 15000 | 20000 | 25000;
-            loan_duedate: 3 | 4 | 5 | 6;
-            longevity(days): number;
-            points: number;  # integer in range [300, 900]
-            quality: ScoreQuality;
-            score_exist: boolean;
-        };
-    };
-    message: string;
-    score: number;
-    risk: {
-        loan_amount: number;
-        risk_level: 'low' | 'medium' | 'high';
-    };
+    export interface IScoreResponseCovalent {
+    endpoint: '/credit_score/covalent';
     status: 'success' | 'error';
+        score: number;
+        risk: {
+            loan_amount: number;
+            risk_level: 'low' | 'medium' | 'high';
+        };
+        message: string;
+        feedback: {
+            score: {
+                score_exist: boolean;
+                points: number;
+                quality: ScoreQuality;
+                loan_amount: 500 | 1000 | 5000 | 10000 | 15000 | 20000 | 25000;
+                loan_duedate: 3 | 4 | 5 | 6;
+                longevity(days): number;
+                cum_balance_now: number;
+            };
+            advice: {
+                credibility_error: boolean;
+                wealth_error: boolean;
+                traffic_error: boolean;
+                stamina_error: boolean;
+            };
+        };
     }
 ```
 
 Response: **400**
 
-Sample error response from a non-existing ETH wallet address
+- Sample error response from a non-existing ETH wallet address
+
+```bash
+    {
+        "endpoint": "/credit_score/covalent",
+        "status": "error",
+        "message": "Malformed address provided: 0xnonexistentethwalletaddressexample"
+    }
+```
 
 ## [PLAID](https://plaid.com/) : credit score model based on Plaid account.
 
