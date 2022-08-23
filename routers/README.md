@@ -39,7 +39,7 @@ The API is in active development and we are changing things rapdily. Once we are
 
 ## Resources :gear:
 
-## [COINBASE](https://www.coinbase.com/) : credit score model based on Coinbase account.
+## [COINBASE](https://www.coinbase.com/) : credit score model based on Coinbase account
 
 ```bash
     POST {BASE_URL}/credit_score/coinbase
@@ -150,7 +150,7 @@ Response: **400**
     }
 ```
 
-## [COVALENT](https://www.covalenthq.com/) : credit score model based on your ETH wallet address.
+## [COVALENT](https://www.covalenthq.com/) : credit score model based on your ETH wallet address
 
 ```bash
     POST {BASE_URL}/credit_score/covalent
@@ -261,7 +261,7 @@ Response: **400**
     }
 ```
 
-## [PLAID](https://plaid.com/) : credit score model based on Plaid account.
+## [PLAID](https://plaid.com/) : credit score model based on Plaid account
 
 ```bash
     POST {BASE_URL}/credit_score/plaid
@@ -377,7 +377,7 @@ Response: **400**
     }
 ```
 
-## [KYC](http://) : KYC verification model.
+## KYC : KYC verification model
 
 ```bash
     POST {BASE_URL}/kyc
@@ -410,91 +410,36 @@ Body
 
 Response: **200**
 
+- Sample response from Plaid Sandbox environment
+
+```bash
+    {
+        "endpoint": "/kyc",
+        "status": "success",
+        "validator": "plaid",
+        "kyc_verified": true,
+    }
+```
+
 - Generalized Typescript response
 
 ```bash
-    enum ScoreQuality {
-        'very poor',
-        'poor',
-        'fair',
-        'good',
-        'very good',
-        'excellent',
-        'exceptional',
-    }
-
-    export interface IScoreResponseCoinbase {
-    endpoint: '/credit_score/coinbase';
-    feedback: {
-        advice: {
-            credibility_error: false,
-            wealth_error: false,
-            traffic_error: false,
-            stamina_error: false
-        };
-        score: {
-            cum_balance_now: number;
-            loan_amount: 500 | 1000 | 5000 | 10000 | 15000 | 20000 | 25000;
-            loan_duedate: 3 | 4 | 5 | 6;
-            longevity(days): number;
-            points: number;  # integer in range [300, 900]
-            quality: ScoreQuality;
-            score_exist: boolean;
-        };
-    };
-    message: string;
-    score: number;
-    risk: {
-        loan_amount: number;
-        risk_level: 'low' | 'medium' | 'high';
-    };
-    status: 'success' | 'error';
+    export interface IScoreResponseKYC {
+        endpoint: '/kyc';
+        status: 'success' | 'error';
+        validator: 'coinbase' | 'covalent' | 'plaid';
+        kyc_verified: boolean;
     }
 ```
 
-- Sample response for a test ETH address
+Response: **400**
+
+- Sample error response from an expired Coinbase access token
 
 ```bash
     {
-      "endpoint": "/credit_score/covalent",
-      "status": "success",
-      "score": 701,
-      "risk": {
-        "loan_amount": 10000,
-        "risk_level": "medium"
-      },
-      "message": "Congrats, you have successfully obtained a credit score! Your NearOracle score is GOOD - 701 points. <br/>
-      This score qualifies you for a short term loan of up to 2934 NEAR which is equivalent to 10000 USD over a <br/>
-      recommended pay back period of 6 monthly installments. Your ETH wallet address has been active for 414 days <br/>
-      and your total balance across all cryptocurrencies owned is $143 USD.",
-      "feedback": {
-        "score": {
-          "score_exist": true,
-          "points": 701,
-          "quality": "good",
-          "loan_amount": 10000,
-          "loan_duedate": 6,
-          "longevity(days)": 414,
-          "cum_balance_now": 14297.00
-        },
-        "advice": {
-          "credibility_error": false,
-          "wealth_error": false,
-          "traffic_error": false,
-          "stamina_error": false
-        }
-      }
-    }
-```
-
-## **Errors**
-
-Sample error response for a non-existing ETH wallet address
-
-```bash
-    {
-        'endpoint': "/credit_score/covalent",
-        'message': "'verified",
-        'status': "error"
+        "endpoint": "/kyc",
+        "status": "error",
+        "message": "Unable to fetch accounts data: The access token expired"
     }
 ```
