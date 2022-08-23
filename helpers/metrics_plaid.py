@@ -1,7 +1,11 @@
 from support.assessment import *
 from helpers.helper import *
+from datetime import datetime
 import statistics as stt
 import numpy as np
+
+
+NOW = datetime.now().date()
 
 
 def plaid_kyc(acc, txn):
@@ -21,9 +25,8 @@ def plaid_kyc(acc, txn):
         # user is verified iff acc and txn data exist,
         # iff the account has been active for > 90 days
         # iff their cumulative balance across all account is > $500
-        from datetime import datetime
-        now = datetime.now().date()  # remove it later, fetch from metadata
-        if txn and acc and (now - txn[-1]['date']).days and sum([a['balances']['current'] for a in acc if a['balances']['current']]):
+
+        if txn and acc and (NOW - txn[-1]['date']).days and sum([a['balances']['current'] for a in acc if a['balances']['current']]):
             return True
         else:
             return False
