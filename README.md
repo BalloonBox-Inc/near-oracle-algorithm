@@ -68,5 +68,5 @@ The tree diagram below describes the structure of this Git Repo. Notice that the
     ├── Procfile                      #set up uvicorn app in Heroku
     ├── pytest.ini                    #pytest initializer
     ├── README.md                     #this landing page
-    └── requirements.txt              #Pyhon module required to run this project
+    └── requirements.txt              #Pyhon modules required to run this project
 ```

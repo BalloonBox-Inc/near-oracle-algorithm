@@ -43,7 +43,7 @@ NarOracle returns to the user a numerical score ranging from 300-900 points. The
 
 The loan terms (loan amount, qualitative descriptor, and payback period) are algorithmic recommendations, and, therefore, they are not prescriptive. Although we strongly advise lenders and borrowers to consider NearOracle's parameters, we also encourage them to stipulate loan terms that best suit their unique needs.
 
-![](./images/credit_score_range.png)
+![](../images/credit_score_range.png)
 
 ---
 
