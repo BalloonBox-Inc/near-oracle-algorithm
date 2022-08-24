@@ -23,7 +23,7 @@ def comma_separated_list(l):
 def create_interpret_plaid():
     '''
    Description:
-        Initializes a dict with a concise summary to communicate and interpret the NEARoracle score. 
+        Initializes a dict with a concise summary to communicate and interpret the NearOracle score.
         It includes the most important metrics used by the credit scoring algorithm (for Plaid).
     '''
     return {
@@ -53,11 +53,11 @@ def interpret_score_plaid(score, feedback, score_range, loan_range, quality_rang
         returns a dict explaining the meaning of the numerical score
 
     Parameters:
-        score (float): user's NEARoracle numerical score
+        score (float): user's NearOracle numerical score
         feedback (dict): score feedback, reporting stats on main Plaid metrics
 
     Returns:
-        interpret (dict): dictionaries with the major contributing score metrics 
+        interpret (dict): dictionaries with the major contributing score metrics
     '''
     try:
         # Create 'interpret' dict to interpret the numerical score
@@ -116,15 +116,15 @@ def qualitative_feedback_plaid(
         messages, score, feedback, score_range, loan_range, quality_range, coinmarketcap_key):
     '''
     Description:
-        A function to format and return a qualitative description 
+        A function to format and return a qualitative description
         of the numerical score obtained by the user
 
     Parameters:
-        score (float): user's NEARoracle numerical score
+        score (float): user's NearOracle numerical score
         feedback (dict): score feedback, reporting stats on main Plaid metrics
 
     Returns:
-        msg (str): qualitative message explaining the numerical score to the user. 
+        msg (str): qualitative message explaining the numerical score to the user.
         Return this message to the user in the front end of the Dapp
     '''
 
@@ -181,7 +181,7 @@ def qualitative_feedback_plaid(
 
         # Subcase #1.1: the error is that no credit card exists
         if 'no credit card' in list(feedback['credit'].values()):
-            msg = msg + f' NEARoracle found no credit card associated with your bank account. '\
+            msg = msg + f' NearOracle found no credit card associated with your bank account. '\
                         f'Credit scores rely heavily on credit card history. Improve your score '\
                         f'by selecting a different bank account which shows credit history'
 
@@ -193,7 +193,8 @@ def qualitative_feedback_plaid(
             msg = msg + f' An error occurred while computing the score metric called {err}. '\
                         f'As a result, your score was rounded down. Try again later or select '\
                         f'an alternative bank account if you have one'
-    return msg + '.'
+    msg = msg + '.'
+    return msg.replace('..', '.')
 
 
 # -------------------------------------------------------------------------- #
@@ -202,7 +203,7 @@ def qualitative_feedback_plaid(
 def create_interpret_coinbase():
     '''
    Description:
-        Initializes a dict with a concise summary to communicate and interpret the NEARoracle score. 
+        Initializes a dict with a concise summary to communicate and interpret the NearOracle score.
         It includes the most important metrics used by the credit scoring algorithm (for Coinbase).
     '''
     return {
@@ -230,11 +231,11 @@ def interpret_score_coinbase(score, feedback, score_range, loan_range, quality_r
         returns a dict explaining the meaning of the numerical score
 
     Parameters:
-        score (float): user's NEARoracle numerical score
+        score (float): user's NearOracle numerical score
         feedback (dict): score feedback, reporting stats on main Coinbase metrics
 
     Returns:
-        interpret (dict): dictionaries with the major contributing score metrics 
+        interpret (dict): dictionaries with the major contributing score metrics
     '''
     try:
         # Create 'interpret' dict to interpret the numerical score
@@ -289,11 +290,11 @@ def qualitative_feedback_coinbase(
         of the numerical score obtained by the user
 
     Parameters:
-        score (float): user's NEARoracle numerical score
+        score (float): user's NearOracle numerical score
         feedback (dict): score feedback, reporting stats on main Coinbase metrics
 
     Returns:
-        msg (str): qualitative message explaining the numerical score to the user. 
+        msg (str): qualitative message explaining the numerical score to the user.
         Return this message to the user in the front end of the Dapp
     '''
 
@@ -365,7 +366,7 @@ def qualitative_feedback_coinbase(
 def create_interpret_covalent():
     '''
    Description:
-        Initializes a dict with a concise summary to communicate and interpret the NEARoracle score. 
+        Initializes a dict with a concise summary to communicate and interpret the NearOracle score.
         It includes the most important metrics used by the credit scoring algorithm (for Covalent).
     '''
     return {
@@ -393,11 +394,11 @@ def interpret_score_covalent(score, feedback, score_range, loan_range, quality_r
         returns a dict explaining the meaning of the numerical score
 
     Parameters:
-        score (float): user's NEARoracle numerical score
+        score (float): user's NearOracle numerical score
         feedback (dict): score feedback, reporting stats on major Covalent metrics
 
     Returns:
-        interpret (dict): dictionaries with the major contributing score metrics 
+        interpret (dict): dictionaries with the major contributing score metrics
     '''
     try:
         # Create 'interpret' dict to interpret the numerical score
@@ -452,15 +453,15 @@ def qualitative_feedback_covalent(
         messages, score, feedback, score_range, loan_range, quality_range, coinmarketcap_key):
     '''
     Description:
-        A function to format and return a qualitative description 
+        A function to format and return a qualitative description
         of the numerical score obtained by the user
 
     Parameters:
-        score (float): user's NEARoracle numerical score
+        score (float): user's NearOracle numerical score
         feedback (dict): score feedback, reporting stats on main Covalent metrics
 
     Returns:
-        msg (str): qualitative message explaining the numerical score to the user. 
+        msg (str): qualitative message explaining the numerical score to the user.
         Return this message to the user in the front end of the Dapp
     '''
 

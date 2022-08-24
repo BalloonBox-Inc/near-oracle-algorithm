@@ -16,8 +16,11 @@ def read_config_file(loan_request):
 
         return data
 
-    except Exception as e:
-        return str(e)
+    except OSError:
+        return 'Unable to find config.json'
+
+    except Exception:
+        return 'Loan amount requested is over the limit.'
 
 
 def read_models_and_metrics(d):

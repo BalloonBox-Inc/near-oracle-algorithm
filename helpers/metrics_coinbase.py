@@ -1,5 +1,3 @@
-from testing.performance import *
-
 from datetime import datetime
 import pandas as pd
 import numpy as np
@@ -65,7 +63,7 @@ def net_flow(txn, timeframe, feedback):
             df = df.groupby(pd.Grouper(freq="M")).sum()
 
             # exclude current month
-            if df.iloc[-1,].name.strftime(
+            if df.iloc[-1, ].name.strftime(
                 "%Y-%m"
             ) == NOW.strftime("%Y-%m"):
                 df = df[:-1]
@@ -84,25 +82,29 @@ def net_flow(txn, timeframe, feedback):
         return df, feedback
 
 
-# @measure_time_and_memory
 def coinbase_kyc(acc, txn):
     '''
     Description:
-        returns 1 if the oracle believes this is a legitimate user
-        with some credible history. Returns 0 otherwise
+        returns True if the oracle believes this is a legitimate user
+        with some credible history. Returns False otherwise
 
     Parameters:
-        acc (list): non-zero balance Coinbase accounts owned by 
+        acc (list): non-zero balance Coinbase accounts owned by
             the user in currencies of trusted reputation
         txn (list): transactions history of above-listed accounts
 
     Returns:
-        (boolean): binary kyc verification 1|0
+        (boolean): binary kyc verification True|False
     '''
 
     try:
-        # Pass KYC check iff the Coinbase account has trusted data
-        if acc and txn:
+        # Pass KYC check iff the Coinbase account has more than 10 txns,
+        # has been active for > 90 days, with cumulative balance > $150
+        if acc and txn\
+            and len(txn) > 10\
+                and (NOW - min([d["created_at"] for d in acc if d["created_at"]])).days > 90\
+            and sum([float(a["native_balance"]["amount"])
+                     for a in acc if float(a["native_balance"]["amount"])]) > 150:
             return True
         else:
             return False
@@ -116,7 +118,6 @@ def coinbase_kyc(acc, txn):
 # -------------------------------------------------------------------------- #
 
 
-# @measure_time_and_memory
 def kyc(acc, txn, feedback):
     '''
     Description:
@@ -152,8 +153,6 @@ def kyc(acc, txn, feedback):
 # -------------------------------------------------------------------------- #
 #                               Metric #2 History                            #
 # -------------------------------------------------------------------------- #
-
-# @measure_time_and_memory
 
 
 def history_acc_longevity(acc, feedback, params):
@@ -198,7 +197,6 @@ def history_acc_longevity(acc, feedback, params):
 # -------------------------------------------------------------------------- #
 
 
-# @measure_time_and_memory
 def liquidity_tot_balance_now(acc, feedback, params):
     '''
     Description:
@@ -242,7 +240,6 @@ def liquidity_tot_balance_now(acc, feedback, params):
         return score, feedback
 
 
-# @measure_time_and_memory
 def liquidity_loan_duedate(txn, feedback, params):
     '''
     Description:
@@ -254,7 +251,7 @@ def liquidity_loan_duedate(txn, feedback, params):
         params (dict): model parameters, i.e. coefficients
 
     Returns:
-        feedback (dict): score feedback with a new key-value pair 
+        feedback (dict): score feedback with a new key-value pair
             'loan_duedate':float (# of months in range [3,6])
     '''
 
@@ -278,7 +275,6 @@ def liquidity_loan_duedate(txn, feedback, params):
         return feedback
 
 
-# @measure_time_and_memory
 def liquidity_avg_running_balance(acc, txn, feedback, params):
     '''
     Description:
@@ -343,11 +339,10 @@ def liquidity_avg_running_balance(acc, txn, feedback, params):
 # -------------------------------------------------------------------------- #
 
 
-# @measure_time_and_memory
 def activity_tot_volume_tot_count(txn, type, feedback, params):
     '''
     Description:
-        A score based on the count and volume of credit OR 
+        A score based on the count and volume of credit OR
         debit transactions across user's Coinbase accounts
 
     Parameters:
@@ -393,7 +388,6 @@ def activity_tot_volume_tot_count(txn, type, feedback, params):
         return score, feedback
 
 
-# @measure_time_and_memory
 def activity_consistency(txn, type, feedback, params):
     '''
     Description:
@@ -465,7 +459,6 @@ def activity_consistency(txn, type, feedback, params):
         return score, feedback
 
 
-# @measure_time_and_memory
 def activity_profit_since_inception(acc, txn, feedback, params):
     '''
     Description:

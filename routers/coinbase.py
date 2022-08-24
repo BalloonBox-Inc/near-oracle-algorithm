@@ -1,25 +1,27 @@
-from testing.performance import *
 from config.helper import *
-from support.helper import *
-from support.risk import *
-from support.feedback import *
-from support.score import *
+from helpers.helper import *
+from helpers.risk import *
+from helpers.feedback import *
+from helpers.score import *
 from market.coinmarketcap import *
 from validator.coinbase import *
-from schemas import *
-from fastapi import APIRouter, Request, Response, HTTPException, status
-from icecream import ic
+
+from fastapi import APIRouter, Depends, Request, status
+from fastapi.responses import JSONResponse
+from sqlalchemy.orm import Session
+from support.database import get_db
+from support.schemas import Coinbase_Item
+from support import crud
 
 
 router = APIRouter(
     prefix='/credit_score',
-    tags=['Credit Score']
+    tags=['Credit Scoring']
 )
 
 
-# @measure_time_and_memory
 @router.post('/coinbase', status_code=status.HTTP_200_OK, summary='Coinbase credit score')
-async def credit_score_coinbase(request: Request, response: Response, item: Coinbase_Item):
+async def credit_score_coinbase(request: Request, item: Coinbase_Item, db: Session = Depends(get_db)):
     '''
     Calculates credit score based on Coinbase data.
 
@@ -34,12 +36,13 @@ async def credit_score_coinbase(request: Request, response: Response, item: Coin
     '''
 
     try:
+        print(f'\033[35;1m Receiving request from: {request.client.host}\033[0m')
+
         # configs
+        print(f'\033[36m Accessing settings ...\033[0m')
         configs = read_config_file(item.loan_request)
         if isinstance(configs, str):
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail='Unable to read config file.')
+            raise Exception(configs)
 
         loan_range = configs['loan_range']
         score_range = configs['score_range']
@@ -54,145 +57,93 @@ async def credit_score_coinbase(request: Request, response: Response, item: Coin
         messages = configs['minimum_requirements']['coinbase']['messages']
         feedback = create_feedback(models)
 
-        ic(loan_range)
-        ic(score_range)
-        ic(qualitative_range)
-        ic(thresholds)
-        ic(parm)
-        ic(models)
-        ic(metrics)
-        ic(messages)
-        ic(feedback)
-
         # coinmarketcap
+        print(f'\033[36m Connecting with Coinmarketcap ...\033[0m')
         top_marketcap = coinmarketcap_currencies(
-            item.coinmarketcap_key,
-            thresholds['coinmarketcap_currencies']
-        )
-        ic(top_marketcap)
+            item.coinmarketcap_key, thresholds['coinmarketcap_currencies'])
         if isinstance(top_marketcap, str):
-            raise Exception(top_marketcap)
+            raise Exception(f'Unable to fetch coinmarketcap data: {top_marketcap}')
 
         # coinbase client connection
+        print(f'\033[36m Connecting with validator ...\033[0m')
         client = coinbase_client(
-            item.coinbase_access_token,
-            item.coinbase_refresh_token
-        )
-        ic(client)
+            item.coinbase_access_token, item.coinbase_refresh_token)
 
         # coinbase supported currencies
+        print(f'\033[36m Checking supported currencies 1/2 ...\033[0m')
         currencies = coinbase_currencies(client)
-        ic(currencies)
         if 'error' in currencies:
-            raise Exception(currencies['error']['message'])
+            error = currencies['error']['message']
+            raise Exception(f'Unable to fetch coinbase data: {error}')
 
         # add top coinmarketcap currencies and coinbase currencies
+        print(f'\033[36m Checking supported currencies 2/2 ...\033[0m')
         top_currencies = aggregate_currencies(
-            top_marketcap,
-            currencies,
-            thresholds['odd_fiats']
-        )
-        ic(top_currencies)
+            top_marketcap, currencies, thresholds['odd_fiats'])
 
         # set native currency to USD
+        print(f'\033[36m Setting native currency 1/2 ...\033[0m')
         native = coinbase_native_currency(client)
         if 'error' in native:
-            raise Exception(native['error']['message'])
+            error = native['error']['message']
+            raise Exception(f'Unable to fetch coinbase native currency: {error}')
         if native != 'USD':
             set_native = coinbase_set_native_currency(client, 'USD')
-        ic(native)
 
         # data fetching
+        print(f'\033[36m Reading data ...\033[0m')
         accounts, transactions = coinbase_accounts_and_transactions(
-            client,
-            top_currencies,
-            thresholds['transaction_types']
-        )
-        ic(accounts)
-        ic(transactions)
+            client, top_currencies, thresholds['transaction_types'])
         if isinstance(accounts, str):
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f'Unable to fetch transactions data: {accounts}')
+            raise Exception(f'Unable to fetch accounts data: {accounts}')
+        if isinstance(transactions, str):
+            raise Exception(f'Unable to fetch transactions data: {transactions}')
 
         # reset native currency
+        print(f'\033[36m Setting native currency 2/2 ...\033[0m')
         set_native = coinbase_set_native_currency(client, native)
-        ic(set_native)
 
         # compute score and feedback
+        print(f'\033[36m Calculating score ...\033[0m')
         score, feedback = coinbase_score(
-            score_range,
-            feedback,
-            models,
-            metrics,
-            parm,
-            accounts,
-            transactions
-        )
-        ic(score)
-        ic(feedback)
-
-        # keep feedback data
-        data = keep_feedback(feedback, score, item.loan_request, 'coinbase')
-        ic(data)
-
-       # validate loan request
-        if not validate_loan_request(
-            loan_range, feedback, "liquidity", "avg_running_balance"
-        ):
-            raise Exception(messages["not_qualified"].format(loan_range[0]))
+            score_range, feedback, models, metrics, parm, accounts, transactions)
 
         # compute risk
-        risk = calc_risk(
-            score,
-            score_range,
-            loan_range
-        )
-        ic(risk)
+        print(f'\033[36m Calculating risk ...\033[0m')
+        risk = calc_risk(score, score_range, loan_range)
+
+        # keep feedback data
+        print(f'\033[36m Saving parameters ...\033[0m')
+        data = keep_dict(score, feedback, risk, item.loan_request)
+        crud.add_event(db, 'coinbase', data)
 
         # update feedback
+        print(f'\033[36m Preparing feedback 1/2 ...\033[0m')
         message = qualitative_feedback_coinbase(
-            messages,
-            score,
-            feedback,
-            score_range,
-            loan_range,
-            qualitative_range,
-            item.coinmarketcap_key
-        )
+            messages, score, feedback, score_range, loan_range, qualitative_range, item.coinmarketcap_key)
 
+        print(f'\033[36m Preparing feedback 2/2 ...\033[0m')
         feedback = interpret_score_coinbase(
-            score,
-            feedback,
-            score_range,
-            loan_range,
-            qualitative_range
-        )
-        ic(message)
-        ic(feedback)
+            score, feedback, score_range, loan_range, qualitative_range)
 
         # return success
-        status_msg = 'success'
-
-    except Exception as e:
-        status_msg = 'error'
-        score = 0
-        risk = 'undefined'
-        message = str(e)
-        feedback = {}
-
-    finally:
-        output = {
+        print(f'\033[35;1m Credit score has successfully been calculated.\033[0m')
+        return {
             'endpoint': '/credit_score/coinbase',
-            'status': status_msg,
+            'status': 'success',
             'score': int(score),
             'risk': risk,
             'message': message,
             'feedback': feedback
         }
-        if score == 0:
-            output.pop('score', None)
-            output.pop('risk', None)
-            output.pop('feedback', None)
 
-        return output
+    except Exception as e:
+        print(f'\033[35;1m Unable to complete credit scoring calculation.\033[0m')
+        return JSONResponse(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            content={
+                'endpoint': '/credit_score/coinbase',
+                'status': 'error',
+                'message': str(e),
+            }
+        )

@@ -4,9 +4,6 @@
 # macOS custom attributes
 .DS_Store
 
-# VScode settings
-.vscode
-
 # python interpreter
 **.pyc
 
@@ -18,3 +15,6 @@
 
 # neglect all covalent-related files
 covalent_**
+
+# temporary
+/temp

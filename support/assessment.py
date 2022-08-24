@@ -1,12 +1,13 @@
-import time
 import tracemalloc
+import time
 
-k = 10**3
+
+K = 10**3
 
 
 def format_time(t):
-    if t >= k:
-        t = t/k
+    if t >= K:
+        t = t/K
         if t >= 60:
             t = str(round(t/60, 2)) + ' min'
         else:
@@ -17,14 +18,14 @@ def format_time(t):
 
 
 def format_memory(m):
-    if m >= k:
-        m = str(round(m/k, 2)) + ' MB'
+    if m >= K:
+        m = str(round(m/K, 2)) + ' MB'
     else:
         m = str(round(m, 2)) + ' KB'
     return m
 
 
-def measure_time_and_memory(func):
+def evaluate_function(func):
     def measure(*args, **kwargs):
         # start measure
         tracemalloc.start()
@@ -39,9 +40,9 @@ def measure_time_and_memory(func):
         tracemalloc.stop()
 
         # format output
-        span = (t1 - t0)*k  # ms
-        memory = memory/k  # KB
-        peak = peak/k  # KB
+        span = (t1 - t0)*K  # ms
+        memory = memory/K  # KB
+        peak = peak/K  # KB
 
         span = format_time(span)
         memory = format_memory(memory)

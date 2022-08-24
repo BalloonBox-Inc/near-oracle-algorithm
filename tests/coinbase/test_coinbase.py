@@ -1,30 +1,31 @@
-from support.metrics_coinbase import *
+from helpers.metrics_coinbase import *
 from config.helper import *
-from support.helper import *
+from helpers.helper import *
 from datetime import datetime
 import unittest
 import json
 import os
 
 
-LOAN_AMOUNT = 24000
+LOAN_AMOUNT = 10000
 dummy_data = 'test_coinbase.json'
 
-json_file = os.path.join(os.path.dirname(
-    __file__).replace('/tests', '/data'), dummy_data)
+json_file = os.path.join(os.path.dirname(__file__), dummy_data)
 
 # -------------------------------------------------------------------------- #
 #                               Helper Functions                             #
 #                                                                            #
 # -------------------------------------------------------------------------- #
+
+
 def str_to_date(acc, feedback):
     '''
     Description:
         serialize a Python data structure converting string instances into datetime objects
-    
+
     Parameters:
         tx (list): locally stored Coinbase data. Either account OR transactions data
-            
+
     Returns:
         all_txn (list): serialized list containing user accounts OR transactions. String dates are converted to datetime objects
     '''
@@ -52,7 +53,7 @@ class TestMetricsCoinbase(unittest.TestCase):
     # factor out set-up code implementing the setUp() method
     def setUp(self):
 
-        # import variables from config.json 
+        # import variables from config.json
         configs = read_config_file(LOAN_AMOUNT)
         models, metrics = read_models_and_metrics(
             configs['minimum_requirements']['coinbase']['scores']['models'])
@@ -66,10 +67,10 @@ class TestMetricsCoinbase(unittest.TestCase):
         # import parameters
         score_range = configs['score_range']
         params = configs['minimum_requirements']['coinbase']['params']
-        self.par = coinbase_params(params, score_range) 
-        
+        self.par = coinbase_params(params, score_range)
 
     # clean up code at the end of this test class
+
     def tearDown(self):
         self.fb = None
         self.acc = None
@@ -179,7 +180,7 @@ class TestMetricsCoinbase(unittest.TestCase):
     def test_net_flow(self):
         '''
         - output should be of type tuple(DataFrame, dict)
-        - bad input parameters should raise and exception       
+        - bad input parameters should raise and exception
         '''
         a = net_flow(self.tx, 12, self.fb)
         b = net_flow([], 6, self.fb)
@@ -205,7 +206,7 @@ class TestMetricsCoinbase(unittest.TestCase):
 
 class TestParametrizeCoinbase(unittest.TestCase):
     '''
-    The TestParametrizeOutput object checks that ALL functions 
+    The TestParametrizeOutput object checks that ALL functions
     of our Coinbase algorithm ALWAYS return a tuple comprising of:
     - an int (i.e., the score)
     - a dict (i.e., the feedback)
@@ -214,7 +215,7 @@ class TestParametrizeCoinbase(unittest.TestCase):
     '''
 
     def setUp(self):
-        # import variables from config.json 
+        # import variables from config.json
         configs = read_config_file(LOAN_AMOUNT)
         models, metrics = read_models_and_metrics(
             configs['minimum_requirements']['coinbase']['scores']['models'])
@@ -228,10 +229,10 @@ class TestParametrizeCoinbase(unittest.TestCase):
         # import parameters
         score_range = configs['score_range']
         params = configs['minimum_requirements']['coinbase']['params']
-        self.par = coinbase_params(params, score_range) 
-    
+        self.par = coinbase_params(params, score_range)
+
         self.args = {
-            'good': 
+            'good':
             [
                 [self.acc, self.tx, self.fb],
                 [self.acc, self.fb, self.par],
@@ -243,7 +244,7 @@ class TestParametrizeCoinbase(unittest.TestCase):
                 [self.tx, 'debit', self.fb, self.par],
                 [self.acc, self.tx, self.fb, self.par]
             ],
-            'empty': 
+            'empty':
             [
                 [[], None, self.fb],
                 [None, self.fb, self.par],
@@ -292,7 +293,3 @@ class TestParametrizeCoinbase(unittest.TestCase):
                 self.assertEqual(x[0], 0)
                 self.assertIsInstance(x[0], (float, int))
                 self.assertIsInstance(x[1], dict)
-
-
-if __name__ == '__main__':
-    unittest.main()

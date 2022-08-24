@@ -1,36 +1,23 @@
+from sqlalchemy import create_engine
+from sqlalchemy.orm import sessionmaker, declarative_base
 from dotenv import load_dotenv
-from icecream import ic
 from os import getenv
-import psycopg2
 load_dotenv()
 
 
-DB_URI = getenv('DATABASE_URL').replace(
-    '@', ':').replace('/', ':').split(':')[3:]
+db_uri = getenv('DATABASE_URL')
+if 'postgresql' not in db_uri:
+    db_uri = db_uri.replace('postgres', 'postgresql')
 
-USER, PASSWORD, HOST, PORT, DATABASE = [DB_URI[i] for i in tuple(range(5))]
+engine = create_engine(db_uri)
+SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+Base = declarative_base()
 
 
-def add_row_to_table(tablename, obj):
-    '''
-    tablename [string]: table name
-    obj [object]: object of column-value pair
-
-    '''
+# create database session
+def get_db():
+    db = SessionLocal()
     try:
-        metadata = ' VARCHAR(255), '.join(list(obj.keys())) + ' VARCHAR(255)'
-        columns = ', '.join(list(obj.keys()))
-        values = "'" + "', '".join(str(e) for e in list(obj.values())) + "'"
-
-        with psycopg2.connect(user=USER, password=PASSWORD, host=HOST, port=PORT, database=DATABASE) as conn:
-            with conn.cursor() as cursor:
-                cursor.execute(
-                    f'CREATE TABLE IF NOT EXISTS {tablename} ({metadata})')
-                conn.commit()
-                cursor.execute(
-                    f'INSERT INTO {tablename} ({columns}) VALUES ({values})')
-                conn.commit()
-
-    except (Exception, psycopg2.Error) as e:
-        ic(str(e))
-    return
+        yield db
+    finally:
+        db.close()

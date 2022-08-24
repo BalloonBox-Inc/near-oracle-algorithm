@@ -6,9 +6,12 @@ from slowapi.errors import RateLimitExceeded
 from slowapi.middleware import SlowAPIMiddleware
 from slowapi import Limiter, _rate_limit_exceeded_handler
 from slowapi.util import get_remote_address
-from routers import plaid, coinbase, covalent, kyc
+from routers import coinbase, covalent, plaid, kyc
+from support.database import engine
+from support import models
 
 
+models.Base.metadata.create_all(bind=engine)
 app = FastAPI()
 
 
@@ -20,9 +23,9 @@ app.add_middleware(SlowAPIMiddleware)
 
 
 # validator routers
-app.include_router(plaid.router)
 app.include_router(coinbase.router)
 app.include_router(covalent.router)
+app.include_router(plaid.router)
 
 
 # kyc router - validator agnostic

@@ -1,128 +1,72 @@
-# 🔮 NEAR Oracle
-
 <p align="center">
   <a href="https://near.org/">
-    <img alt="NearMainLogo" src="https://github.com/BalloonBox-Inc/NEARoracle-Oracle/blob/dev/images/logo_near_oracle.png" width="700" />
+    <img alt="Near" src="https://github.com/BalloonBox-Inc/near-oracle-algorithm/blob/dev/images/logo_NearOracle.png" width="700" />
   </a>
 </p>
 
-## At a Glance
+## Credit Scoring on NEAR Protocol 🔮 :ringed_planet: :mag:
 
-NEARoracle is an oracle for credit scoring designed for the web3 community. The oracle returns a numerical score affirming users' credibility and trustworthiness in the web3 space. The DApp was designed with one specific use case in mind: unsecured P2P lending, which is facilitating lending and borrowing of crypto loans.
+NearOracle is an oracle for credit scoring that runs on the NEAR protocol and serves web3 users interested in lending or borrowing money in the crypto space. This repo contains the Python codebase of the credit scoring algorithm used by the NearOracle dApp, a dApp that BalloonBox developed through a grant by the [NEAR Foundation](https://near.foundation/). The oracle reads in the user's fiat or crypto financial history and uses it to calculate a numerical score, namely an integer representing a user's financial health. Ranking users through a credit score is essential to distinguish between trusted and suspicious agents in the web3 space. The dApp caters to a specific use case, namely unsecured P2P lending: facilitating lending and borrowing of crypto loans.
 
-The DApp works as follow:
+###### How does the dApp work?
 
-- it acquires user's financial data by integrating with two validators ([Plaid](https://dashboard.plaid.com/overview) & [Coinbase](https://developers.coinbase.com/))
-- it runs an algorithm on given data to compute a score representing the financial health of a user
-- it writes the score to the NEAR Protocol blockchain via a Wasm smart contract build using the Rust `NEAR SDK`
+- it acquires user's financial data by integrating with three validators ([Plaid](https://dashboard.plaid.com/overview), [Coinbase](https://developers.coinbase.com/), and [MetaMask](https://metamask.io/))
+- it runs the credit scoring algorithm to compute a score assessing a user's financial health
+- it writes the score to the blockchain via a Wasm smart contract build using the Rust `NEAR SDK`
 
-Ultimately, this will incentivize on-chain traffic, it will affirm the reputation of those users requesting a credit score, and it will execute a credit score check to validate their credibility, while also preserving their privacy.
+###### In this Repo
+
+This GitHub repo contains the codebase of the NearOracle credit score algorithm. The code features 3 validators, 4 API integrations, 12 score metrics, and 25+ functions to calculate users' credit scores. The front end of the NearOracle dApp (see codebase at [`near-oracle-client`](https://github.com/BalloonBox-Inc/near-oracle-client)), after fetching the user's data, passes it to the algorithm, which executes and returns a score via a Rust smart contract (see codebase at [`near-oracle-contract`](https://github.com/BalloonBox-Inc/near-oracle-contract)).
+
+Continue to read these docs to understand the algorithm or clone this project and spin it up in your local machine.
 
 ---
 
-## This Repo
 
-This GitHub repo contains the codebase of the NEARoracle credit score algorithm. The code features 2 validators, 3 API integrations, 10 score metrics, and 25+ functions to calculate users' credit scores. The front end of the NEARoracle DApp, after fetching the user's data, passes it to the algorithm to execute and return a score. The Rust smart contract is stored at the [NEARoracle-Oracle](https://github.com/BalloonBox-Inc/NEARoracle-Contract) repo.
-
-## Execute Locally
-
-- download or clone the repo to your machine
-- install dependancies
-- set up `.env` file
-- execute
-
-### Package Manager Required :package:
-
-pip or conda
-
-Run in local terminal the following command:
+### :octopus: Directory Structure
+The tree diagram below describes the structure of this Git Repo. Notice that the decision tree only features the most important files and disregards all others.
 
 ```bash
-git clone  ... my-project-name
-cd my-project-name
+.
+└───
+    ├── config
+    │   └── config.json               # contains all model parameters and weights - tune this file to alter the model
+    ├── helpers
+    │   ├── feedback.py               # string formatter returning a qualitative score feedback
+    │   ├── helper.py                 # helper functions for data cleaning
+    │   ├── metrics_coinbase.py       # logic to analyze a user's Coinbase account data
+    │   ├── metrics_covalent.py       # logic to analyze a user's ETH wallet data (powered by Covalent)
+    │   ├── metrics_plaid.py          # logic to analyze a user's bank account data (powered by Plaid)
+    │   ├── models.py                 # aggregate granular credit score logic into 4 metrics
+    │   ├── risk.py                   # high/med/low risk indicators
+    │   ├── score.py                  # aggregate score metrics into an actual credit score
+    │   └── README.md                 # docs on credit score model & guideline to clone project
+    ├── market
+    │   └── coinmarketcap.py          # hit a few endpoints on Coinmarketcap (live exchange rate & top cryptos)
+    ├── routers
+    │   ├── coinbase.py               # core execution logic - Coinbase
+    │   ├── covalent.py               # core execution logic - Covalent
+    │   ├── kyc.py                    # core execution logic - KYC template
+    │   ├── plaid.py                  # core execution logic - Plaid
+    │   └── README.md                 # docs on the API endpoints
+    ├── support
+    │   ├── assessment.py             # tracking memory allocation in database
+    │   ├── crud.py                   # Create, Read, Update, Delete (CRUD) - database handler
+    │   ├── database.py               # set up PostgreSQL database to store computed scores
+    │   ├── models.py                 # clases with data to enter in new row of database
+    │   └── schemas.py                # http request classes
+    ├── tests
+    │   ├── coinbase                  # directory with 2 files: Coinbase pytests & dummy test data json
+    │   ├── covalent                  # directory with 2 files: Covalent pytests & dummy test data json
+    │   └── plaid                     # directory with 2 files: Plaid pytests & dummy test data json
+    ├── validator
+    │   ├── coinbase.py               # functions calling Coinbase API
+    │   ├── covalent.py               # functions calling Covalent API
+    │   └── plaid.py                  # functions calling Plaid API
+    ├── LICENCE
+    ├── main.py                       # core file - handle API calls, directing them to the router folder
+    ├── Procfile                      # set up uvicorn app in Heroku
+    ├── pytest.ini                    # pytest initializer
+    ├── README.md                     # this landing page
+    └── requirements.txt              # Python modules required to run this project
 ```
-
-Run _either_ of the command below to install dependencies:
-
-```bash
-pip install -r requirements.txt                                 # using pip
-conda create --name <env_name> --file requirements.txt          # using Conda
-```
-
-### Credentials Required :old_key: :lock:
-
-If you want to test the algorithm alone (independently from the DApp frontend), then continue reading this page and follow the step-by-step guide below. You'll need to create a Developer CoinMarketCap API Key, following the CoinMarketCap Developers guide [here](https://coinmarketcap.com/api/documentation/v1/#section/Introduction). In addition, you'll need either a Plaid or Coinbase account or (ideally) both. If you don't own one yet, you can create an account [here](https://dashboard.plaid.com/signin) and [here](https://www.coinbase.com/signup), respectively and then retrieve your Plaid [keys](https://dashboard.plaid.com/team/keys) and your Coinbase [keys](https://www.coinbase.com/settings/api). For Coinbase, you'll need to generate a new set of API keys. Do so, following this flow: `Coinbase` -> `settings` -> `API` -> `New API Key`.
-
-Next, create a `.env` local file in your root folder:
-
-```bash
-PLAID_CLIENT_ID=your_client_id
-PLAID_CLIENT_SECRET=your_secret_sandbox_key
-PLAID_ACCESS_TOKEN=your_unique_access_token
-
-COINBASE_CLIENT_ID=your_coinbase_id
-COINBASE_CLIENT_SECRET=your_coinbase_secret_key
-
-COINMARKETCAP_KEY=your_coinmarketcap_key
-```
-
-### Run Locally
-
-`cd` into the local directory where you cloned NEARoracle_Oracle. To run the credit score algorithm locally as a stand-alone Python project execute this command in terminal. You must also ensure you are in your project root.
-
-```bash
-cd my-project-name
-python demo.py
-```
-
-> :warning: The oracle will execute properly, only if you set up a correct and complete `.env` file.
-
-## Credit Score Model
-
-### Algorithm Architecture :page_facing_up:
-
-Understand the credit score model at a glance.
-
-There are three distinct models, one for each of our chosen validators, namely Plaid, Coinbase & Covalent.
-
-[**Plaid model**](./images/logic_plaid.png) diagram and features:
-
-- :curling_stone: analyze 5 years of transaction history
-- :gem: dynamically select user's best credit card products
-- :dart: detect recurring deposits and withdrawals (monthly)
-- :hammer_and_wrench: deploy linear regression on minimum running balance over the past 24 months
-- :magnet: auto-filter & discard micro transactions
-- :pushpin: inspect loan, investment, and saving accounts
-
-[**Coinbase model**](./images/logic_coinbase.png) diagram and features:
-
-- :bell: check for user KYC status
-- :key: live fetch of top 25 cryptos by market cap via [CoinMarketCap](https://coinmarketcap.com/) API
-- :fire: dynamically select user's best crypto wallets
-- :closed_lock_with_key: auto-convert any currency to USD in real-time
-- :bulb: analyze all transactions since Coinbase account inception
-- :moneybag: compute user's net profit
-
-[**Covalent model**](./images/logic_covalent.png) diagram and features:
-
-- :fox_face: authenticate user via MetaMask 
-- :parachute: account for credits, debits transactions, transfers, frequency, cumulative balance now, and more
-- :chains: fetch up to 100 top ERC20 tokens (by market capitalization) via [CoinMarketCap](https://coinmarketcap.com/) API
-- :bar_chart: analyze time series of latest 400 transactions on MetaMask wallet
-- :chart: inspect historical OHLCV for last 30 days
-
-
-## Interpret Your Score :mag:
-
-NEARoracle returns to the user a numerical score ranging from 300-900 points. The score is partitioned into categorical bins (very poor | poor | fair | good | very good | excellent | exceptional), which describe the score qualitatively (see fuel gauge in the diagram below). Every bin is associated with a USD equivalent, which represents the maximum loan amount in USD that a user qualifies for, based on NEARoracle oracle calculation. Lastly, the NEARoracle also returns the estimated payback period, namely the expected time it will take for the user to pay back the loan. The loan terms (loan amount, qualitative descriptor, and payback period) are algorithmic recommendations, and, therefore, they are not prescriptive. Although we strongly advise lenders and borrowers to consider the NEARoracle Oracle's parameters, we also encourage them to stipulate loan terms to best suit their needs.
-![](./images/credit_score_range.png)
-
-### Unit tests :pencil2: :black_nib: :page_facing_up:
-
-The algorithm has undergone extensive unit testing. To execute these tests yourself, run the following command in terminal, from the root folder of this Git repo:
-
-```bash
-python -m unittest -v unit_tests                # for both Coinbase & Plaid
-```
-
-> :warning: both Coinbase and Plaid `unittest` relies on imported test data (_json_ files). We crafted two fake and anonimized test data-sets with the explicit goal of executing unit tests. Find these two data sets in the `data` directory, under the names of `test_user_coinbase.json` and `test_user_plaid.json`, respectively.
