@@ -30,43 +30,43 @@ The tree diagram below describes the structure of this Git Repo. Notice that the
 .
 └───
     ├── config
-    │   └── config.json               #contains all model parameters and weights - tune this file to alter the model
+    │   └── config.json               # contains all model parameters and weights - tune this file to alter the model
     ├── helpers
-    │   ├── feedback.py               #string formatter returning a qualitative score feedback
-    │   ├── helper.py                 #helper functions for data cleaning
-    │   ├── metrics_coinbase.py       #logic to analyze a user's Coinbase account data
-    │   ├── metrics_covalent.py       #logic to analyze a user's ETH wallet data (powered by Covalent)
-    │   ├── metrics_plaid.py          #logic to analyze a user's bank account data (powered by Plaid)
-    │   ├── models.py                 #aggregre the granular credit score logic into 4 metrics
-    │   ├── risk.py                   #high/med/low risk indicators
-    │   ├── score.py                  #aggregate score metrics into an actual credit score
-    │   └── README.md                 #docs on credit score model & guideline to clone project
+    │   ├── feedback.py               # string formatter returning a qualitative score feedback
+    │   ├── helper.py                 # helper functions for data cleaning
+    │   ├── metrics_coinbase.py       # logic to analyze a user's Coinbase account data
+    │   ├── metrics_covalent.py       # logic to analyze a user's ETH wallet data (powered by Covalent)
+    │   ├── metrics_plaid.py          # logic to analyze a user's bank account data (powered by Plaid)
+    │   ├── models.py                 # aggregate granular credit score logic into 4 metrics
+    │   ├── risk.py                   # high/med/low risk indicators
+    │   ├── score.py                  # aggregate score metrics into an actual credit score
+    │   └── README.md                 # docs on credit score model & guideline to clone project
     ├── market
-    │   └── coinmarketcap.py          #hit a few endpoints on Coinmarketcap (live exchange rate & top cryptos)
+    │   └── coinmarketcap.py          # hit a few endpoints on Coinmarketcap (live exchange rate & top cryptos)
     ├── routers
-    │   ├── coinbase.py               #core execution logic - Coinbase
-    │   ├── covalent.py               #core execution logic - Covalent
-    │   ├── kyc.py                    #core execution logic - KYC template
-    │   ├── plaid.py                  #core execution logic - Plaid
-    │   └── README.md                 #docs on the API endpoints
+    │   ├── coinbase.py               # core execution logic - Coinbase
+    │   ├── covalent.py               # core execution logic - Covalent
+    │   ├── kyc.py                    # core execution logic - KYC template
+    │   ├── plaid.py                  # core execution logic - Plaid
+    │   └── README.md                 # docs on the API endpoints
     ├── support
-    │   ├── assessment.py             #tracking memory allocation in database
-    │   ├── crud.py                   #Create, Read, Update, Delete (CRUD) - database handler
-    │   ├── database.py               #set up PostgreSQL database to store computed scores
-    │   ├── models.py                 #clases with data to enter in new row of database
-    │   └── schemas.py                #http request classes
+    │   ├── assessment.py             # tracking memory allocation in database
+    │   ├── crud.py                   # Create, Read, Update, Delete (CRUD) - database handler
+    │   ├── database.py               # set up PostgreSQL database to store computed scores
+    │   ├── models.py                 # clases with data to enter in new row of database
+    │   └── schemas.py                # http request classes
     ├── tests
-    │   ├── coinbase                  #directory with 2 files: Coinbase pytests & dummy test data json
-    │   ├── covalent                  #directory with 2 files: Covalent pytests & dummy test data json
-    │   └── plaid                     #directory with 2 files: Plaid pytests & dummy test data json
+    │   ├── coinbase                  # directory with 2 files: Coinbase pytests & dummy test data json
+    │   ├── covalent                  # directory with 2 files: Covalent pytests & dummy test data json
+    │   └── plaid                     # directory with 2 files: Plaid pytests & dummy test data json
     ├── validator
-    │   ├── coinbase.py               #functions calling Coinbase API
-    │   ├── covalent.py               #functions calling Covalent API
-    │   └── plaid.py                  #functions calling Plaid API
+    │   ├── coinbase.py               # functions calling Coinbase API
+    │   ├── covalent.py               # functions calling Covalent API
+    │   └── plaid.py                  # functions calling Plaid API
     ├── LICENCE
-    ├── main.py                       #core file - handle API calls, directing them to the router folder
-    ├── Procfile                      #set up uvicorn app in Heroku
-    ├── pytest.ini                    #pytest initializer
-    ├── README.md                     #this landing page
-    └── requirements.txt              #Pyhon modules required to run this project
+    ├── main.py                       # core file - handle API calls, directing them to the router folder
+    ├── Procfile                      # set up uvicorn app in Heroku
+    ├── pytest.ini                    # pytest initializer
+    ├── README.md                     # this landing page
+    └── requirements.txt              # Python modules required to run this project
 ```
