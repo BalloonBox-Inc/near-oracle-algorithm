@@ -121,13 +121,13 @@ def plaid_credit_metrics(feedback, params, metadata, period):
         try:
             dup = du['period']
             util_values = list({k: v for k, v in dup.items() if k <= period}.values())
-            util_values = [n if n > 0.3 else 0 for n in util_values]
+            util_values = [n if n > 0.35 else 0 for n in util_values]
             util_weights = cum_halves_list(0.25, len(util_values))
             cum_util_ratio = [w/v for v, w in zip(util_values, util_weights) if v > 0]
             if cum_util_ratio:
                 cum_util_ratio = 1 - stt.mean([n for n in cum_util_ratio if n < 1])
             else:
-                cum_util_ratio = 1  # never used more than 30% of limit
+                cum_util_ratio = 1  # never used more than 35% of limit
 
             score.append(cum_util_ratio)
 
