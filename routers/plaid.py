@@ -143,7 +143,7 @@ async def credit_score_plaid(request: Request, item: Plaid_Item, db: Session = D
         return JSONResponse(
             status_code=status.HTTP_400_BAD_REQUEST,
             content={
-                'endpoint': '/credit_score/coinbase',
+                'endpoint': '/credit_score/plaid',
                 'status': 'error',
                 'message': error_msg,
             }
