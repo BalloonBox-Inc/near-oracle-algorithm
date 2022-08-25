@@ -87,7 +87,8 @@ async def credit_score_plaid(request: Request, item: Plaid_Item, db: Session = D
 
         # validate loan request and transaction history
         print(f'\033[36m Validating template ...\033[0m')
-        if not validate_loan_request(loan_range, accounts) or not validate_txn_history(thresholds['transactions_period'], data):
+        # or not validate_txn_history(thresholds['transactions_period'], data):
+        if not validate_loan_request(loan_range, accounts):
             value = loan_range[0]
             if value == 0:
                 raise Exception(messages['not_qualified'])
