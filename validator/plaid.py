@@ -2,12 +2,11 @@ from plaid.model.transactions_get_request_options import TransactionsGetRequestO
 from plaid.model.transactions_get_request import TransactionsGetRequest
 from plaid.model.institutions_get_by_id_request import InstitutionsGetByIdRequest
 from plaid.model.country_code import CountryCode
-
 from plaid.api import plaid_api
+from helpers.helper import flatten_list
 from datetime import timedelta
 from datetime import datetime
 from icecream import ic
-
 import plaid
 import json
 
@@ -65,17 +64,43 @@ def plaid_transactions(access_token, client, timeframe):
         if 'error' in r:
             raise Exception(r['error']['message'])
 
-        txn = {k: v for k, v in r.items()
-               if k in ['accounts', 'item', 'transactions']}
+        transactions = r['transactions']
+        total_transactions = r['total_transactions']
+        extra_pages = int(total_transactions / len(transactions))
 
-        txn['transactions'] = [t for t in txn['transactions']
-                               if not t['pending']]
+        txn = list()
+        for page in range(extra_pages):
+            options = TransactionsGetRequestOptions()
+            options.offset = len(transactions)
+
+            request = TransactionsGetRequest(
+                access_token=access_token,
+                start_date=start_date.date(),
+                end_date=end_date.date(),
+                options=options
+            )
+            rn = client.transactions_get(request).to_dict()
+            if 'error' in rn:
+                raise Exception(rn['error']['message'])
+            transactions = rn['transactions']
+            txn.append(transactions)
+
+        data = {k: v for k, v in r.items()
+                if k in ['accounts', 'item', 'transactions']}
+
+        if txn:
+            txn = flatten_list(txn)
+            lst = data['transactions']
+            lst.extend(txn)
+            data['transactions'] = lst
+
+        data['transactions'] = [t for t in data['transactions'] if not t['pending']]
 
     except plaid.ApiException as e:
-        txn = format_error(e)
+        data = format_error(e)
 
     finally:
-        return txn
+        return data
 
 
 def plaid_bank_name(client, bank_id):
