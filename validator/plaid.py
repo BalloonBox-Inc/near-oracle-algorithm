@@ -4,8 +4,7 @@ from plaid.model.institutions_get_by_id_request import InstitutionsGetByIdReques
 from plaid.model.country_code import CountryCode
 from plaid.api import plaid_api
 from helpers.helper import flatten_list
-from datetime import timedelta
-from datetime import datetime
+from datetime import datetime, timedelta
 from icecream import ic
 import plaid
 import json
@@ -71,11 +70,14 @@ def plaid_transactions(access_token, client, pagination_limit):
 
         txn_count = len(r['transactions'])
         txn_total_count = r['total_transactions']
+        print(f'total txn: {txn_total_count}')
+        print(f'page1 txn: {txn_count}')
 
         # calling other pages if exists
         if txn_total_count != txn_count:
             extra_pages = int(txn_total_count / txn_count)
             extra_pages = min(extra_pages, pagination_limit)
+            print(f'extra pages: {extra_pages}')
 
             for n in range(extra_pages):
                 options = TransactionsGetRequestOptions()
@@ -94,7 +96,7 @@ def plaid_transactions(access_token, client, pagination_limit):
 
                 txn.append(rn['transactions'])
                 txn_count += len(rn['transactions'])
-
+        print(f'pageX txn: {len(txn)}')
         # first page data only
         data = {k: v for k, v in r.items()
                 if k in ['accounts', 'item', 'transactions']}
@@ -109,6 +111,9 @@ def plaid_transactions(access_token, client, pagination_limit):
         # remove pending transactions
         data['transactions'] = [t for t in data['transactions'] if not t['pending']]
 
+        first_txn = data['transactions'][-1]['date']
+        txn_histoy = (datetime.now().date() - first_txn).days
+        print(f'txn history: {txn_histoy}')
     except plaid.ApiException as e:
         data = format_error(e)
 
