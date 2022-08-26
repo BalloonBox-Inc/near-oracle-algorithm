@@ -447,6 +447,8 @@ def validate_loan_request(loan_range, accounts):
         print(f'\033[36m  -> Available:\t{available:,.2f}\033[0m')
         if available > loan_range[0]:
             return True
+        else:
+            return False
     except Exception:
         return False
 
@@ -455,8 +457,10 @@ def validate_txn_history(req_period, data):
     try:
         txn_history = data[0]['timespan']
         print(f'\033[36m  -> History:\t{txn_history}\033[0m')
-        if txn_history > req_period / 2:
+        if txn_history >= req_period:
             return True
+        else:
+            return False
     except Exception:
         return False
 

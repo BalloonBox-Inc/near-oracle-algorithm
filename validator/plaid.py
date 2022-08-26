@@ -47,53 +47,66 @@ def format_error(e):
     return error
 
 
-def plaid_transactions(access_token, client, timeframe):
+def plaid_transactions(access_token, client, pagination_limit):
 
-    start_date = (datetime.now() - timedelta(days=timeframe))
+    start_date = (datetime.now() - timedelta(days=1800))  # max of 5 years of data
     end_date = datetime.now()
+    txn = list()
+    plaid_max_fetch = 500  # https://plaid.com/docs/api/products/transactions/#transactionsget
 
     try:
+        options = TransactionsGetRequestOptions()
+        options.count = plaid_max_fetch
+
         request = TransactionsGetRequest(
             access_token=access_token,
             start_date=start_date.date(),
             end_date=end_date.date(),
-            options=TransactionsGetRequestOptions()
+            options=options
         )
 
         r = client.transactions_get(request).to_dict()
         if 'error' in r:
             raise Exception(r['error']['message'])
 
-        # transactions = r['transactions']
-        # total_transactions = r['total_transactions']
-        # extra_pages = int(total_transactions / len(transactions))
+        txn_count = len(r['transactions'])
+        txn_total_count = r['total_transactions']
 
-        # txn = list()
-        # for page in range(extra_pages):
-        #     options = TransactionsGetRequestOptions()
-        #     options.offset = len(transactions)
+        # calling other pages if exists
+        if txn_total_count != txn_count:
+            extra_pages = int(txn_total_count / txn_count)
+            extra_pages = min(extra_pages, pagination_limit)
 
-        #     request = TransactionsGetRequest(
-        #         access_token=access_token,
-        #         start_date=start_date.date(),
-        #         end_date=end_date.date(),
-        #         options=options
-        #     )
-        #     rn = client.transactions_get(request).to_dict()
-        #     if 'error' in rn:
-        #         raise Exception(rn['error']['message'])
-        #     transactions = rn['transactions']
-        #     txn.append(transactions)
+            for n in range(extra_pages):
+                options = TransactionsGetRequestOptions()
+                options.offset = txn_count
+                options.count = plaid_max_fetch
 
+                request = TransactionsGetRequest(
+                    access_token=access_token,
+                    start_date=start_date.date(),
+                    end_date=end_date.date(),
+                    options=options
+                )
+                rn = client.transactions_get(request).to_dict()
+                if 'error' in rn:
+                    raise Exception(rn['error']['message'])
+
+                txn.append(rn['transactions'])
+                txn_count += len(rn['transactions'])
+
+        # first page data only
         data = {k: v for k, v in r.items()
                 if k in ['accounts', 'item', 'transactions']}
 
-        # if txn:
-        #     txn = flatten_list(txn)
-        #     lst = data['transactions']
-        #     lst.extend(txn)
-        #     data['transactions'] = lst
+        # add other pages data if exists
+        if txn:
+            txn = flatten_list(txn)  # other pages
+            lst = data['transactions']  # first page
+            lst.extend(txn)
+            data['transactions'] = lst
 
+        # remove pending transactions
         data['transactions'] = [t for t in data['transactions'] if not t['pending']]
 
     except plaid.ApiException as e:

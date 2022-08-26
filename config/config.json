@@ -9,7 +9,8 @@
             "minimum_requirements": {
                 "plaid": {
                     "thresholds": {
-                        "transactions_period": 360
+                        "transactions_period": 90,
+                        "transactions_pagination": 3
                     },
                     "scores": {
                         "models": {
@@ -232,7 +233,8 @@
             "minimum_requirements": {
                 "plaid": {
                     "thresholds": {
-                        "transactions_period": 720
+                        "transactions_period": 360,
+                        "transactions_pagination": 6
                     },
                     "scores": {
                         "models": {
@@ -324,7 +326,8 @@
             "minimum_requirements": {
                 "plaid": {
                     "thresholds": {
-                        "transactions_period": 1800
+                        "transactions_period": 720,
+                        "transactions_pagination": 9
                     },
                     "scores": {
                         "models": {
