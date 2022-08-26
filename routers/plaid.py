@@ -55,6 +55,7 @@ async def credit_score_plaid(request: Request, item: Plaid_Item, db: Session = D
 
         thresholds = configs['minimum_requirements']['plaid']['thresholds']
         period = thresholds['transactions_period']
+        pagination = thresholds['transactions_pagination']
         parm = configs['minimum_requirements']['plaid']['params']
 
         models, metrics = read_models_and_metrics(
@@ -71,7 +72,7 @@ async def credit_score_plaid(request: Request, item: Plaid_Item, db: Session = D
 
         # data fetching
         print(f'\033[36m Reading data ...\033[0m')
-        dataset = plaid_transactions(item.plaid_access_token, client, period)
+        dataset = plaid_transactions(item.plaid_access_token, client, pagination)
         if isinstance(dataset, dict) and 'error_code' in dataset:
             error = dataset['message']
             raise Exception(f'Unable to fetch transactions data: {error}')
@@ -87,8 +88,7 @@ async def credit_score_plaid(request: Request, item: Plaid_Item, db: Session = D
 
         # validate loan request and transaction history
         print(f'\033[36m Validating template ...\033[0m')
-        # or not validate_txn_history(thresholds['transactions_period'], data):
-        if not validate_loan_request(loan_range, accounts):
+        if not validate_loan_request(loan_range, accounts) or not validate_txn_history(period, data):
             value = loan_range[0]
             if value == 0:
                 raise Exception(messages['not_qualified'])
