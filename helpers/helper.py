@@ -456,7 +456,7 @@ def validate_loan_request(loan_range, accounts):
 def validate_txn_history(req_period, data):
     try:
         txn_history = data[0]['timespan']
-        print(f'\033[36m  -> History:\t{txn_history}\033[0m')
+        print(f'\033[36m  -> History:\t\t{txn_history}\033[0m')
         if txn_history >= req_period:
             return True
         else:
