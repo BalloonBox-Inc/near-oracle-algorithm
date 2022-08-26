@@ -167,7 +167,7 @@ def plaid_credit_metrics(feedback, params, metadata, period):
     metrics, size = 8, len(score)
     if size < metrics:
         score = fill_list(score, metrics, size)
-    print(f'\033[36m  -> Credit:\t{score}\033[0m')
+    print(f'\033[36m  -> Credit:\t\t{score}\033[0m')
     return score, feedback
 
 
@@ -295,7 +295,7 @@ def plaid_velocity_metrics(feedback, params, metadata):
     metrics, size = 5, len(score)
     if size < metrics:
         score = fill_list(score, metrics, size)
-    print(f'\033[36m  -> Velocity:\t{score}\033[0m')
+    print(f'\033[36m  -> Velocity:\t\t{score}\033[0m')
     return score, feedback
 
 
