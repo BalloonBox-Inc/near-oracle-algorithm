@@ -88,7 +88,7 @@
                     "messages": {
                         "failed": "NearOracle could not calculate your credit score as there is no active credit line nor transaction history associated with your Plaid bank account. Please use a different bank account.",
                         "success": "Congrats, you have successfully obtained a credit score! Your NearOracle score is {} - {} points. This score qualifies you for a short term loan of up to {:,} NEAR which is equivalent to {:,} USD",
-                        "not_qualified": "Unfortunately it looks like you do not qualify for the requested loan amount. Please try another time."
+                        "not_qualified": "Unfortunately it looks like you do not qualify for the requested loan amount. At least 3 months of transaction history is required. Try another time."
                     }
                 },
                 "coinbase": {
