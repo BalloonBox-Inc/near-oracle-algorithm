@@ -17,7 +17,7 @@ class PlaidTable(Base):
 
 class CoinbaseTable(Base):
 
-    __tablename__ = 'coinabse'
+    __tablename__ = 'coinbase'
 
     event_id = Column(Integer, primary_key=True)
     datetime = Column(DateTime, nullable=False)

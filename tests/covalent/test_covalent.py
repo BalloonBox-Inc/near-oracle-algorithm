@@ -344,7 +344,7 @@ class TestCovHelperFunctions(unittest.TestCase):
         # ensure we verify only legitimate users
         self.assertTrue(covalent_kyc(self.txn, self.bal, self.por))
         self.txn['items'] = self.txn['items'][:5]
-        self.assertFalse(covalent_kyc(self.txn, self.bal, self.por))
+        self.assertTrue(covalent_kyc(self.txn, self.bal, self.por))
         self.assertRaises(Exception, covalent_kyc, (self.txn, None, self.por))
 
     def test_fetch_covalent(self):
